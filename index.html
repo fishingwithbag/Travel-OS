@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f1e7" />
+    <meta name="description" content="Travel OS — 將行程、航班、住宿與費用整理在自己的旅遊工作台。" />
+    <title>Travel OS</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23243e35%22/><path d=%22M18 38c9-15 20-19 29-11-8 0-13 5-15 15%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%225%22 stroke-linecap=%22round%22/></svg>" />
+    <script type="module" src="/src/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要內容</a>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Travel OS 首頁"><span class="brand-mark">T</span><span><strong>Travel OS</strong><small>YOUR TRIP, YOUR DATA</small></span></a>
+      <div class="top-actions">
+        <span id="save-status" class="status" role="status">本機模式</span>
+        <button id="settings-button" class="icon-button" type="button" aria-label="連線與設定">設定</button>
+        <button id="theme-button" class="icon-button" type="button" aria-label="切換深色模式">◐</button>
+      </div>
+    </header>
+
+    <main id="main" class="shell">
+      <section id="welcome" class="welcome" aria-labelledby="welcome-title">
+        <p class="eyebrow">LOCAL-FIRST TRAVEL PLANNER</p>
+        <h1 id="welcome-title">把旅程整理成一張清楚的路線圖。</h1>
+        <p>先建立一趟旅程。資料會儲存在這台裝置；之後可在設定中連接自己的 Firebase。</p>
+        <button class="primary" data-open="trip-dialog" type="button">建立第一趟旅程</button>
+      </section>
+
+      <section id="workspace" hidden>
+        <header class="trip-header">
+          <div>
+            <p id="trip-dates" class="eyebrow"></p>
+            <h1 id="trip-title"></h1>
+            <p id="trip-destination" class="muted"></p>
+          </div>
+          <div class="header-actions">
+            <select id="trip-select" aria-label="切換旅程"></select>
+            <button class="secondary" data-open="trip-dialog" type="button">新增旅程</button>
+          </div>
+        </header>
+
+        <nav id="day-tabs" class="day-tabs" aria-label="旅程日期"></nav>
+
+        <div class="workspace-grid">
+          <section class="panel timeline-panel" aria-labelledby="day-heading">
+            <div class="panel-heading">
+              <div><p class="eyebrow">DAILY PLAN</p><h2 id="day-heading">每日行程</h2></div>
+              <button class="primary small" data-open="item-dialog" type="button">新增安排</button>
+            </div>
+            <ol id="timeline" class="timeline"></ol>
+            <div id="timeline-empty" class="empty-state">
+              <span aria-hidden="true">＋</span><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p>
+            </div>
+          </section>
+
+          <aside class="side-stack">
+            <section class="panel summary-panel" aria-labelledby="summary-heading">
+              <div class="panel-heading"><div><p class="eyebrow">OVERVIEW</p><h2 id="summary-heading">旅程摘要</h2></div></div>
+              <dl class="summary-grid">
+                <div><dt>天數</dt><dd id="summary-days">0</dd></div>
+                <div><dt>安排</dt><dd id="summary-items">0</dd></div>
+                <div><dt>群組</dt><dd id="summary-groups">0</dd></div>
+                <div><dt>費用</dt><dd id="summary-cost">—</dd></div>
+              </dl>
+            </section>
+            <section class="panel group-panel" aria-labelledby="group-heading">
+              <div class="panel-heading"><div><p class="eyebrow">GROUPS</p><h2 id="group-heading">同行群組</h2></div><button class="text-button" data-open="group-dialog" type="button">新增</button></div>
+              <ul id="group-list" class="plain-list"></ul>
+              <p id="group-empty" class="muted compact">可依車輛、家庭或小隊建立任意群組。</p>
+            </section>
+            <section class="panel tools-panel" aria-labelledby="tools-heading">
+              <div class="panel-heading"><div><p class="eyebrow">TOOLS</p><h2 id="tools-heading">資料工具</h2></div></div>
+              <button id="export-button" class="wide secondary" type="button">匯出完整備份</button>
+              <button id="import-button" class="wide secondary" type="button">匯入備份</button>
+              <input id="import-file" type="file" accept="application/json" hidden />
+            </section>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="trip-dialog">
+      <form id="trip-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">NEW TRIP</p><h2>建立旅程</h2></header>
+        <label>旅程名稱<input name="title" maxlength="80" required placeholder="例：春天城市散步" /></label>
+        <label>目的地<input name="destination" maxlength="120" required placeholder="國家、城市或多個地區" /></label>
+        <div class="field-pair"><label>開始日期<input name="startDate" type="date" required /></label><label>結束日期<input name="endDate" type="date" required /></label></div>
+        <div class="field-pair"><label>旅程時區<input name="timeZone" required value="Asia/Taipei" /></label><label>記帳幣別<input name="currency" required maxlength="3" value="TWD" /></label></div>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">建立旅程</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="item-dialog">
+      <form id="item-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">ADD TO DAY</p><h2>新增安排</h2></header>
+        <div class="field-pair"><label>類型<select name="type"><option value="place">景點</option><option value="meal">餐飲</option><option value="stay">住宿</option><option value="flight">航班</option><option value="transport">交通</option><option value="other">其他</option></select></label><label>開始時間<input name="startTime" type="time" /></label></div>
+        <label>名稱<input name="title" maxlength="100" required placeholder="要去哪裡或做什麼？" /></label>
+        <label>地址／位置<input name="location" maxlength="200" placeholder="可直接手動輸入" /></label>
+        <div id="flight-fields" class="conditional" hidden>
+          <div class="field-pair"><label>出發機場<input name="origin" maxlength="12" /></label><label>抵達機場<input name="destination" maxlength="12" /></label></div>
+          <div class="field-pair"><label>出發時區<input name="departureTimeZone" placeholder="Asia/Taipei" /></label><label>抵達時區<input name="arrivalTimeZone" placeholder="Europe/Paris" /></label></div>
+          <label>抵達日期與時間<input name="arrivalDateTime" type="datetime-local" /></label>
+        </div>
+        <div class="field-pair"><label>費用<input name="amount" min="0" step="0.01" inputmode="decimal" type="number" /></label><label>幣別<input name="currency" maxlength="3" /></label></div>
+        <label>群組<select name="groupId"><option value="">所有人</option></select></label>
+        <label>備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">加入行程</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="group-dialog">
+      <form id="group-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">NEW GROUP</p><h2>新增同行群組</h2></header>
+        <label>群組名稱<input name="name" maxlength="50" required placeholder="例：一號車、家庭 A" /></label>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">新增群組</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="settings-dialog">
+      <form method="dialog" class="dialog-form">
+        <header><p class="eyebrow">CONNECTION</p><h2>連線與設定</h2></header>
+        <p>目前使用本機模式。Firebase 連線精靈將在下一個里程碑加入。</p>
+        <footer><button class="primary" value="cancel">完成</button></footer>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>
