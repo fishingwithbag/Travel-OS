@@ -1,9 +1,11 @@
 import './styles.css';
 import { addGroup, createItem, createTrip, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
+import { parseFirebaseConfig } from './config/firebase-config.js';
+import { FirebaseTripStore } from './storage/firebase-store.js';
 
-const store = new IndexedDbTripStore();
-const state = { trips: [], currentTripId: '', selectedDate: '' };
+let store = new IndexedDbTripStore();
+const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, googleMapsKey:'' };
 const $ = (selector) => document.querySelector(selector);
 const typeLabels = { place: '景點', meal: '餐飲', stay: '住宿', flight: '航班', transport: '交通', other: '其他' };
 
@@ -19,6 +21,7 @@ async function saveTrip(trip) {
   await store.saveTrip(updated);
   state.trips = state.trips.map((entry) => entry.id === updated.id ? updated : entry);
   $('#save-status').textContent = '已儲存在本機';
+  if (state.mode === 'cloud') $('#save-status').textContent = '已同步至自己的 Firebase';
   render();
 }
 
@@ -80,6 +83,56 @@ $('#group-form').addEventListener('submit', async (event) => {
   try { const trip = currentTrip(); const group = addGroup(trip, formData(form).name); await saveTrip({ ...trip, groups:[...trip.groups,group] }); form.reset(); form.closest('dialog').close(); showToast('群組已新增。'); } catch (error) { setError(form, error); }
 });
 
+function updateConnectionSummary() {
+  const summary = $('#connection-summary');
+  if (state.mode === 'cloud') {
+    summary.innerHTML = `<strong>Firebase 模式</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')}</span>`;
+    $('#save-status').textContent = '已連接自己的 Firebase';
+  } else {
+    summary.innerHTML = '<strong>本機模式</strong><span>資料只保存在這台裝置</span>';
+    $('#save-status').textContent = '本機模式';
+  }
+}
+
+async function activateStore(nextStore, mode, connection = null) {
+  await store.close?.();
+  store = nextStore;
+  state.mode = mode; state.connection = connection;
+  state.trips = await store.listTrips();
+  state.trips.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+  state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
+  updateConnectionSummary(); render();
+}
+
+$('#connection-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget; setError(form, '');
+  const progress = $('#connection-progress'); progress.innerHTML = '<span>1／3　正在檢查設定格式…</span>';
+  try {
+    const input = formData(form);
+    if (!input.email || !input.password) throw new ValidationError('請輸入 Firebase Email 與密碼。');
+    const config = parseFirebaseConfig(input.firebaseConfig);
+    progress.innerHTML += '<span>2／3　正在登入指定的 Firebase 專案…</span>';
+    const cloudStore = new FirebaseTripStore();
+    const connection = await cloudStore.connect(config, { email:input.email, password:input.password }, event.submitter?.value === 'signup' ? 'signup' : 'login');
+    progress.innerHTML += '<span>3／3　測試資料讀寫已完成。</span>';
+    state.googleMapsKey = String(input.googleMapsKey || '').trim();
+    if (input.remember) localStorage.setItem('travel-os:connection', JSON.stringify({ firebase:config, googleMapsKey:state.googleMapsKey }));
+    else localStorage.removeItem('travel-os:connection');
+    await activateStore(cloudStore, 'cloud', connection);
+    form.elements.password.value = '';
+    setTimeout(() => form.closest('dialog').close(), 350);
+    showToast(`已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
+  } catch (error) { progress.textContent = ''; setError(form, error); }
+});
+
+$('#local-mode-button').addEventListener('click', async () => {
+  const localStore = await new IndexedDbTripStore().connect();
+  await activateStore(localStore, 'local');
+  $('#connection-form').closest('dialog').close();
+  showToast('已切換至這台裝置的本機旅程。');
+});
+
 $('#export-button').addEventListener('click', () => {
   const backup = { schemaVersion:1, exportedAt:new Date().toISOString(), trips:state.trips };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
@@ -102,6 +155,15 @@ for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListene
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem('travel-os:theme') || 'light';
+  const remembered = localStorage.getItem('travel-os:connection');
+  if (remembered) {
+    try {
+      const connection = JSON.parse(remembered);
+      $('#connection-form').elements.firebaseConfig.value = JSON.stringify(connection.firebase, null, 2);
+      $('#connection-form').elements.googleMapsKey.value = connection.googleMapsKey || '';
+      $('#connection-form').elements.remember.checked = true;
+    } catch { localStorage.removeItem('travel-os:connection'); }
+  }
   await store.connect(); state.trips = await store.listTrips(); state.trips.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)); state.currentTripId = state.trips[0]?.id || ''; render();
 }
 

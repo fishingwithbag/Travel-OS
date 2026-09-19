@@ -8,13 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:rules": "npx --yes firebase-tools@15.11.0 emulators:exec --project demo-travel-os --only database \"vitest run tests/database-rules.test.js\"",
     "test:watch": "vitest",
-    "check": "npm run test && npm run build"
+    "check": "npm run test -- --exclude tests/database-rules.test.js && npm run build"
   },
   "dependencies": {
     "firebase": "^12.3.0"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@vitest/coverage-v8": "^5.0.1",
     "fake-indexeddb": "^6.2.2",
     "vite": "^7.1.7",

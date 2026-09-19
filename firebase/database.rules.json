@@ -1,0 +1,40 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "diagnostics": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$entry": {
+          ".validate": "newData.hasOnly(['createdAt']) && newData.child('createdAt').isNumber()"
+        }
+      }
+    },
+    "userTrips": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$tripId": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('trips').child($tripId).child('members').child(auth.uid).val() === 'owner') && (!newData.exists() || newData.val() === true)",
+          ".validate": "newData.val() === true"
+        }
+      }
+    },
+    "trips": {
+      "$tripId": {
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        ".write": "auth != null && ((!data.exists() && newData.child('ownerId').val() === auth.uid && newData.child('members').child(auth.uid).val() === 'owner') || data.child('members').child(auth.uid).val() === 'owner')",
+        ".validate": "newData.hasChildren(['ownerId','members','data']) && newData.child('ownerId').isString() && (!data.exists() || newData.child('ownerId').val() === data.child('ownerId').val()) && newData.child('members').child(newData.child('ownerId').val()).val() === 'owner'",
+        "members": {
+          "$uid": {
+            ".validate": "newData.val() === 'owner' || newData.val() === 'editor' || newData.val() === 'viewer'"
+          }
+        },
+        "data": {
+          ".write": "auth != null && (data.parent().child('members').child(auth.uid).val() === 'owner' || data.parent().child('members').child(auth.uid).val() === 'editor')",
+          ".validate": "newData.hasChildren(['schemaVersion','id','title','destination','startDate','endDate','timeZone','currency','groups','items','updatedAt','revision']) && newData.child('id').val() === $tripId && newData.child('title').isString() && newData.child('title').val().length <= 80 && newData.child('destination').isString() && newData.child('destination').val().length <= 120 && newData.child('revision').isNumber()"
+        }
+      }
+    }
+  }
+}

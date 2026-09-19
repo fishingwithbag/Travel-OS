@@ -122,10 +122,20 @@
     </dialog>
 
     <dialog id="settings-dialog">
-      <form method="dialog" class="dialog-form">
+      <form id="connection-form" class="dialog-form">
         <header><p class="eyebrow">CONNECTION</p><h2>連線與設定</h2></header>
-        <p>目前使用本機模式。Firebase 連線精靈將在下一個里程碑加入。</p>
-        <footer><button class="primary" value="cancel">完成</button></footer>
+        <div id="connection-summary" class="connection-summary"><strong>本機模式</strong><span>資料只保存在這台裝置</span></div>
+        <label>Firebase Web config
+          <textarea name="firebaseConfig" rows="7" spellcheck="false" placeholder='貼上 Firebase Console 提供的 firebaseConfig = { ... }'></textarea>
+        </label>
+        <p class="field-help">僅接受網頁應用程式的公開連線設定。請勿貼上 service account 或私鑰。</p>
+        <label>Google Maps browser key（選填）<input name="googleMapsKey" autocomplete="off" /></label>
+        <div class="field-pair"><label>Email<input name="email" type="email" autocomplete="username" /></label><label>密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
+        <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開連線設定</label>
+        <details><summary>還沒有 Firebase？</summary><ol class="setup-steps"><li>在 Firebase Console 建立專案及 Web app。</li><li>建立 Realtime Database，並部署本專案提供的安全 Rules。</li><li>在 Authentication 啟用 Email/Password，加入目前網域至授權網域。</li><li>複製 Web app 的完整 config 貼到上方。</li></ol></details>
+        <p class="form-error" role="alert"></p>
+        <div id="connection-progress" class="checklist" aria-live="polite"></div>
+        <footer class="settings-actions"><button id="local-mode-button" class="secondary" type="button">切換本機模式</button><button class="secondary" data-close type="button">取消</button><button class="primary" name="intent" value="login">驗證並登入</button><button class="text-button" name="intent" value="signup">建立帳號</button></footer>
       </form>
     </dialog>
 
