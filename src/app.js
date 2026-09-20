@@ -3,6 +3,7 @@ import { addGroup, createItem, createTrip, expenseTotals, touchTrip, tripDates, 
 import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfig } from './config/firebase-config.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
+import { mapSearchUrl, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, googleMapsKey:'' };
@@ -39,7 +40,7 @@ function render() {
   $('#day-tabs').innerHTML = dates.map((date, index) => `<button class="day-tab" type="button" data-date="${date}" role="tab" aria-selected="${date === state.selectedDate}"><small>DAY ${index + 1}</small><strong>${formatDay(date)}</strong></button>`).join('');
   const items = trip.items.filter((item) => item.date === state.selectedDate).sort((a,b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
   $('#day-heading').textContent = formatDay(state.selectedDate);
-  $('#timeline').innerHTML = items.map((item) => `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p></div><span class="type-badge">${typeLabels[item.type]}</span></li>`).join('');
+  $('#timeline').innerHTML = items.map((item) => `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${item.location ? `<a class="map-link" href="${mapSearchUrl(item.location)}" target="_blank" rel="noopener noreferrer">在 Google Maps 開啟</a>` : ''}</div><span class="type-badge">${typeLabels[item.type]}</span></li>`).join('');
   $('#timeline-empty').hidden = items.length > 0;
   $('#summary-days').textContent = dates.length;
   $('#summary-items').textContent = trip.items.length;
@@ -110,13 +111,28 @@ $('#connection-form').addEventListener('submit', async (event) => {
   const progress = $('#connection-progress'); progress.innerHTML = '<span>1／3　正在檢查設定格式…</span>';
   try {
     const input = formData(form);
+    const intent = event.submitter?.value || 'login';
+    const mapsKey = validateMapsBrowserKey(input.googleMapsKey);
+    if (intent === 'maps') {
+      progress.innerHTML = '<span>正在驗證 Google Maps browser key…</span>';
+      const result = await verifyMapsBrowserKey(mapsKey);
+      state.googleMapsKey = mapsKey;
+      if (input.remember) {
+        let previous = {};
+        try { previous = JSON.parse(localStorage.getItem('travel-os:connection') || '{}'); } catch { previous = {}; }
+        localStorage.setItem('travel-os:connection', JSON.stringify({ ...previous, googleMapsKey:mapsKey }));
+      }
+      progress.innerHTML = `<span>${escapeHtml(result.message)}</span>`;
+      showToast(result.enabled ? 'Google Maps 選配功能已啟用。' : '未設定 key；外部導航仍可使用。');
+      return;
+    }
     if (!input.email || !input.password) throw new ValidationError('請輸入 Firebase Email 與密碼。');
     const config = parseFirebaseConfig(input.firebaseConfig);
     progress.innerHTML += '<span>2／3　正在登入指定的 Firebase 專案…</span>';
     const cloudStore = new FirebaseTripStore();
-    const connection = await cloudStore.connect(config, { email:input.email, password:input.password }, event.submitter?.value === 'signup' ? 'signup' : 'login');
+    const connection = await cloudStore.connect(config, { email:input.email, password:input.password }, intent === 'signup' ? 'signup' : 'login');
     progress.innerHTML += '<span>3／3　測試資料讀寫已完成。</span>';
-    state.googleMapsKey = String(input.googleMapsKey || '').trim();
+    state.googleMapsKey = mapsKey;
     if (input.remember) localStorage.setItem('travel-os:connection', JSON.stringify({ firebase:config, googleMapsKey:state.googleMapsKey }));
     else localStorage.removeItem('travel-os:connection');
     await activateStore(cloudStore, 'cloud', connection);
@@ -161,6 +177,7 @@ async function start() {
       const connection = JSON.parse(remembered);
       $('#connection-form').elements.firebaseConfig.value = JSON.stringify(connection.firebase, null, 2);
       $('#connection-form').elements.googleMapsKey.value = connection.googleMapsKey || '';
+      state.googleMapsKey = connection.googleMapsKey || '';
       $('#connection-form').elements.remember.checked = true;
     } catch { localStorage.removeItem('travel-os:connection'); }
   }
