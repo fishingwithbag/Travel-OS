@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFirebaseConfig, publicConnectionExport } from '../src/config/firebase-config.js';
+import { parseFirebaseConfig, parseFirebaseConfigInput, publicConnectionExport } from '../src/config/firebase-config.js';
 
 const raw = `const firebaseConfig = {
   apiKey: "example-browser-key",
@@ -18,6 +18,13 @@ describe('Firebase runtime config', () => {
   });
   it('rejects a database URL by itself', () => {
     expect(() => parseFirebaseConfig('{"databaseURL":"https://sample.firebaseio.com"}')).toThrow(/缺少/);
+  });
+  it('accepts the same config through individual wizard fields', () => {
+    expect(parseFirebaseConfigInput({
+      firebase_apiKey:'example-browser-key', firebase_authDomain:'sample.firebaseapp.com',
+      firebase_databaseURL:'https://sample-default-rtdb.asia-southeast1.firebasedatabase.app',
+      firebase_projectId:'sample-project', firebase_appId:'1:123:web:abc',
+    })).toMatchObject({ projectId:'sample-project', appId:'1:123:web:abc' });
   });
   it('excludes the Google key from portable settings by default', () => {
     const firebase = parseFirebaseConfig(raw);

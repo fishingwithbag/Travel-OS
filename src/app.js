@@ -1,7 +1,7 @@
 import './styles.css';
 import { addGroup, createBackup, createItem, createTrip, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
-import { parseFirebaseConfig } from './config/firebase-config.js';
+import { parseFirebaseConfigInput } from './config/firebase-config.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { mapSearchUrl, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
 
@@ -133,7 +133,7 @@ $('#connection-form').addEventListener('submit', async (event) => {
       return;
     }
     if (!input.email || !input.password) throw new ValidationError('請輸入 Firebase Email 與密碼。');
-    const config = parseFirebaseConfig(input.firebaseConfig);
+    const config = parseFirebaseConfigInput(input);
     progress.innerHTML += '<span>2／3　正在登入指定的 Firebase 專案…</span>';
     const cloudStore = new FirebaseTripStore();
     const connection = await cloudStore.connect(config, { email:input.email, password:input.password }, intent === 'signup' ? 'signup' : 'login');

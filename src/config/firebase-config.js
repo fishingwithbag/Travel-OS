@@ -34,6 +34,12 @@ export function parseFirebaseConfig(raw) {
   return Object.freeze(config);
 }
 
+export function parseFirebaseConfigInput(input) {
+  if (String(input.firebaseConfig || '').trim()) return parseFirebaseConfig(input.firebaseConfig);
+  const config = Object.fromEntries(ALLOWED_FIELDS.map((field) => [field, String(input[`firebase_${field}`] || '').trim()]).filter(([, value]) => value));
+  return parseFirebaseConfig(JSON.stringify(config));
+}
+
 export function publicConnectionExport(config, includeGoogleKey = false) {
   const value = { schemaVersion:1, firebase:{ ...config.firebase } };
   if (includeGoogleKey && config.googleMapsKey) value.googleMapsKey = config.googleMapsKey;

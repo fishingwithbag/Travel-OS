@@ -131,6 +131,19 @@
           <textarea name="firebaseConfig" rows="7" spellcheck="false" placeholder='貼上 Firebase Console 提供的 firebaseConfig = { ... }'></textarea>
         </label>
         <p class="field-help">僅接受網頁應用程式的公開連線設定。請勿貼上 service account 或私鑰。</p>
+        <details>
+          <summary>改用逐欄輸入</summary>
+          <div class="setup-fields">
+            <label>API key<input name="firebase_apiKey" autocomplete="off" /></label>
+            <label>Auth domain<input name="firebase_authDomain" placeholder="project.firebaseapp.com" /></label>
+            <label>Database URL<input name="firebase_databaseURL" type="url" placeholder="https://project.firebasedatabase.app" /></label>
+            <label>Project ID<input name="firebase_projectId" /></label>
+            <label>App ID<input name="firebase_appId" /></label>
+            <label>Storage bucket（選填）<input name="firebase_storageBucket" /></label>
+            <label>Messaging sender ID（選填）<input name="firebase_messagingSenderId" /></label>
+            <label>Measurement ID（選填）<input name="firebase_measurementId" /></label>
+          </div>
+        </details>
         <label>Google Maps browser key（選填）<input name="googleMapsKey" autocomplete="off" /></label>
         <div class="field-pair"><label>Email<input name="email" type="email" autocomplete="username" /></label><label>密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
         <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開連線設定</label>
