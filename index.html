@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f5f1e7" />
     <meta name="description" content="Travel OS — 將行程、航班、住宿與費用整理在自己的旅遊工作台。" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <title>Travel OS</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23243e35%22/><path d=%22M18 38c9-15 20-19 29-11-8 0-13 5-15 15%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%225%22 stroke-linecap=%22round%22/></svg>" />
     <script type="module" src="/src/app.js"></script>
@@ -73,6 +74,7 @@
             <section class="panel tools-panel" aria-labelledby="tools-heading">
               <div class="panel-heading"><div><p class="eyebrow">TOOLS</p><h2 id="tools-heading">資料工具</h2></div></div>
               <button id="export-button" class="wide secondary" type="button">匯出完整備份</button>
+              <button id="share-export-button" class="wide secondary" type="button">匯出分享副本</button>
               <button id="import-button" class="wide secondary" type="button">匯入備份</button>
               <input id="import-file" type="file" accept="application/json" hidden />
             </section>
@@ -136,6 +138,15 @@
         <p class="form-error" role="alert"></p>
         <div id="connection-progress" class="checklist" aria-live="polite"></div>
         <footer class="settings-actions"><button id="local-mode-button" class="secondary" type="button">切換本機模式</button><button class="secondary" data-close type="button">取消</button><button class="text-button" name="intent" value="maps">只儲存地圖設定</button><button class="primary" name="intent" value="login">驗證並登入</button><button class="text-button" name="intent" value="signup">建立帳號</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="import-dialog">
+      <form id="import-form" class="dialog-form">
+        <header><p class="eyebrow">IMPORT PREVIEW</p><h2>確認匯入備份</h2></header>
+        <div id="import-summary" class="connection-summary"></div>
+        <p class="muted">匯入會取代目前本機模式的所有旅程；雲端模式不允許批次覆蓋。</p>
+        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">確認取代本機資料</button></footer>
       </form>
     </dialog>
 

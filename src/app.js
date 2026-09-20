@@ -1,5 +1,5 @@
 import './styles.css';
-import { addGroup, createItem, createTrip, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
+import { addGroup, createBackup, createItem, createTrip, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfig } from './config/firebase-config.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
@@ -7,6 +7,7 @@ import { mapSearchUrl, validateMapsBrowserKey, verifyMapsBrowserKey } from './pr
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, googleMapsKey:'' };
+let pendingBackup = null;
 const $ = (selector) => document.querySelector(selector);
 const typeLabels = { place: '景點', meal: '餐飲', stay: '住宿', flight: '航班', transport: '交通', other: '其他' };
 
@@ -14,7 +15,12 @@ function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'nume
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
 function showToast(message) { const toast = $('#toast'); toast.textContent = message; toast.hidden = false; clearTimeout(showToast.timer); showToast.timer = setTimeout(() => { toast.hidden = true; }, 3000); }
 function setError(form, error) { form.querySelector('.form-error').textContent = error instanceof ValidationError ? error.message : '發生未預期的錯誤，請再試一次。'; }
-function openDialog(id) { const dialog = document.getElementById(id); dialog.showModal(); dialog.querySelector('input,select,button')?.focus(); }
+function openDialog(id) {
+  const dialog = document.getElementById(id);
+  for (const error of dialog.querySelectorAll('.form-error')) error.textContent = '';
+  dialog.showModal();
+  dialog.querySelector('input,select,button')?.focus();
+}
 function formData(form) { return Object.fromEntries(new FormData(form).entries()); }
 
 async function saveTrip(trip) {
@@ -149,22 +155,34 @@ $('#local-mode-button').addEventListener('click', async () => {
   showToast('已切換至這台裝置的本機旅程。');
 });
 
-$('#export-button').addEventListener('click', () => {
-  const backup = { schemaVersion:1, exportedAt:new Date().toISOString(), trips:state.trips };
+function downloadBackup(mode) {
+  const backup = createBackup(state.trips, mode);
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob); link.download = `travel-os-backup-${new Date().toISOString().slice(0,10)}.json`; link.click();
+  link.href = URL.createObjectURL(blob); link.download = `travel-os-${mode}-${new Date().toISOString().slice(0,10)}.json`; link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-});
+}
+$('#export-button').addEventListener('click', () => downloadBackup('private'));
+$('#share-export-button').addEventListener('click', () => downloadBackup('share'));
 $('#import-button').addEventListener('click', () => $('#import-file').click());
 $('#import-file').addEventListener('change', async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
   if (file.size > 5_000_000) { showToast('備份檔案不可超過 5 MB。'); return; }
   try {
-    const backup = validateBackup(JSON.parse(await file.text()));
-    await store.replaceAll(backup.trips); state.trips = backup.trips; state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = ''; render(); showToast(`已還原 ${backup.trips.length} 趟旅程。`);
+    if (state.mode !== 'local') throw new ValidationError('請先切換至本機模式，再預覽及匯入備份。');
+    pendingBackup = validateBackup(JSON.parse(await file.text()));
+    const itemCount = pendingBackup.trips.reduce((sum, trip) => sum + trip.items.length, 0);
+    $('#import-summary').innerHTML = `<strong>${pendingBackup.trips.length} 趟旅程</strong><span>${itemCount} 筆安排 · ${pendingBackup.mode === 'share' ? '分享副本' : '完整備份'}</span>`;
+    openDialog('import-dialog');
   } catch (error) { showToast(error instanceof ValidationError ? error.message : '備份檔案無法解析。'); }
   event.target.value = '';
+});
+$('#import-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!pendingBackup || state.mode !== 'local') return;
+  await store.replaceAll(pendingBackup.trips);
+  state.trips = pendingBackup.trips; state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
+  const count = pendingBackup.trips.length; pendingBackup = null; event.currentTarget.closest('dialog').close(); render(); showToast(`已還原 ${count} 趟旅程。`);
 });
 
 for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
@@ -185,3 +203,7 @@ async function start() {
 }
 
 start().catch(() => { $('#save-status').textContent = '儲存空間無法使用'; showToast('無法開啟本機儲存空間，請檢查瀏覽器設定。'); });
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}

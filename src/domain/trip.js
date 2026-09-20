@@ -96,10 +96,36 @@ export function touchTrip(trip) {
 export function validateBackup(value) {
   if (!value || typeof value !== 'object' || value.schemaVersion !== SCHEMA_VERSION || !Array.isArray(value.trips)) throw new ValidationError('這不是支援的 Travel OS 備份。');
   if (value.trips.length > 100) throw new ValidationError('備份內的旅程數量超過上限。');
-  value.trips.forEach((trip) => {
-    createTrip(trip, trip.id);
+  const trips = value.trips.map((trip) => {
+    const normalized = createTrip(trip, clean(trip.id, 100, '旅程 ID'));
     if (!Array.isArray(trip.items) || !Array.isArray(trip.groups)) throw new ValidationError('旅程資料結構不完整。');
     if (trip.items.length > 10_000) throw new ValidationError('單一旅程的項目數量超過上限。');
+    const groups = trip.groups.map((group) => ({ id:clean(group.id,100,'群組 ID'), name:clean(group.name,50,'群組名稱') }));
+    const groupIds = new Set(groups.map((group) => group.id));
+    const base = { ...normalized, groups };
+    const items = trip.items.map((item) => {
+      if (item.groupId && !groupIds.has(item.groupId)) throw new ValidationError('行程包含不存在的群組。');
+      return createItem({
+        ...item,
+        amount:item.amountMinor == null ? '' : Number(item.amountMinor) / 100,
+        origin:item.flight?.origin,
+        destination:item.flight?.destination,
+        departureTimeZone:item.flight?.departureTimeZone,
+        arrivalTimeZone:item.flight?.arrivalTimeZone,
+        arrivalDateTime:item.flight?.arrivalDateTime,
+      }, base, clean(item.id,100,'行程 ID'));
+    });
+    return { ...base, items, createdAt:String(trip.createdAt || normalized.createdAt), updatedAt:String(trip.updatedAt || normalized.updatedAt), revision:Math.max(1,Number(trip.revision) || 1) };
   });
-  return value;
+  return { schemaVersion:SCHEMA_VERSION, exportedAt:String(value.exportedAt || ''), mode:value.mode === 'share' ? 'share' : 'private', trips };
+}
+
+export function createBackup(trips, mode = 'private') {
+  const privateCopy = structuredClone(trips);
+  const exportTrips = mode === 'share' ? privateCopy.map((trip) => ({
+    ...trip,
+    groups:[],
+    items:trip.items.map(({ notes, groupId, amountMinor, currency, ...item }) => ({ ...item, notes:'', groupId:'', amountMinor:null, currency:trip.currency })),
+  })) : privateCopy;
+  return { schemaVersion:SCHEMA_VERSION, exportedAt:new Date().toISOString(), mode:mode === 'share' ? 'share' : 'private', trips:exportTrips };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addGroup, createItem, createTrip, expenseTotals, tripDates, validateBackup } from '../src/domain/trip.js';
+import { addGroup, createBackup, createItem, createTrip, expenseTotals, tripDates, validateBackup } from '../src/domain/trip.js';
 
 describe('trip domain', () => {
   it('creates dates across month and year boundaries', () => {
@@ -30,5 +30,20 @@ describe('trip domain', () => {
 
   it('rejects malformed backups', () => {
     expect(() => validateBackup({ schemaVersion:1, trips:'not-an-array' })).toThrow();
+  });
+
+  it('removes notes, groups and amounts from share copies', () => {
+    const trip = createTrip({ title:'Share', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-share');
+    trip.groups = [{ id:'private-group', name:'Private people' }];
+    trip.items = [createItem({ date:'2027-01-01', type:'stay', title:'Hotel', notes:'booking 123', groupId:'private-group', amount:'99', currency:'USD' }, trip, 'item-share')];
+    const shared = createBackup([trip], 'share');
+    expect(shared.trips[0].groups).toEqual([]);
+    expect(shared.trips[0].items[0]).toMatchObject({ notes:'', groupId:'', amountMinor:null });
+  });
+
+  it('normalizes imported values instead of trusting raw objects', () => {
+    const trip = createTrip({ title:'Import', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-import');
+    const backup = validateBackup({ schemaVersion:1, trips:[trip] });
+    expect(backup.trips[0]).toMatchObject({ id:'trip-import', items:[], groups:[] });
   });
 });

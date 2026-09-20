@@ -1,0 +1,12 @@
+{
+  "name": "Travel OS",
+  "short_name": "Travel OS",
+  "description": "Local-first, user-owned travel planner",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f1e7",
+  "theme_color": "#243e35",
+  "icons": []
+}
