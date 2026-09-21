@@ -1,6 +1,8 @@
 # Firebase 設定指南
 
-Travel OS 的「一鍵設定」是指網站使用者不需修改程式或重新建置：準備好自己的 Firebase 專案後，直接在網站內貼上 Web config 並登入。瀏覽器不能代替專案擁有者建立雲端資源或安全規則。
+Travel OS 的設定精靈不需修改程式或重新建置：先將 Travel OS 部署到自己控制的網站，準備好自己的 Firebase 專案後，直接在網站內貼上 Web config 並登入。官方公開體驗站只提供本機模式，不接受 Firebase、API key 或帳號密碼。瀏覽器不能代替專案擁有者建立雲端資源或安全規則。
+
+開始前請先完成[自行部署](SELF_HOSTING.zh-TW.md)。不要在由陌生人控制或無法核對原始碼的 Travel OS 網站輸入帳號密碼。
 
 ## 1. 建立 Firebase 專案與 Web app
 
@@ -12,7 +14,7 @@ Travel OS 的「一鍵設定」是指網站使用者不需修改程式或重新�
 
 ## 2. 啟用登入
 
-在 Authentication → Sign-in method 啟用 Email/Password。到 Settings → Authorized domains 加入實際使用網站的網域；本機測試則加入 `localhost`。
+在 Authentication → Sign-in method 啟用 Email/Password。一般 Email/Password 登入不需要將公開體驗站加入 Authorized domains。只有啟用 Google、Email Link 或其他 redirect 流程時，才在 Settings → Authorized domains 加入你自己部署網站的網域；本機測試需要時加入 `localhost`。
 
 ## 3. 建立 Realtime Database
 

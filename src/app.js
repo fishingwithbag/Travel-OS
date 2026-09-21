@@ -2,6 +2,7 @@ import './styles.css';
 import { addGroup, createBackup, createItem, createTrip, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfigInput } from './config/firebase-config.js';
+import { isSharedPublicDemo } from './config/deployment.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { mapSearchUrl, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
 
@@ -10,6 +11,7 @@ const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', co
 let pendingBackup = null;
 const $ = (selector) => document.querySelector(selector);
 const typeLabels = { place: '景點', meal: '餐飲', stay: '住宿', flight: '航班', transport: '交通', other: '其他' };
+const sharedPublicDemo = isSharedPublicDemo(location.hostname);
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
@@ -95,6 +97,9 @@ function updateConnectionSummary() {
   if (state.mode === 'cloud') {
     summary.innerHTML = `<strong>Firebase 模式</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')}</span>`;
     $('#save-status').textContent = '已連接自己的 Firebase';
+  } else if (sharedPublicDemo) {
+    summary.innerHTML = '<strong>公開體驗站</strong><span>僅限本機模式，不接受雲端設定或帳密</span>';
+    $('#save-status').textContent = '本機模式';
   } else {
     summary.innerHTML = '<strong>本機模式</strong><span>資料只保存在這台裝置</span>';
     $('#save-status').textContent = '本機模式';
@@ -116,6 +121,7 @@ $('#connection-form').addEventListener('submit', async (event) => {
   const form = event.currentTarget; setError(form, '');
   const progress = $('#connection-progress'); progress.innerHTML = '<span>1／3　正在檢查設定格式…</span>';
   try {
+    if (sharedPublicDemo) throw new ValidationError('公開體驗站僅提供本機模式；請先建立由自己控制的網站副本。');
     const input = formData(form);
     const intent = event.submitter?.value || 'login';
     const mapsKey = validateMapsBrowserKey(input.googleMapsKey);
@@ -189,6 +195,13 @@ for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListene
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem('travel-os:theme') || 'light';
+  if (sharedPublicDemo) {
+    localStorage.removeItem('travel-os:connection');
+    $('#shared-host-warning').hidden = false;
+    $('#external-service-fields').disabled = true;
+    for (const button of $('#connection-form').querySelectorAll('button[name="intent"]')) button.disabled = true;
+    $('#connection-summary').innerHTML = '<strong>公開體驗站</strong><span>僅限本機模式，不接受雲端設定或帳密</span>';
+  }
   const remembered = localStorage.getItem('travel-os:connection');
   if (remembered) {
     try {

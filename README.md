@@ -1,6 +1,6 @@
 # Travel OS
 
-Travel OS 是一個 local-first 的開源旅遊規劃器。第一次開啟即可在本機建立旅程；需要跨裝置同步時，可在網站內貼上自己的 Firebase Web config、登入自己的帳號後開始使用。Google Maps browser key 是選配，未設定時仍可透過一般地圖連結導航。
+Travel OS 是一個 local-first 的開源旅遊規劃器。第一次開啟即可在本機建立旅程。需要跨裝置同步時，先把 Travel OS 部署到自己控制的網站，再於設定精靈貼上自己的 Firebase Web config。Google Maps browser key 是選配，未設定時仍可透過一般地圖連結導航。
 
 ## 功能
 
@@ -15,14 +15,14 @@ Travel OS 是一個 local-first 的開源旅遊規劃器。第一次開啟即可
 
 ## 立即使用
 
-直接開啟 [Travel OS 線上版](https://fishingwithbag.github.io/Travel-OS/)，或在本機啟動：
+直接開啟 [Travel OS 公開體驗站](https://fishingwithbag.github.io/Travel-OS/) 使用本機模式，或在本機啟動：
 
 ```bash
 npm ci
 npm run dev
 ```
 
-本機模式不需帳號或 API key，資料只存在目前瀏覽器。需要同步時，開啟右上角「設定」，依 [Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md) 完成自己的專案，再貼上完整 Web config。
+本機模式不需帳號或 API key，資料只存在目前瀏覽器。公開體驗站會停用 Firebase、Google key 與帳密輸入，避免使用者將雲端憑證交給他人維護的前端。需要同步時，依 [自行部署指南](docs/SELF_HOSTING.zh-TW.md) 建立自己的網站副本，再依 [Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md) 完成連線。
 
 Web config 是 Firebase 用戶端連線資料，並不是管理員密鑰；真正的資料隔離由 Authentication 與 Database Rules 執行。Travel OS 不接受 service account JSON、私鑰或 server secret。
 
@@ -40,7 +40,7 @@ npm run test:rules
 
 ## 資料與隱私
 
-本機模式使用 IndexedDB。只有使用者主動設定 Firebase 後，網站才會連線到該使用者指定的專案。選擇「記住這台裝置」只會保存公開 Web config 與選填的 browser key，不保存密碼。詳細行為與備份差異請見 [資料與備份說明](docs/DATA_AND_BACKUPS.zh-TW.md)。
+本機模式使用 IndexedDB。自行部署的版本只有在使用者主動設定 Firebase 後，才會連線到指定專案。選擇「記住這台裝置」只會保存公開 Web config 與選填的 browser key，不保存密碼。詳細行為與備份差異請見 [資料與備份說明](docs/DATA_AND_BACKUPS.zh-TW.md)。
 
 ## 專案狀態
 
@@ -49,6 +49,7 @@ npm run test:rules
 ## 文件
 
 - [Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)
+- [自行部署指南](docs/SELF_HOSTING.zh-TW.md)
 - [資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)
 - [架構決策](docs/decisions/001-local-first-adapters.md)
 - [貢獻指南](CONTRIBUTING.md)
