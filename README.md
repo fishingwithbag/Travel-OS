@@ -15,7 +15,7 @@ Travel OS 是一個 local-first 的開源旅遊規劃器。第一次開啟即可
 
 ## 立即使用
 
-正式示範站發布後會顯示在 GitHub repository 的 About 區。也可在本機啟動：
+直接開啟 [Travel OS 線上版](https://fishingwithbag.github.io/Travel-OS/)，或在本機啟動：
 
 ```bash
 npm ci
