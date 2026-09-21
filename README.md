@@ -1,61 +1,147 @@
-# Travel OS
+<p align="center">
+  <img src="docs/assets/readme-hero.svg" width="100%" alt="Travel OS — 把旅程收進一張真正屬於你的地圖" />
+</p>
 
-Travel OS 是一個 local-first 的開源旅遊規劃器。第一次開啟即可在本機建立旅程。需要跨裝置同步時，先把 Travel OS 部署到自己控制的網站，再於設定精靈貼上自己的 Firebase Web config。Google Maps browser key 是選配，未設定時仍可透過一般地圖連結導航。
+<h1 align="center">Travel OS</h1>
 
-## 功能
+<p align="center">
+  <strong>行程可以很精彩，管理它不必很混亂。</strong><br />
+  一個 local-first、可自行部署、由旅行者擁有資料的開源旅遊規劃器。
+</p>
 
-- 自訂目的地、跨月／跨年日期與多個旅程。
-- 景點、餐飲、住宿、交通、手動航班與任意數量同行群組。
-- 航班出發／抵達時區與日期分開記錄。
-- 不混加不同幣別的費用摘要。
-- IndexedDB 本機模式，以及使用者自有 Firebase 的雲端模式。
-- 完整私人備份、去除備註／群組／金額的分享副本、匯入預覽。
-- 相對路徑建置，可部署在網域根目錄或 GitHub Pages repository 子路徑。
-- 離線 app shell、鍵盤操作、桌面與手機響應式介面。
+<p align="center">
+  <a href="https://github.com/fishingwithbag/Travel-OS/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/fishingwithbag/Travel-OS/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://github.com/fishingwithbag/Travel-OS/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/fishingwithbag/Travel-OS/actions/workflows/pages.yml/badge.svg" /></a>
+  <a href="https://github.com/fishingwithbag/Travel-OS/releases"><img alt="Release" src="https://img.shields.io/github/v/release/fishingwithbag/Travel-OS?include_prereleases&sort=semver&style=flat-square&color=315d4c" /></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-cb8f5d?style=flat-square" /></a>
+</p>
 
-## 立即使用
+<p align="center">
+  <a href="https://fishingwithbag.github.io/Travel-OS/"><strong>開啟本機體驗站</strong></a>
+  ·
+  <a href="docs/SELF_HOSTING.zh-TW.md"><strong>建立自己的網站</strong></a>
+  ·
+  <a href="docs/FIREBASE_SETUP.zh-TW.md"><strong>連接 Firebase</strong></a>
+</p>
 
-直接開啟 [Travel OS 公開體驗站](https://fishingwithbag.github.io/Travel-OS/) 使用本機模式，或在本機啟動：
+> [!IMPORTANT]
+> 官方公開體驗站只開放 **IndexedDB 本機模式**，不接受 Firebase config、Google API key、Email 或密碼。需要雲端同步時，請先用 **Use this template** 建立由自己控制的網站副本。
+
+## 為什麼做 Travel OS？
+
+一趟旅行散落在很多地方：日期留在日曆、航班躺在信箱、住宿埋在聊天紀錄，費用則分散在不同幣別。整理它們不該再需要另一個會綁住資料的平台。
+
+Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同一張旅程工作台。沒有帳號也能開始；需要跨裝置時，再連接自己擁有的 Firebase。你決定資料放在哪裡，也可以隨時完整匯出帶走。
+
+## 旅程需要的，都在同一個地方
+
+| 規劃 | 資料 | 使用體驗 |
+|---|---|---|
+| 🗓️ 跨月、跨年動態日期 | 💾 IndexedDB 本機優先 | 📱 手機與桌面響應式介面 |
+| ✈️ 分開記錄起降日期與時區 | ☁️ 使用者自有 Firebase | ⌨️ 鍵盤可操作的表單與對話框 |
+| 🏨 景點、餐飲、住宿、交通與航班 | 🔐 owner／editor／viewer Rules | 🌙 明暗主題與離線 app shell |
+| 👥 任意數量的同行群組 | 📦 私人備份與分享副本 | 🗺️ 無 API key 也能開啟地圖 |
+| 💱 不混加不同幣別 | 🔄 匯入前預覽與 schema 驗證 | 🧭 GitHub Pages 子路徑可部署 |
+
+## 兩種使用方式
+
+### 1. 先用本機模式出發
+
+開啟[公開體驗站](https://fishingwithbag.github.io/Travel-OS/)，不用登入、不用 API key。旅程保存在目前瀏覽器的 IndexedDB，適合試用、單機規劃或不需要同步的旅行。
+
+> [!TIP]
+> 瀏覽器資料可能被使用者自行清除。正式使用時，請定期下載「完整備份」。
+
+### 2. 建立自己的雲端版本
+
+1. 按 repository 上方的 **Use this template** 建立個人副本。
+2. 在副本的 **Settings → Pages** 選擇 **GitHub Actions**。
+3. 開啟自己的 Travel OS，貼上自己的 Firebase Web config 並登入。
+
+不需要修改程式碼，也不需要把 Firebase 設定提交到 Git。完整步驟請見[自行部署指南](docs/SELF_HOSTING.zh-TW.md)與 [Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)。
+
+## 資料怎麼流動？
+
+```mermaid
+flowchart LR
+    A[旅行者的瀏覽器] -->|本機模式| B[(IndexedDB)]
+    A -->|自行部署版本| C[自己的 Travel OS 網站]
+    C -->|登入與同步| D[(自己的 Firebase)]
+    C -. 選填 .-> E[Google Maps browser API]
+    F[官方公開體驗站] -->|僅限本機模式| B
+```
+
+- 官方體驗站不開放雲端設定，避免使用者把憑證交給他人控制的前端。
+- 自行部署版本只在使用者主動設定後連接指定的 Firebase。
+- 「記住這台裝置」只保存公開 Web config 與選填的 browser key，不保存密碼。
+- Travel OS 拒絕 service account、Admin SDK 私鑰及 server secret。
+- Firebase Rules 以 UID、`tripId` 和 membership 隔離資料。
+
+更多細節請讀[資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)、[安全政策](SECURITY.md)及[共享體驗站架構決策](docs/decisions/003-shared-demo-local-only.md)。
+
+## 本機開發
+
+需要 Node.js 22 或相容版本：
 
 ```bash
+git clone https://github.com/fishingwithbag/Travel-OS.git
+cd Travel-OS
 npm ci
 npm run dev
 ```
 
-本機模式不需帳號或 API key，資料只存在目前瀏覽器。公開體驗站會停用 Firebase、Google key 與帳密輸入，避免使用者將雲端憑證交給他人維護的前端。需要同步時，依 [自行部署指南](docs/SELF_HOSTING.zh-TW.md) 建立自己的網站副本，再依 [Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md) 完成連線。
+Production build 使用相對資源路徑，同一份輸出可放在網域根目錄或 repository 子路徑。
 
-Web config 是 Firebase 用戶端連線資料，並不是管理員密鑰；真正的資料隔離由 Authentication 與 Database Rules 執行。Travel OS 不接受 service account JSON、私鑰或 server secret。
-
-## 開發與驗證
-
-需要 Node.js 22 或相容版本。
+## 品質與安全檢查
 
 ```bash
-npm ci
+# 單元測試與 production build
 npm run check
+
+# Firebase Realtime Database Rules；需要 Java 21
 npm run test:rules
+
+# 已知套件漏洞
+npm audit --audit-level=high
 ```
 
-`npm run check` 執行單元測試與 production build。`npm run test:rules` 需要 Java 21，會啟動 Firebase Realtime Database Emulator 驗證 owner／editor／viewer 及跨旅程隔離。
+GitHub Actions 會在每次 push 與 Pull Request 執行上述檢查。Rules 測試涵蓋未登入者、陌生人、viewer、editor、owner、權限提升與跨使用者索引。
 
-## 資料與隱私
+## 專案地圖
 
-本機模式使用 IndexedDB。自行部署的版本只有在使用者主動設定 Firebase 後，才會連線到指定專案。選擇「記住這台裝置」只會保存公開 Web config 與選填的 browser key，不保存密碼。詳細行為與備份差異請見 [資料與備份說明](docs/DATA_AND_BACKUPS.zh-TW.md)。
+```text
+src/
+├─ config/       執行時設定解析與部署防呆
+├─ domain/       旅程資料模型、驗證與備份
+├─ providers/    選配地圖能力
+├─ storage/      IndexedDB 與 Firebase adapters
+├─ app.js        介面流程與狀態
+└─ styles.css    響應式視覺系統
 
-## 專案狀態
+firebase/        Realtime Database Rules
+tests/           Domain、設定、儲存與權限測試
+docs/            設定指南、資料說明與 ADR
+```
 
-目前版本是 beta。核心本機流程與 Firebase Rules 已自動測試；正式 Firebase 專案仍需由每位專案擁有者自行完成 Authentication、授權網域與 Rules 設定。Google Places 等需要額外 API 或後端代理的能力尚未包含。
+## 目前狀態
 
-## 文件
+Travel OS 正在公開 beta 階段。核心本機流程、備份、Firebase 權限及 Pages 部署已自動驗證；Google Places 等需要額外 API 或後端代理的能力尚未包含。正式 Firebase 專案仍由每位自行部署者管理 Authentication、Database、Rules、配額與帳務。
 
-- [Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)
-- [自行部署指南](docs/SELF_HOSTING.zh-TW.md)
-- [資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)
-- [架構決策](docs/decisions/001-local-first-adapters.md)
+查看[版本紀錄](CHANGELOG.md)與 [Releases](https://github.com/fishingwithbag/Travel-OS/releases)了解每次更新。
+
+## 一起把旅程工具做好
+
+歡迎回報問題、改善文件或提出 Pull Request。提交前請閱讀[貢獻指南](CONTRIBUTING.md)，並確認示例不包含真實旅程、姓名、訂單、憑證或其他私人資料。
+
+- [回報問題](https://github.com/fishingwithbag/Travel-OS/issues)
 - [貢獻指南](CONTRIBUTING.md)
-- [安全政策](SECURITY.md)
+- [安全漏洞私密回報](SECURITY.md)
 - [第三方授權與素材](THIRD_PARTY_NOTICES.md)
 
 ## License
 
-程式碼採用 [MIT License](LICENSE)。第三方套件依各自授權條款使用。
+Travel OS 採用 [MIT License](LICENSE)。你可以使用、修改及發布自己的版本；第三方套件仍依各自授權條款使用。
+
+<p align="center">
+  <sub>Plan freely. Keep your data. Travel your way.</sub>
+</p>
