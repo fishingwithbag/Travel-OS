@@ -1,5 +1,11 @@
 import { ValidationError } from '../domain/trip.js';
 
+export function normalizeFirebaseTrip(value) {
+  if (!value) return value;
+  const toList = (entry) => Array.isArray(entry) ? entry.filter(Boolean) : Object.values(entry || {});
+  return { ...value, groups:toList(value.groups), items:toList(value.items) };
+}
+
 export class FirebaseTripStore {
   #app;
   #auth;
@@ -47,11 +53,11 @@ export class FirebaseTripStore {
   async listTrips() {
     const { ref, get } = this.#modules;
     const index = (await get(ref(this.#database, `userTrips/${this.#uid}`))).val() || {};
-    const trips = await Promise.all(Object.keys(index).slice(0,100).map(async (id) => (await get(ref(this.#database, `trips/${id}/data`))).val()));
+    const trips = await Promise.all(Object.keys(index).slice(0,100).map(async (id) => normalizeFirebaseTrip((await get(ref(this.#database, `trips/${id}/data`))).val())));
     return trips.filter(Boolean);
   }
 
-  async getTrip(id) { return (await this.#modules.get(this.#modules.ref(this.#database, `trips/${id}/data`))).val(); }
+  async getTrip(id) { return normalizeFirebaseTrip((await this.#modules.get(this.#modules.ref(this.#database, `trips/${id}/data`))).val()); }
 
   async saveTrip(trip) {
     const { ref, get, set, update } = this.#modules;

@@ -38,7 +38,7 @@
         },
         "data": {
           ".write": "auth != null && (data.parent().child('members').child(auth.uid).val() === 'owner' || data.parent().child('members').child(auth.uid).val() === 'editor')",
-          ".validate": "newData.hasChildren(['schemaVersion','id','title','destination','startDate','endDate','timeZone','currency','groups','items','updatedAt','revision']) && newData.child('id').val() === $tripId && newData.child('title').isString() && newData.child('title').val().length <= 80 && newData.child('destination').isString() && newData.child('destination').val().length <= 120 && newData.child('revision').isNumber()"
+          ".validate": "newData.hasChildren(['schemaVersion','id','title','destination','startDate','endDate','timeZone','currency','updatedAt','revision']) && newData.child('id').val() === $tripId && newData.child('title').isString() && newData.child('title').val().length <= 80 && newData.child('destination').isString() && newData.child('destination').val().length <= 120 && newData.child('revision').isNumber()"
         }
       }
     }
