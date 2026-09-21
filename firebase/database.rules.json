@@ -7,7 +7,13 @@
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
         "$entry": {
-          ".validate": "newData.hasChildren(['createdAt']) && newData.numChildren() === 1 && newData.child('createdAt').isNumber()"
+          ".validate": "newData.hasChildren(['createdAt'])",
+          "createdAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     },
