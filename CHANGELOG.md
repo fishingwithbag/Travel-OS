@@ -6,9 +6,9 @@
 
 ### Changed
 
-- 移除尚未被任何 Maps／Places 功能使用的 Google Maps Browser Key 設定與動態 script loader；現有 Google Maps 外部導航維持無 key 使用。
-- 舊版曾記住的 Browser Key 不再載入，若同時有有效 Firebase Web config 會自動只保留 Firebase 設定。
-- 文件明確區分未來 Maps JavaScript／Places 的 Browser Key 與 Routes／Geocoding／Weather 的後端 Server Key 安全邊界。
+- Self-host 第一次使用改以 Firebase 雲端同步為 onboarding 主流程，本機 IndexedDB 保留為 Demo／離線／fallback。
+- Google Maps Browser Key 回到設定精靈，實際驗證 Maps JavaScript 與 Places；UI 遮罩 Key，並引導設定 Website/API restrictions、quota 與 billing alerts。
+- Browser Key 可隨 Firebase 公開 config 選擇性記住在目前裝置；密碼與 Server Key 永不保存。Routes／Geocoding／Weather Server Key 仍只允許存在使用者自己的後端。
 - Firebase Rules deploy 新增本機明確 target 與 predeploy boundary guard；OpenSource 不再允許從登入帳號或其他 repository 的 Firebase project 推測 production 部署目標。
 
 ## 0.1.0-beta.2 - 2026-09-21

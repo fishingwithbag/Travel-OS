@@ -23,10 +23,13 @@
 
     <main id="main" class="shell">
       <section id="welcome" class="welcome" aria-labelledby="welcome-title">
-        <p class="eyebrow">LOCAL-FIRST TRAVEL PLANNER</p>
+        <p class="eyebrow">CLOUD-SYNC TRAVEL PLANNER</p>
         <h1 id="welcome-title">把旅程整理成一張清楚的路線圖。</h1>
-        <p>先建立一趟旅程。資料會儲存在這台裝置；之後可在設定中連接自己的 Firebase。</p>
-        <button class="primary" data-open="trip-dialog" type="button">建立第一趟旅程</button>
+        <p>自行部署版本建議先完成雲端同步設定，讓旅程可以跨裝置與多人協作；本機模式保留給試用、離線或暫時不連雲端的情境。</p>
+        <div class="welcome-actions">
+          <button id="cloud-setup-button" class="primary" data-open="settings-dialog" type="button">設定雲端同步</button>
+          <button id="local-start-button" class="secondary" data-open="trip-dialog" type="button">先用本機模式</button>
+        </div>
       </section>
 
       <section id="workspace" hidden>
@@ -125,7 +128,7 @@
 
     <dialog id="settings-dialog">
       <form id="connection-form" class="dialog-form">
-        <header><p class="eyebrow">CONNECTION</p><h2>連線與設定</h2></header>
+        <header><p class="eyebrow">CLOUD ONBOARDING</p><h2>雲端同步設定精靈</h2><p class="muted compact">使用你自己的 Firebase 與 Google Cloud。Travel OS 不提供中央雲端，也不會把你的資料送到維護者的 Firebase。</p></header>
         <section id="shared-host-warning" class="trust-warning" role="note" hidden>
           <strong>公開體驗站不接受 Firebase、API key 或帳號密碼</strong>
           <p>這個網站由 repository 維護者部署。為避免使用者把雲端憑證輸入他人控制的網頁，這裡只開放本機模式。需要雲端同步時，請先建立由自己控制的網站副本。</p>
@@ -133,6 +136,9 @@
         </section>
         <div id="connection-summary" class="connection-summary"><strong>本機模式</strong><span>資料只保存在這台裝置</span></div>
         <fieldset id="external-service-fields" class="connection-fields">
+        <section class="wizard-step">
+        <p class="eyebrow">STEP 1 · FIREBASE</p>
+        <h3>連接你自己的 Firebase</h3>
         <label>Firebase Web config
           <textarea name="firebaseConfig" rows="7" spellcheck="false" placeholder='貼上 Firebase Console 提供的 firebaseConfig = { ... }'></textarea>
         </label>
@@ -150,13 +156,29 @@
             <label>Measurement ID（選填）<input name="firebase_measurementId" /></label>
           </div>
         </details>
+        <details><summary>還沒有 Firebase？查看建立步驟</summary><ol class="setup-steps"><li>先將 Travel OS 部署到自己控制的網站。</li><li>在 Firebase Console 建立專案及 Web app。</li><li>建立 Realtime Database，並部署本專案提供的安全 Rules。</li><li>在 Authentication 啟用 Email/Password，並在 Users 建立登入帳號。</li><li>複製 Web app 的完整 config 貼到上方。</li></ol></details>
+        </section>
+
+        <section class="wizard-step">
+          <p class="eyebrow">STEP 2 · GOOGLE MAPS</p>
+          <h3>建立你自己的 Browser Key</h3>
+          <label>Google Maps Browser Key<input name="googleMapsKey" type="password" autocomplete="off" required placeholder="AIza…" /></label>
+          <p class="field-help">欄位會遮罩，但 Browser Key 在瀏覽器端技術上不是秘密。真正的防盜機制是 Website restrictions、API restrictions、配額與帳務警示。</p>
+          <div class="security-note"><strong>這個網站建議授權的 Website referrer</strong><code id="maps-referrer-recommendation"></code><span>不要把 Key 設成 unrestricted，也不要把 Server Key 貼到這裡。</span></div>
+          <details open><summary>Google Cloud Console 申請與防盜設定</summary><ol class="setup-steps"><li>進入 Google Cloud Console，建立或選擇你自己的 project，並連結 Billing。</li><li>在 Google Maps Platform 啟用 <strong>Maps JavaScript API</strong>、<strong>Places API</strong> 與 <strong>Places API (New)</strong>。</li><li>到 <strong>Google Maps Platform → Keys & Credentials</strong>，選擇 <strong>Create credentials → API key</strong>。</li><li>編輯該 Key，Application restrictions 選 <strong>Websites</strong>，加入上方顯示的網站 referrer。正式站與本機開發網址請分別加入。</li><li>API restrictions 選 <strong>Restrict key</strong>，只勾選 Maps JavaScript API、Places API、Places API (New)。</li><li>到 Quotas 設定合理的每日／每分鐘上限；到 Billing 建立預算與告警。預算告警本身不是硬上限，所以仍要搭配 quota。</li><li>儲存後把這把 <strong>Browser Key</strong> 貼回上方；設定精靈會實際載入 Maps JS 並驗證 Places。</li></ol><p class="field-help"><a href="https://developers.google.com/maps/api-security-best-practices" target="_blank" rel="noopener noreferrer">Google 官方 API Key 安全指南</a> · <a href="https://console.cloud.google.com/google/maps-apis/credentials" target="_blank" rel="noopener noreferrer">開啟 Google Maps Platform Credentials</a></p></details>
+          <p class="field-help"><strong>Server Key 不在這個精靈輸入。</strong>未來 Routes／Geocoding／Weather 必須使用你自己後端的 Secret Manager 或等效 secret storage。</p>
+        </section>
+
+        <section class="wizard-step">
+        <p class="eyebrow">STEP 3 · SIGN IN</p>
+        <h3>登入並驗證雲端同步</h3>
         <div class="field-pair"><label>Email<input name="email" type="email" autocomplete="username" /></label><label>密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
-        <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開連線設定</label>
-        <details><summary>還沒有 Firebase？</summary><ol class="setup-steps"><li>先將 Travel OS 部署到自己控制的網站。</li><li>在 Firebase Console 建立專案及 Web app。</li><li>建立 Realtime Database，並部署本專案提供的安全 Rules。</li><li>在 Authentication 啟用 Email/Password，並在 Users 建立登入帳號。</li><li>複製 Web app 的完整 config 貼到上方。</li></ol></details>
+        <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開 Firebase config 與受限制 Browser Key（不保存密碼）</label>
+        </section>
         </fieldset>
         <p class="form-error" role="alert"></p>
         <div id="connection-progress" class="checklist" aria-live="polite"></div>
-        <footer class="settings-actions"><button id="local-mode-button" class="secondary" type="button">切換本機模式</button><button class="secondary" data-close type="button">取消</button><button class="primary" name="intent" value="login">驗證並登入</button></footer>
+        <footer class="settings-actions"><button id="local-mode-button" class="secondary" type="button">先使用本機模式</button><button class="secondary" data-close type="button">取消</button><button class="primary" name="intent" value="login">驗證 Google + Firebase 並啟用雲端</button></footer>
       </form>
     </dialog>
 

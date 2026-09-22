@@ -1,14 +1,14 @@
 import './styles.css';
 import { addGroup, createBackup, createItem, createTrip, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
-import { parseFirebaseConfigInput, parseRememberedFirebaseConnection } from './config/firebase-config.js';
-import { isSharedPublicDemo } from './config/deployment.js';
+import { parseFirebaseConfigInput, parseRememberedConnection } from './config/firebase-config.js';
+import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployment.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { prepareStoreSwitch } from './storage/store-switch.js';
-import { mapSearchUrl } from './providers/maps.js';
+import { mapSearchUrl, recommendedWebsiteRestriction, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
 
 let store = new IndexedDbTripStore();
-const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
+const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, googleMapsKey:'' };
 let pendingBackup = null;
 const $ = (selector) => document.querySelector(selector);
 const typeLabels = { place: '景點', meal: '餐飲', stay: '住宿', flight: '航班', transport: '交通', other: '其他' };
@@ -22,7 +22,7 @@ function openDialog(id) {
   const dialog = document.getElementById(id);
   for (const error of dialog.querySelectorAll('.form-error')) error.textContent = '';
   dialog.showModal();
-  dialog.querySelector('input,select,button')?.focus();
+  dialog.querySelector('input,select,textarea,button')?.focus();
 }
 function formData(form) { return Object.fromEntries(new FormData(form).entries()); }
 
@@ -80,7 +80,7 @@ $('#theme-button').addEventListener('click', () => { const next = document.docum
 
 $('#trip-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; setError(form, '');
-  try { const trip = createTrip(formData(form)); await store.saveTrip(trip); state.trips.push(trip); state.currentTripId = trip.id; state.selectedDate = trip.startDate; form.reset(); form.elements.timeZone.value = 'Asia/Taipei'; form.elements.currency.value = 'TWD'; form.closest('dialog').close(); render(); showToast('旅程已建立並儲存在本機。'); } catch (error) { setError(form, error); }
+  try { const trip = createTrip(formData(form)); await store.saveTrip(trip); state.trips.push(trip); state.currentTripId = trip.id; state.selectedDate = trip.startDate; form.reset(); form.elements.timeZone.value = 'Asia/Taipei'; form.elements.currency.value = 'TWD'; form.closest('dialog').close(); render(); showToast(state.mode === 'cloud' ? '旅程已建立並同步到自己的 Firebase。' : '旅程已建立並儲存在本機。'); } catch (error) { setError(form, error); }
 });
 
 $('#item-form select[name="type"]').addEventListener('change', (event) => { $('#flight-fields').hidden = event.target.value !== 'flight'; });
@@ -97,7 +97,7 @@ $('#group-form').addEventListener('submit', async (event) => {
 function updateConnectionSummary() {
   const summary = $('#connection-summary');
   if (state.mode === 'cloud') {
-    summary.innerHTML = `<strong>Firebase 模式</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')}</span>`;
+    summary.innerHTML = `<strong>雲端同步已啟用</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')} · Maps/Places 已驗證</span>`;
     $('#save-status').textContent = '已連接自己的 Firebase';
   } else if (sharedPublicDemo) {
     summary.innerHTML = '<strong>公開體驗站</strong><span>僅限本機模式，不接受雲端設定或帳密</span>';
@@ -122,17 +122,22 @@ async function activateStore(nextStore, mode, connection = null) {
 $('#connection-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.currentTarget; setError(form, '');
-  const progress = $('#connection-progress'); progress.innerHTML = '<span>1／3　正在檢查設定格式…</span>';
+  const progress = $('#connection-progress'); progress.innerHTML = '<span>1／4　正在檢查 Firebase 與 Google 設定…</span>';
   try {
     if (sharedPublicDemo) throw new ValidationError('公開體驗站僅提供本機模式；請先建立由自己控制的網站副本。');
     const input = formData(form);
     if (!input.email || !input.password) throw new ValidationError('請輸入 Firebase Email 與密碼。');
     const config = parseFirebaseConfigInput(input);
-    progress.innerHTML += '<span>2／3　正在登入指定的 Firebase 專案…</span>';
+    const googleMapsKey = validateMapsBrowserKey(input.googleMapsKey);
+    progress.innerHTML += '<span>2／4　正在驗證 Maps JavaScript API 與 Places…</span>';
+    await verifyMapsBrowserKey(googleMapsKey);
+    progress.innerHTML += '<span>3／4　正在登入指定的 Firebase 專案…</span>';
     const cloudStore = new FirebaseTripStore();
     const connection = await cloudStore.connect(config, { email:input.email, password:input.password });
-    progress.innerHTML += '<span>3／3　測試資料讀寫已完成。</span>';
-    if (input.remember) localStorage.setItem('travel-os:connection', JSON.stringify({ firebase:config }));
+    progress.innerHTML += '<span>4／4　Firebase 診斷讀寫已完成。</span>';
+    state.googleMapsKey = googleMapsKey;
+    localStorage.setItem('travel-os:onboarding-mode', 'cloud');
+    if (input.remember) localStorage.setItem('travel-os:connection', JSON.stringify({ firebase:config, googleMapsKey }));
     else localStorage.removeItem('travel-os:connection');
     const warnings = await activateStore(cloudStore, 'cloud', connection);
     form.elements.password.value = '';
@@ -144,8 +149,9 @@ $('#connection-form').addEventListener('submit', async (event) => {
 $('#local-mode-button').addEventListener('click', async () => {
   const localStore = await new IndexedDbTripStore().connect();
   await activateStore(localStore, 'local');
+  localStorage.setItem('travel-os:onboarding-mode', 'local');
   $('#connection-form').closest('dialog').close();
-  showToast('已切換至這台裝置的本機旅程。');
+  showToast('已進入本機模式；之後仍可從設定啟用雲端同步。');
 });
 
 function downloadBackup(mode) {
@@ -186,23 +192,29 @@ for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListene
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem('travel-os:theme') || 'light';
+  $('#maps-referrer-recommendation').textContent = recommendedWebsiteRestriction(location.origin) || '請填入你實際部署網站的 HTTPS origin';
   if (sharedPublicDemo) {
     localStorage.removeItem('travel-os:connection');
     $('#shared-host-warning').hidden = false;
     $('#external-service-fields').disabled = true;
     for (const button of $('#connection-form').querySelectorAll('button[name="intent"]')) button.disabled = true;
     $('#connection-summary').innerHTML = '<strong>公開體驗站</strong><span>僅限本機模式，不接受雲端設定或帳密</span>';
+    $('#cloud-setup-button').hidden = true;
+    $('#local-start-button').textContent = '建立第一趟旅程';
   }
   const remembered = localStorage.getItem('travel-os:connection');
   if (remembered) {
     try {
-      const connection = parseRememberedFirebaseConnection(remembered);
+      const connection = parseRememberedConnection(remembered);
       $('#connection-form').elements.firebaseConfig.value = JSON.stringify(connection.firebase, null, 2);
+      $('#connection-form').elements.googleMapsKey.value = connection.googleMapsKey || '';
+      state.googleMapsKey = connection.googleMapsKey || '';
       $('#connection-form').elements.remember.checked = true;
       localStorage.setItem('travel-os:connection', JSON.stringify(connection));
     } catch { localStorage.removeItem('travel-os:connection'); }
   }
   await store.connect(); state.trips = await store.listTrips(); state.trips.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)); state.currentTripId = state.trips[0]?.id || ''; render();
+  if (shouldOpenCloudOnboarding(location.hostname, localStorage.getItem('travel-os:onboarding-mode') || '')) openDialog('settings-dialog');
 }
 
 start().catch(() => { $('#save-status').textContent = '儲存空間無法使用'; showToast('無法開啟本機儲存空間，請檢查瀏覽器設定。'); });

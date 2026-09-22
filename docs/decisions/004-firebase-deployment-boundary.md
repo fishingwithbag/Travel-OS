@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-Travel OS is public and local-first. The official public site runs IndexedDB only. Its Realtime Database Rules are a template for Emulator tests and independently hosted copies; they are not the Rules for the maintainer's private travel website or any other unrelated Firebase project.
+Travel OS is public, cloud-sync-first for independently hosted copies, and local-only on the maintainer-hosted demo. The official public site runs IndexedDB only. Its Realtime Database Rules are a template for Emulator tests and independently hosted copies; they are not the Rules for the maintainer's private travel website or any other unrelated Firebase project.
 
 Using `firebase projects:list`, account history, or the existence of a Realtime Database to infer a deployment target is unsafe because several unrelated applications can be managed by the same Firebase account.
 

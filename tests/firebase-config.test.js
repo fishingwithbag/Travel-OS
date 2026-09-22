@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFirebaseConfig, parseFirebaseConfigInput, parseRememberedFirebaseConnection } from '../src/config/firebase-config.js';
+import { parseFirebaseConfig, parseFirebaseConfigInput, parseRememberedConnection } from '../src/config/firebase-config.js';
 
 const raw = `const firebaseConfig = {
   apiKey: "example-browser-key",
@@ -26,11 +26,16 @@ describe('Firebase runtime config', () => {
       firebase_projectId:'sample-project', firebase_appId:'1:123:web:abc',
     })).toMatchObject({ projectId:'sample-project', appId:'1:123:web:abc' });
   });
-  it('migrates remembered Firebase settings without retaining legacy Google keys', () => {
+  it('restores a restricted Google Browser Key with remembered Firebase settings', () => {
     const firebase = parseFirebaseConfig(raw);
-    expect(parseRememberedFirebaseConnection(JSON.stringify({ firebase, googleMapsKey:'legacy-browser-key' }))).toEqual({ firebase });
+    const googleMapsKey = 'AIza123456789012345678901234567890';
+    expect(parseRememberedConnection(JSON.stringify({ firebase, googleMapsKey }))).toEqual({ firebase, googleMapsKey });
   });
-  it('rejects a legacy remembered entry that contains no Firebase config', () => {
-    expect(() => parseRememberedFirebaseConnection(JSON.stringify({ googleMapsKey:'legacy-browser-key' }))).toThrow(/不完整/);
+  it('keeps older Firebase-only remembered settings compatible', () => {
+    const firebase = parseFirebaseConfig(raw);
+    expect(parseRememberedConnection(JSON.stringify({ firebase }))).toEqual({ firebase, googleMapsKey:'' });
+  });
+  it('rejects a remembered entry that contains no Firebase config', () => {
+    expect(() => parseRememberedConnection(JSON.stringify({ googleMapsKey:'AIza123456789012345678901234567890' }))).toThrow(/不完整/);
   });
 });

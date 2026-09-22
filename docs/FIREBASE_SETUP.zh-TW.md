@@ -1,6 +1,6 @@
 # Firebase 設定指南
 
-Travel OS 的設定精靈不需修改程式或重新建置：先將 Travel OS 部署到自己控制的網站，準備好自己的 Firebase 專案後，直接在網站內貼上 Web config 並登入。官方公開體驗站只提供本機模式，不接受 Firebase、API key 或帳號密碼。瀏覽器不能代替專案擁有者建立雲端資源或安全規則。
+Travel OS 的 self-host 版本把雲端同步當作第一次使用的主流程。先將 Travel OS 部署到自己控制的網站，準備好自己的 Firebase 與 Google Cloud 後，第一次開啟網站會自動進入雲端同步設定精靈。官方公開體驗站只提供本機模式，不接受 Firebase、API key 或帳號密碼。
 
 開始前請先完成[自行部署](SELF_HOSTING.zh-TW.md)。不要在由陌生人控制或無法核對原始碼的 Travel OS 網站輸入帳號密碼。
 
@@ -41,21 +41,27 @@ OpenSource repository 不會從 `firebase projects:list`、目前登入帳號或
 
 這組規則預設拒絕所有未授權存取，並以旅程 membership 實作 owner／editor／viewer 權限。
 
-## 4. 在 Travel OS 連線
+## 4. 準備 Google Maps Browser Key
+
+雲端設定精靈同時需要你自己的 Google Maps Browser Key。請依 [Google Cloud / Maps Browser Key 設定指南](GOOGLE_CLOUD_SETUP.zh-TW.md)建立 Key，並完成 Website restrictions、API restrictions、quota 與 Billing alert。
+
+Browser Key 不是 Server Key。不要將 Routes、Geocoding、Weather 使用的後端 Server Key 貼進 Travel OS。
+
+## 5. 在 Travel OS 連線
 
 1. 開啟「設定」。
 2. 貼上整段 Firebase Web config。
-3. 輸入該 Firebase 專案中的 Email 與密碼。
-4. 使用 Firebase Console 已建立的帳號，按「驗證並登入」。
-5. 精靈會進行本人範圍的診斷寫入並立即刪除，再載入該帳號可見的旅程。
+3. 貼上受限制的 Google Maps Browser Key。
+4. 輸入該 Firebase 專案中的 Email 與密碼。
+5. 使用 Firebase Console 已建立的帳號，按「驗證 Google + Firebase 並啟用雲端」。
+6. 精靈會先載入 Maps JavaScript API 並驗證 Places，再進行 Firebase 本人範圍的診斷寫入並立即刪除，最後載入該帳號可見的旅程。
 
 「連線成功」只代表登入、基本 Rules 與診斷讀寫可用，不等於完整安全稽核。修改規則後應執行 repository 的 Emulator 測試。
 
 ## Google API 金鑰邊界
 
-目前這個 beta 只用 Google Maps 通用網址開啟外部導航，不載入 Maps JavaScript API 或 Places API，因此網站設定頁不需要、也不接收 Google API key。
-
-未來若加入 Maps JavaScript／Places 前端功能，只能使用受 HTTP referrer 與 API restrictions 限制的 **Browser Key**。Routes、Geocoding、Weather 等伺服器 API 必須由自行管理的後端使用 **Server Key** 呼叫；Server Key 不得放進瀏覽器、`localStorage`、repository 或前端建置產物。
+- **Browser Key**：由 self-host 使用者自己建立，設定精靈會驗證 Maps JavaScript API / Places。這把 Key 在瀏覽器技術上可見，所以必須使用 Website restrictions、API restrictions 與 quota；UI 遮罩只避免肩窺，不代表 Key 變成秘密。
+- **Server Key**：Routes、Geocoding、Weather 等伺服器 API 必須由使用者自己的後端使用 Server Key 呼叫。Server Key 不得放進瀏覽器、`localStorage`、repository 或前端建置產物，也不會被設定精靈接受。
 
 ## 常見問題
 

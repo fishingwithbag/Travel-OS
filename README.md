@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>行程可以很精彩，管理它不必很混亂。</strong><br />
-  一個 local-first、可自行部署、由旅行者擁有資料的開源旅遊規劃器。
+  一個以使用者自有雲端同步為主軸、可自行部署、仍保有本機模式的開源旅遊規劃器。
 </p>
 
 <p align="center">
@@ -22,6 +22,8 @@
   <a href="docs/SELF_HOSTING.zh-TW.md"><strong>建立自己的網站</strong></a>
   ·
   <a href="docs/FIREBASE_SETUP.zh-TW.md"><strong>連接 Firebase</strong></a>
+  ·
+  <a href="docs/GOOGLE_CLOUD_SETUP.zh-TW.md"><strong>設定 Google Cloud</strong></a>
 </p>
 
 > [!IMPORTANT]
@@ -31,34 +33,36 @@
 
 一趟旅行散落在很多地方：日期留在日曆、航班躺在信箱、住宿埋在聊天紀錄，費用則分散在不同幣別。整理它們不該再需要另一個會綁住資料的平台。
 
-Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同一張旅程工作台。沒有帳號也能開始；需要跨裝置時，再連接自己擁有的 Firebase。你決定資料放在哪裡，也可以隨時完整匯出帶走。
+Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同一張旅程工作台。自行部署後，第一次啟動會先引導你連接自己的 Firebase 與 Google Cloud，讓跨裝置與多人同步成為正式使用的主要模式；IndexedDB 則保留給公開 Demo、離線與暫時不連雲端的情境。你決定資料放在哪裡，也可以隨時完整匯出帶走。
 
 ## 旅程需要的，都在同一個地方
 
 | 規劃 | 資料 | 使用體驗 |
 |---|---|---|
-| 🗓️ 跨月、跨年動態日期 | 💾 IndexedDB 本機優先 | 📱 手機與桌面響應式介面 |
-| ✈️ 分開記錄起降日期與時區 | ☁️ 使用者自有 Firebase | ⌨️ 鍵盤可操作的表單與對話框 |
+| 🗓️ 跨月、跨年動態日期 | ☁️ 使用者自有 Firebase 雲端同步 | 📱 手機與桌面響應式介面 |
+| ✈️ 分開記錄起降日期與時區 | 💾 IndexedDB 本機 fallback | ⌨️ 鍵盤可操作的表單與對話框 |
 | 🏨 景點、餐飲、住宿、交通與航班 | 🔐 owner／editor／viewer Rules | 🌙 明暗主題與離線 app shell |
 | 👥 任意數量的同行群組 | 📦 私人備份與分享副本 | 🗺️ 無 API key 也能開啟地圖 |
 | 💱 不混加不同幣別 | 🔄 匯入前預覽與 schema 驗證 | 🧭 GitHub Pages 子路徑可部署 |
 
-## 兩種使用方式
+## 建議使用方式
 
-### 1. 先用本機模式出發
-
-開啟[公開體驗站](https://fishingwithbag.github.io/Travel-OS/)，不用登入、不用 API key。旅程保存在目前瀏覽器的 IndexedDB，適合試用、單機規劃或不需要同步的旅行。
-
-> [!TIP]
-> 瀏覽器資料可能被使用者自行清除。正式使用時，請定期下載「完整備份」。
-
-### 2. 建立自己的雲端版本
+### 1. 建立自己的雲端 Travel OS（主流程）
 
 1. 按 repository 上方的 **Use this template** 建立個人副本。
 2. 在副本的 **Settings → Pages** 選擇 **GitHub Actions**。
-3. 開啟自己的 Travel OS，貼上自己的 Firebase Web config 並登入。
+3. 開啟自己的 Travel OS；第一次啟動會自動開啟雲端同步設定精靈。
+4. 依精靈建立自己的 Firebase、Google Maps Browser Key，設定限制後登入。
+5. 完成後，旅程以自己的 Firebase 為同步核心，可跨裝置並支援多人權限。
 
-不需要修改程式碼，也不需要把 Firebase 設定提交到 Git。完整步驟請見[自行部署指南](docs/SELF_HOSTING.zh-TW.md)與 [Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)。
+完整步驟請見[自行部署指南](docs/SELF_HOSTING.zh-TW.md)、[Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)與 [Google Cloud / Maps Key 指南](docs/GOOGLE_CLOUD_SETUP.zh-TW.md)。
+
+### 2. 本機模式（Demo／離線／暫時略過雲端）
+
+開啟[公開體驗站](https://fishingwithbag.github.io/Travel-OS/)，不用登入、不用 API key。旅程保存在目前瀏覽器的 IndexedDB。自行部署版本在設定精靈也可以明確選擇「先使用本機模式」。
+
+> [!TIP]
+> 本機瀏覽器資料可能被使用者自行清除；本機模式請定期下載完整備份。
 
 ## 資料怎麼流動？
 
@@ -71,11 +75,11 @@ flowchart LR
 ```
 
 - 官方體驗站不開放雲端設定，避免使用者把憑證交給他人控制的前端。
-- 自行部署版本只在使用者主動設定後連接指定的 Firebase。
-- 「記住這台裝置」只保存公開 Firebase Web config，不保存密碼。
+- 自行部署版本把使用者自己的 Firebase 雲端同步當作 onboarding 主流程；本機模式是明確可選的 fallback。
+- 「記住這台裝置」只保存公開 Firebase Web config 與受 Website/API restrictions 保護的 Browser Key，不保存密碼。
 - Travel OS 拒絕 service account、Admin SDK 私鑰及 server secret。
 - Firebase Rules 以 UID、`tripId` 和 membership 隔離資料。
-- 目前地圖按鈕只開啟 keyless Google Maps URL；若未來加入 Maps JavaScript／Places，只能使用 Browser Key。Routes／Geocoding／Weather 的 Server Key 必須留在後端。
+- 設定精靈會驗證使用者自己的 Maps JavaScript／Places Browser Key。Browser Key 在瀏覽器中可見，因此一定要設定 Website restrictions、API restrictions 與 quota；Routes／Geocoding／Weather Server Key 必須留在使用者自己的後端。
 
 更多細節請讀[資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)、[安全政策](SECURITY.md)及[共享體驗站架構決策](docs/decisions/003-shared-demo-local-only.md)。
 
