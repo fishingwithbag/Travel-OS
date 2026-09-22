@@ -20,12 +20,24 @@ Travel OS 的設定精靈不需修改程式或重新建置：先將 Travel OS �
 
 建立 Realtime Database，地區可依主要使用者所在地選擇。不要使用公開讀寫的測試規則。
 
-將 repository 的 [`firebase/database.rules.json`](../firebase/database.rules.json) 部署到該 Database。可在 Firebase Console 的 Rules 分頁貼上，或由專案維護者使用 Firebase CLI：
+將 repository 的 [`firebase/database.rules.json`](../firebase/database.rules.json) 部署到**你自己的 Firebase 專案**。可在 Firebase Console 的 Rules 分頁貼上，或使用 repository 提供的受保護 CLI 流程：
 
 ```bash
-firebase use YOUR_PROJECT_ID
-firebase deploy --only database
+npm run firebase:rules:configure -- --project YOUR_PROJECT_ID
+npm run firebase:rules:deploy
 ```
+
+OpenSource repository 不會從 `firebase projects:list`、目前登入帳號或既有 `.firebaserc` 推測 production target。Database deploy 另有 `predeploy` guard；即使直接執行 `firebase deploy --only database --project ...`，目標也必須和本機明確核准的 project 完全一致。
+
+專案維護者若同時管理其他私人 Firebase，可在本機建立不進 Git 的 `.firebase-private-projects.local.json`：
+
+```json
+{
+  "blockedProjects": ["PRIVATE_PROJECT_ID"]
+}
+```
+
+列在這裡的 project 永遠不能從 Travel OS OpenSource repository 部署 Rules。
 
 這組規則預設拒絕所有未授權存取，並以旅程 membership 實作 owner／editor／viewer 權限。
 

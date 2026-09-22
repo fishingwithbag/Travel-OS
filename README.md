@@ -101,11 +101,17 @@ npm run check
 # Firebase Realtime Database Rules；需要 Java 21
 npm run test:rules
 
+# 自架者部署 Rules：先明確核准自己的 Firebase project，再部署
+npm run firebase:rules:configure -- --project YOUR_PROJECT_ID
+npm run firebase:rules:deploy
+
 # 已知套件漏洞
 npm audit --audit-level=high
 ```
 
 GitHub Actions 會在每次 push 與 Pull Request 執行上述檢查。Rules 測試涵蓋未登入者、陌生人、viewer、editor、owner、權限提升與跨使用者索引。
+
+OpenSource repository 沒有 production Firebase target，也禁止從 Firebase 帳號中的既有專案自動推測部署目標。Database deploy 會經過 `predeploy` boundary guard；完整設計見 [ADR-004](docs/decisions/004-firebase-deployment-boundary.md)。
 
 ## 專案地圖
 

@@ -11,6 +11,8 @@ dist/
 private/
 backups/
 *.local.json
+.firebase-deploy-target.local.json
+.firebase-private-projects.local.json
 .DS_Store
 Thumbs.db
 

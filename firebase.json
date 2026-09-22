@@ -1,4 +1,7 @@
 {
-  "database": { "rules": "firebase/database.rules.json" },
+  "database": {
+    "rules": "firebase/database.rules.json",
+    "predeploy": ["node scripts/firebase-deploy-boundary.mjs guard"]
+  },
   "emulators": { "database": { "port": 9000 }, "ui": { "enabled": false } }
 }

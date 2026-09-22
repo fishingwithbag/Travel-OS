@@ -17,4 +17,5 @@
 - Travel OS 不需要且不接受 service account、Admin SDK 私鑰、OAuth client secret 或 server key。
 - 官方公開體驗站只開放本機模式，不接受 Firebase config 或帳號密碼；雲端模式只供自行部署版本使用。
 - 每位自行部署者必須維護自己的 Firebase Rules、Authentication、授權網域與 Google Cloud 限制。
+- OpenSource repository 沒有 maintainer production Firebase target。Database Rules 部署必須先在本機明確核准 self-host 專案，並通過 `firebase.json` 的 predeploy boundary guard；不得從 Firebase 帳號中的既有 project 推測部署目標。
 - 設定精靈的診斷成功不是完整安全稽核；Rules Emulator 測試才是 repository 的權限回歸檢查。
