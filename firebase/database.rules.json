@@ -21,8 +21,8 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$tripId": {
-          ".write": "auth != null && (auth.uid === $uid || root.child('trips').child($tripId).child('members').child(auth.uid).val() === 'owner') && (!newData.exists() || newData.val() === true)",
-          ".validate": "newData.val() === true"
+          ".write": "auth != null && (auth.uid === $uid || root.child('trips').child($tripId).child('members').child(auth.uid).val() === 'owner' || newData.parent().parent().parent().child('trips').child($tripId).child('members').child(auth.uid).val() === 'owner') && (!newData.exists() || newData.val() === true)",
+          ".validate": "newData.val() === true && newData.parent().parent().parent().child('trips').child($tripId).child('members').child($uid).exists()"
         }
       }
     },
@@ -38,7 +38,118 @@
         },
         "data": {
           ".write": "auth != null && (data.parent().child('members').child(auth.uid).val() === 'owner' || data.parent().child('members').child(auth.uid).val() === 'editor')",
-          ".validate": "newData.hasChildren(['schemaVersion','id','title','destination','startDate','endDate','timeZone','currency','updatedAt','revision']) && newData.child('id').val() === $tripId && newData.child('title').isString() && newData.child('title').val().length <= 80 && newData.child('destination').isString() && newData.child('destination').val().length <= 120 && newData.child('revision').isNumber()"
+          ".validate": "newData.hasChildren(['schemaVersion','id','title','destination','startDate','endDate','timeZone','currency','createdAt','updatedAt','revision']) && newData.child('id').val() === $tripId && newData.child('startDate').val() <= newData.child('endDate').val() && newData.child('createdAt').val() <= newData.child('updatedAt').val() && ((!data.exists() && newData.child('revision').val() === 1) || (data.exists() && data.child('revision').isNumber() && newData.child('revision').val() === data.child('revision').val() + 1 && newData.child('createdAt').val() === data.child('createdAt').val()))",
+          "schemaVersion": {
+            ".validate": "newData.isNumber() && newData.val() === 1"
+          },
+          "id": {
+            ".validate": "newData.isString() && newData.val() === $tripId"
+          },
+          "title": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80 && newData.val().matches(/.*[^ ].*/)"
+          },
+          "destination": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120 && newData.val().matches(/.*[^ ].*/)"
+          },
+          "startDate": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/)"
+          },
+          "endDate": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/)"
+          },
+          "timeZone": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64 && newData.val().matches(/^[A-Za-z0-9_+.-]+(\\/[A-Za-z0-9_+.-]+)*$/)"
+          },
+          "currency": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+          },
+          "createdAt": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{3})?Z$/)"
+          },
+          "updatedAt": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{3})?Z$/)"
+          },
+          "revision": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() % 1 === 0"
+          },
+          "groups": {
+            ".validate": "newData.hasChildren()",
+            "$groupKey": {
+              ".validate": "newData.hasChildren(['id','name'])",
+              "id": {
+                ".validate": "newData.isString() && newData.val() === $groupKey && newData.val().length > 0 && newData.val().length <= 100"
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50 && newData.val().matches(/.*[^ ].*/)"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "items": {
+            ".validate": "newData.hasChildren()",
+            "$itemKey": {
+              ".validate": "newData.hasChildren(['id','date','type','title','currency'])",
+              "id": {
+                ".validate": "newData.isString() && newData.val() === $itemKey && newData.val().length > 0 && newData.val().length <= 100"
+              },
+              "date": {
+                ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.val() >= newData.parent().parent().parent().child('startDate').val() && newData.val() <= newData.parent().parent().parent().child('endDate').val()"
+              },
+              "type": {
+                ".validate": "newData.val() === 'place' || newData.val() === 'meal' || newData.val() === 'stay' || newData.val() === 'flight' || newData.val() === 'transport' || newData.val() === 'other'"
+              },
+              "title": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100 && newData.val().matches(/.*[^ ].*/)"
+              },
+              "startTime": {
+                ".validate": "newData.isString() && (newData.val() === '' || newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/))"
+              },
+              "location": {
+                ".validate": "newData.isString() && newData.val().length <= 200"
+              },
+              "notes": {
+                ".validate": "newData.isString() && newData.val().length <= 1000"
+              },
+              "groupId": {
+                ".validate": "newData.isString() && newData.val().length <= 100 && (newData.val() === '' || newData.parent().parent().parent().child('groups').child(newData.val()).exists())"
+              },
+              "amountMinor": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000000 && newData.val() % 1 === 0"
+              },
+              "currency": {
+                ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+              },
+              "flight": {
+                ".validate": "newData.hasChildren(['origin','destination','departureTimeZone','arrivalTimeZone','arrivalDateTime'])",
+                "origin": {
+                  ".validate": "newData.isString() && newData.val().length <= 12"
+                },
+                "destination": {
+                  ".validate": "newData.isString() && newData.val().length <= 12"
+                },
+                "departureTimeZone": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "arrivalTimeZone": {
+                  ".validate": "newData.isString() && newData.val().length <= 64"
+                },
+                "arrivalDateTime": {
+                  ".validate": "newData.isString() && (newData.val() === '' || newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$/))"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
         }
       }
     }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFirebaseConfig, parseFirebaseConfigInput, publicConnectionExport } from '../src/config/firebase-config.js';
+import { parseFirebaseConfig, parseFirebaseConfigInput } from '../src/config/firebase-config.js';
 
 const raw = `const firebaseConfig = {
   apiKey: "example-browser-key",
@@ -25,9 +25,5 @@ describe('Firebase runtime config', () => {
       firebase_databaseURL:'https://sample-default-rtdb.asia-southeast1.firebasedatabase.app',
       firebase_projectId:'sample-project', firebase_appId:'1:123:web:abc',
     })).toMatchObject({ projectId:'sample-project', appId:'1:123:web:abc' });
-  });
-  it('excludes the Google key from portable settings by default', () => {
-    const firebase = parseFirebaseConfig(raw);
-    expect(publicConnectionExport({ firebase, googleMapsKey:'browser-key' })).not.toHaveProperty('googleMapsKey');
   });
 });

@@ -4,6 +4,7 @@ import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfigInput } from './config/firebase-config.js';
 import { isSharedPublicDemo } from './config/deployment.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
+import { prepareStoreSwitch } from './storage/store-switch.js';
 import { mapSearchUrl, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
 
 let store = new IndexedDbTripStore();
@@ -44,7 +45,8 @@ function render() {
   $('#trip-title').textContent = trip.title;
   $('#trip-destination').textContent = trip.destination;
   $('#trip-dates').textContent = `${trip.startDate} — ${trip.endDate}`;
-  $('#trip-select').innerHTML = state.trips.map((entry) => `<option value="${entry.id}" ${entry.id === trip.id ? 'selected' : ''}>${escapeHtml(entry.title)}</option>`).join('');
+  const tripSelect = $('#trip-select');
+  tripSelect.replaceChildren(...state.trips.map((entry) => new Option(entry.title, entry.id, false, entry.id === trip.id)));
   $('#day-tabs').innerHTML = dates.map((date, index) => `<button class="day-tab" type="button" data-date="${date}" role="tab" aria-selected="${date === state.selectedDate}"><small>DAY ${index + 1}</small><strong>${formatDay(date)}</strong></button>`).join('');
   const items = trip.items.filter((item) => item.date === state.selectedDate).sort((a,b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
   $('#day-heading').textContent = formatDay(state.selectedDate);
@@ -58,7 +60,7 @@ function render() {
   $('#group-list').innerHTML = trip.groups.map((group) => `<li>${escapeHtml(group.name)}</li>`).join('');
   $('#group-empty').hidden = trip.groups.length > 0;
   const groupSelect = $('#item-form select[name="groupId"]');
-  groupSelect.innerHTML = '<option value="">所有人</option>' + trip.groups.map((group) => `<option value="${group.id}">${escapeHtml(group.name)}</option>`).join('');
+  groupSelect.replaceChildren(new Option('所有人', ''), ...trip.groups.map((group) => new Option(group.name, group.id)));
   $('#item-form input[name="currency"]').value = trip.currency;
 }
 
@@ -107,13 +109,14 @@ function updateConnectionSummary() {
 }
 
 async function activateStore(nextStore, mode, connection = null) {
-  await store.close?.();
+  const nextTrips = await prepareStoreSwitch(store, nextStore);
+  const warnings = nextStore.consumeWarnings?.() || [];
   store = nextStore;
   state.mode = mode; state.connection = connection;
-  state.trips = await store.listTrips();
-  state.trips.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+  state.trips = nextTrips;
   state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
   updateConnectionSummary(); render();
+  return warnings;
 }
 
 $('#connection-form').addEventListener('submit', async (event) => {
@@ -142,15 +145,15 @@ $('#connection-form').addEventListener('submit', async (event) => {
     const config = parseFirebaseConfigInput(input);
     progress.innerHTML += '<span>2／3　正在登入指定的 Firebase 專案…</span>';
     const cloudStore = new FirebaseTripStore();
-    const connection = await cloudStore.connect(config, { email:input.email, password:input.password }, intent === 'signup' ? 'signup' : 'login');
+    const connection = await cloudStore.connect(config, { email:input.email, password:input.password });
     progress.innerHTML += '<span>3／3　測試資料讀寫已完成。</span>';
     state.googleMapsKey = mapsKey;
     if (input.remember) localStorage.setItem('travel-os:connection', JSON.stringify({ firebase:config, googleMapsKey:state.googleMapsKey }));
     else localStorage.removeItem('travel-os:connection');
-    await activateStore(cloudStore, 'cloud', connection);
+    const warnings = await activateStore(cloudStore, 'cloud', connection);
     form.elements.password.value = '';
     setTimeout(() => form.closest('dialog').close(), 350);
-    showToast(`已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
+    showToast(warnings.length ? `已連接 ${connection.projectId}；另略過 ${warnings.length} 筆失效或損壞的雲端資料。` : `已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
   } catch (error) { progress.textContent = ''; setError(form, error); }
 });
 
@@ -186,9 +189,13 @@ $('#import-file').addEventListener('change', async (event) => {
 $('#import-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!pendingBackup || state.mode !== 'local') return;
-  await store.replaceAll(pendingBackup.trips);
-  state.trips = pendingBackup.trips; state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
-  const count = pendingBackup.trips.length; pendingBackup = null; event.currentTarget.closest('dialog').close(); render(); showToast(`已還原 ${count} 趟旅程。`);
+  try {
+    await store.replaceAll(pendingBackup.trips);
+    state.trips = pendingBackup.trips; state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
+    const count = pendingBackup.trips.length; pendingBackup = null; event.currentTarget.closest('dialog').close(); render(); showToast(`已還原 ${count} 趟旅程。`);
+  } catch {
+    showToast('備份還原失敗；請確認瀏覽器儲存空間後重試。');
+  }
 });
 
 for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });

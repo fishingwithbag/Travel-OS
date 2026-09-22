@@ -35,7 +35,11 @@ export class IndexedDbTripStore {
     const transaction = this.#database.transaction(STORE, 'readwrite');
     transaction.objectStore(STORE).clear();
     trips.forEach((trip) => transaction.objectStore(STORE).put(structuredClone(trip)));
-    await new Promise((resolve, reject) => { transaction.oncomplete = resolve; transaction.onerror = () => reject(transaction.error); });
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error('IndexedDB transaction aborted.'));
+    });
   }
   close() { this.#database?.close(); this.#database = undefined; }
 }

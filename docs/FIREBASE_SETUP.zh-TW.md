@@ -14,7 +14,7 @@ Travel OS 的設定精靈不需修改程式或重新建置：先將 Travel OS �
 
 ## 2. 啟用登入
 
-在 Authentication → Sign-in method 啟用 Email/Password。一般 Email/Password 登入不需要將公開體驗站加入 Authorized domains。只有啟用 Google、Email Link 或其他 redirect 流程時，才在 Settings → Authorized domains 加入你自己部署網站的網域；本機測試需要時加入 `localhost`。
+在 Authentication → Sign-in method 啟用 Email/Password，接著到 Users 建立允許使用 Travel OS 的登入帳號。Travel OS 前端不提供自行註冊，避免公開自架站被濫用來建立大量 Auth 使用者。一般 Email/Password 登入不需要將公開體驗站加入 Authorized domains。只有啟用 Google、Email Link 或其他 redirect 流程時，才在 Settings → Authorized domains 加入你自己部署網站的網域；本機測試需要時加入 `localhost`。
 
 ## 3. 建立 Realtime Database
 
@@ -34,7 +34,7 @@ firebase deploy --only database
 1. 開啟「設定」。
 2. 貼上整段 Firebase Web config。
 3. 輸入該 Firebase 專案中的 Email 與密碼。
-4. 按「驗證並登入」；第一次使用可按「建立帳號」。
+4. 使用 Firebase Console 已建立的帳號，按「驗證並登入」。
 5. 精靈會進行本人範圍的診斷寫入並立即刪除，再載入該帳號可見的旅程。
 
 「連線成功」只代表登入、基本 Rules 與診斷讀寫可用，不等於完整安全稽核。修改規則後應執行 repository 的 Emulator 測試。
