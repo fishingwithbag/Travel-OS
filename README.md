@@ -42,7 +42,7 @@ Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同�
 | 🗓️ 跨月、跨年動態日期 | ☁️ 使用者自有 Firebase 雲端同步 | 📱 手機與桌面響應式介面 |
 | ✈️ 分開記錄起降日期與時區 | 💾 IndexedDB 本機 fallback | ⌨️ 鍵盤可操作的表單與對話框 |
 | 🏨 景點、餐飲、住宿、交通與航班 | 🔐 owner／editor／viewer Rules | 🌙 明暗主題與離線 app shell |
-| 👥 任意數量的同行群組 | 📦 私人備份與分享副本 | 🗺️ 無 API key 也能開啟地圖 |
+| 👥 任意數量的同行群組 | 📦 私人備份與分享副本 | 🗺️ 無 API key 仍可開啟 Google Maps 外部導航 |
 | 💱 不混加不同幣別 | 🔄 匯入前預覽與 schema 驗證 | 🧭 GitHub Pages 子路徑可部署 |
 
 ## 建議使用方式
@@ -51,9 +51,9 @@ Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同�
 
 1. 按 repository 上方的 **Use this template** 建立個人副本。
 2. 在副本的 **Settings → Pages** 選擇 **GitHub Actions**。
-3. 開啟自己的 Travel OS；第一次啟動會自動開啟雲端同步設定精靈。
-4. 依精靈建立自己的 Firebase、Google Maps Browser Key，設定限制後登入。
-5. 完成後，旅程以自己的 Firebase 為同步核心，可跨裝置並支援多人權限。
+3. 開啟自己的 Travel OS；第一次啟動會自動進入「雲端同步設定精靈」。
+4. 依序完成自己的 **Firebase Web config → Google Maps Browser Key → Firebase 帳號登入**。精靈會引導設定 Website/API restrictions，並驗證 Maps JavaScript／Places 與 Firebase 連線。
+5. 驗證完成後進入雲端模式，旅程以自己的 Firebase 為同步核心，可跨裝置並支援多人權限。
 
 完整步驟請見[自行部署指南](docs/SELF_HOSTING.zh-TW.md)、[Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)與 [Google Cloud / Maps Key 指南](docs/GOOGLE_CLOUD_SETUP.zh-TW.md)。
 
@@ -71,6 +71,7 @@ flowchart LR
     A[旅行者的瀏覽器] -->|本機模式| B[(IndexedDB)]
     A -->|自行部署版本| C[自己的 Travel OS 網站]
     C -->|登入與同步| D[(自己的 Firebase)]
+    C -->|Browser Key| E[自己的 Google Cloud / Maps & Places]
     F[官方公開體驗站] -->|僅限本機模式| B
 ```
 
@@ -123,7 +124,7 @@ OpenSource repository 沒有 production Firebase target，也禁止從 Firebase 
 src/
 ├─ config/       執行時設定解析與部署防呆
 ├─ domain/       旅程資料模型、驗證與備份
-├─ providers/    外部地圖導覽
+├─ providers/    Google Maps 外部導航與 Browser Key 驗證
 ├─ storage/      IndexedDB 與 Firebase adapters
 ├─ app.js        介面流程與狀態
 └─ styles.css    響應式視覺系統
@@ -135,7 +136,7 @@ docs/            設定指南、資料說明與 ADR
 
 ## 目前狀態
 
-Travel OS 正在公開 beta 階段。核心本機流程、備份、Firebase 權限及 Pages 部署已自動驗證；Google Places 等需要額外 API 或後端代理的能力尚未包含。正式 Firebase 專案仍由每位自行部署者管理 Authentication、Database、Rules、配額與帳務。
+Travel OS 正在公開 beta 階段。核心本機流程、備份、Firebase 權限、雲端設定精靈、Maps JavaScript／Places Browser Key 驗證及 Pages 部署已自動驗證。Places 地點搜尋／自動完成，以及 Routes／Geocoding／Weather 等進階能力仍待後續實作；正式 Firebase 與 Google Cloud 專案、Rules、API restrictions、配額與帳務都由每位自行部署者管理。
 
 查看[版本紀錄](CHANGELOG.md)與 [Releases](https://github.com/fishingwithbag/Travel-OS/releases)了解每次更新。
 
