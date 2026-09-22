@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { isSharedPublicDemo } from '../src/config/deployment.js';
 
 describe('shared demo guard', () => {
@@ -11,5 +13,12 @@ describe('shared demo guard', () => {
     expect(isSharedPublicDemo('localhost')).toBe(false);
     expect(isSharedPublicDemo('traveler.github.io')).toBe(false);
     expect(isSharedPublicDemo('fishingwithbag.github.io.example.com')).toBe(false);
+  });
+
+  it('keeps the public repository unbound from production Firebase and guarded on deploy', () => {
+    const root = fileURLToPath(new URL('../', import.meta.url));
+    expect(fs.existsSync(`${root}.firebaserc`)).toBe(false);
+    const firebaseConfig = JSON.parse(fs.readFileSync(`${root}firebase.json`, 'utf8'));
+    expect(firebaseConfig.database.predeploy).toContain('node scripts/firebase-deploy-boundary.mjs guard');
   });
 });
