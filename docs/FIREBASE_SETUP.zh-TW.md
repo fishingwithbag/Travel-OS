@@ -39,15 +39,11 @@ firebase deploy --only database
 
 「連線成功」只代表登入、基本 Rules 與診斷讀寫可用，不等於完整安全稽核。修改規則後應執行 repository 的 Emulator 測試。
 
-## Google Maps browser key（選填）
+## Google API 金鑰邊界
 
-不設定 key 時，地址仍可用 Google Maps 通用網址開啟。若設定 browser key，請在 Google Cloud Console：
+目前這個 beta 只用 Google Maps 通用網址開啟外部導航，不載入 Maps JavaScript API 或 Places API，因此網站設定頁不需要、也不接收 Google API key。
 
-- 只啟用實際需要的瀏覽器 API。
-- 設定 HTTP referrer 限制，包含正式網域與必要的本機來源。
-- 設定 API restrictions 與費用／配額告警。
-
-不要將 server key 放進瀏覽器。需要伺服器權限的 API 應由自行管理的後端代理呼叫。
+未來若加入 Maps JavaScript／Places 前端功能，只能使用受 HTTP referrer 與 API restrictions 限制的 **Browser Key**。Routes、Geocoding、Weather 等伺服器 API 必須由自行管理的後端使用 **Server Key** 呼叫；Server Key 不得放進瀏覽器、`localStorage`、repository 或前端建置產物。
 
 ## 常見問題
 

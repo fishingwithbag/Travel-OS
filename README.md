@@ -67,15 +67,15 @@ flowchart LR
     A[旅行者的瀏覽器] -->|本機模式| B[(IndexedDB)]
     A -->|自行部署版本| C[自己的 Travel OS 網站]
     C -->|登入與同步| D[(自己的 Firebase)]
-    C -. 選填 .-> E[Google Maps browser API]
     F[官方公開體驗站] -->|僅限本機模式| B
 ```
 
 - 官方體驗站不開放雲端設定，避免使用者把憑證交給他人控制的前端。
 - 自行部署版本只在使用者主動設定後連接指定的 Firebase。
-- 「記住這台裝置」只保存公開 Web config 與選填的 browser key，不保存密碼。
+- 「記住這台裝置」只保存公開 Firebase Web config，不保存密碼。
 - Travel OS 拒絕 service account、Admin SDK 私鑰及 server secret。
 - Firebase Rules 以 UID、`tripId` 和 membership 隔離資料。
+- 目前地圖按鈕只開啟 keyless Google Maps URL；若未來加入 Maps JavaScript／Places，只能使用 Browser Key。Routes／Geocoding／Weather 的 Server Key 必須留在後端。
 
 更多細節請讀[資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)、[安全政策](SECURITY.md)及[共享體驗站架構決策](docs/decisions/003-shared-demo-local-only.md)。
 
@@ -113,7 +113,7 @@ GitHub Actions 會在每次 push 與 Pull Request 執行上述檢查。Rules 測
 src/
 ├─ config/       執行時設定解析與部署防呆
 ├─ domain/       旅程資料模型、驗證與備份
-├─ providers/    選配地圖能力
+├─ providers/    外部地圖導覽
 ├─ storage/      IndexedDB 與 Firebase adapters
 ├─ app.js        介面流程與狀態
 └─ styles.css    響應式視覺系統

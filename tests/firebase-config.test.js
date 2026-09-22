@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFirebaseConfig, parseFirebaseConfigInput } from '../src/config/firebase-config.js';
+import { parseFirebaseConfig, parseFirebaseConfigInput, parseRememberedFirebaseConnection } from '../src/config/firebase-config.js';
 
 const raw = `const firebaseConfig = {
   apiKey: "example-browser-key",
@@ -25,5 +25,12 @@ describe('Firebase runtime config', () => {
       firebase_databaseURL:'https://sample-default-rtdb.asia-southeast1.firebasedatabase.app',
       firebase_projectId:'sample-project', firebase_appId:'1:123:web:abc',
     })).toMatchObject({ projectId:'sample-project', appId:'1:123:web:abc' });
+  });
+  it('migrates remembered Firebase settings without retaining legacy Google keys', () => {
+    const firebase = parseFirebaseConfig(raw);
+    expect(parseRememberedFirebaseConnection(JSON.stringify({ firebase, googleMapsKey:'legacy-browser-key' }))).toEqual({ firebase });
+  });
+  it('rejects a legacy remembered entry that contains no Firebase config', () => {
+    expect(() => parseRememberedFirebaseConnection(JSON.stringify({ googleMapsKey:'legacy-browser-key' }))).toThrow(/不完整/);
   });
 });

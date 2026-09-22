@@ -22,7 +22,7 @@ export function parseFirebaseConfig(raw) {
   if (text.length > 10_000) throw new ValidationError('Firebase config 內容過長。');
   if (FORBIDDEN_MARKERS.some((marker) => text.toLowerCase().includes(marker.toLowerCase()))) throw new ValidationError('偵測到管理憑證或私鑰；本網站不接受這類敏感資料。');
   let parsed;
-  try { parsed = JSON.parse(text.startsWith('{') ? normalizeObjectSyntax(text) : normalizeObjectSyntax(text)); }
+  try { parsed = JSON.parse(normalizeObjectSyntax(text)); }
   catch { throw new ValidationError('設定格式無法解析，請複製 Firebase Console 的 Web app config。'); }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new ValidationError('Firebase config 必須是物件。');
   const config = {};
@@ -38,4 +38,12 @@ export function parseFirebaseConfigInput(input) {
   if (String(input.firebaseConfig || '').trim()) return parseFirebaseConfig(input.firebaseConfig);
   const config = Object.fromEntries(ALLOWED_FIELDS.map((field) => [field, String(input[`firebase_${field}`] || '').trim()]).filter(([, value]) => value));
   return parseFirebaseConfig(JSON.stringify(config));
+}
+
+export function parseRememberedFirebaseConnection(raw) {
+  let stored;
+  try { stored = JSON.parse(String(raw || '')); }
+  catch { throw new ValidationError('已記住的 Firebase 連線設定無法解析。'); }
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored) || !stored.firebase) throw new ValidationError('已記住的 Firebase 連線設定不完整。');
+  return Object.freeze({ firebase:parseFirebaseConfig(JSON.stringify(stored.firebase)) });
 }

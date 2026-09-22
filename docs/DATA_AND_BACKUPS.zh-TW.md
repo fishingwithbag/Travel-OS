@@ -8,7 +8,7 @@ Firebase 模式只在自行部署的版本開放，並只連線到使用者在�
 
 ## 記住這台裝置
 
-啟用後只在 localStorage 保存 Firebase 公開 Web config 與選填的 Google browser key。密碼不會保存，也不會放入網址、repository 或作者的服務。公用裝置不應啟用此選項，可清除瀏覽器網站資料移除設定。
+啟用後只在 localStorage 保存 Firebase 公開 Web config。密碼不會保存，也不會放入網址、repository 或作者的服務。舊版若曾保存 Google browser key，更新後會忽略並移除該欄位。公用裝置不應啟用此選項，可清除瀏覽器網站資料移除設定。
 
 ## 兩種匯出
 

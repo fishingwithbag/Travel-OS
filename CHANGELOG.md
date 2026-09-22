@@ -2,6 +2,14 @@
 
 本專案遵循語意化版本概念；beta 期間可能調整資料結構，變更會記錄於此。
 
+## Unreleased
+
+### Changed
+
+- 移除尚未被任何 Maps／Places 功能使用的 Google Maps Browser Key 設定與動態 script loader；現有 Google Maps 外部導航維持無 key 使用。
+- 舊版曾記住的 Browser Key 不再載入，若同時有有效 Firebase Web config 會自動只保留 Firebase 設定。
+- 文件明確區分未來 Maps JavaScript／Places 的 Browser Key 與 Routes／Geocoding／Weather 的後端 Server Key 安全邊界。
+
 ## 0.1.0-beta.2 - 2026-09-21
 
 ### Security

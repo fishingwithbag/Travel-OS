@@ -14,7 +14,7 @@ A centrally hosted open-source frontend can read anything entered into its page.
 
 ## Decision
 
-The official `fishingwithbag.github.io` deployment runs only in IndexedDB local mode. It disables Firebase configuration, Google browser key, email and password controls, removes remembered cloud configuration, and directs cloud users to create a deployment they control. Independently hosted copies retain the complete runtime setup wizard.
+The official `fishingwithbag.github.io` deployment runs only in IndexedDB local mode. It disables Firebase configuration, email and password controls, removes remembered cloud configuration, and directs cloud users to create a deployment they control. Independently hosted copies retain the Firebase runtime setup wizard. The current product does not accept Google API keys.
 
 ## Consequences
 
