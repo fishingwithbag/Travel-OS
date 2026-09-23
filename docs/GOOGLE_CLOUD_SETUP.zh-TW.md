@@ -4,13 +4,15 @@ Travel OS 的自行部署版本會在雲端設定精靈中驗證你自己的 **G
 
 > Browser Key 會出現在瀏覽器送往 Google 的請求中，因此無法被「藏成真正秘密」。安全重點是讓偷到 Key 的人無法在其他網站或其他 API 使用它：一定要同時設定 **Website restrictions** 與 **API restrictions**，並設定配額／帳務告警。
 
-## 1. 建立或選擇 Google Cloud project
+## 1. 建立一個獨立的 Google Maps Cloud project
 
 1. 登入 [Google Cloud Console](https://console.cloud.google.com/)。
-2. 在頂端 project 選單建立一個新 project，或選擇專門給這個 Travel OS 使用的 project。
+2. 在頂端 project 選單建立一個**新的** project，例如 `My Travel OS Maps`。
 3. 到 **Billing**，確認 project 已連結有效 Billing account。Google Maps Platform production 使用需要 Billing。
 
-建議不要和其他不相關網站共用同一把 API Key。每一個 Travel OS 網站使用自己的 Browser Key，日後要輪替或撤銷會比較安全。
+不要選用前一步建立的 Firebase Spark project。Firebase 官方說，同一 Firebase project 若連結 Cloud Billing 或使用 Google Maps API，會自動從 Spark 升級成 Blaze。Travel OS 因此建議把免費 Firebase 與有 Billing 的 Google Maps 分成兩個 project。
+
+也建議不要和其他不相關網站共用同一把 API Key。每一個 Travel OS 網站使用自己的 Browser Key，日後要輪替或撤銷會比較安全。
 
 ## 2. 啟用需要的 Maps API
 
@@ -74,14 +76,14 @@ Website/API restrictions 是防止 Key 被拿去其他地方使用的第一道�
 
 在 Google Cloud / Google Maps Platform 的 Quotas 頁面，依你的旅行網站規模設定合理的每日或每分鐘 request 上限。個人旅行網站通常不需要很高的額度，可先用保守值，確定需求後再調高。
 
-再到 **Billing → Budgets & alerts** 建立預算與告警，例如 50%、80%、100%。一般「Budget alert」只負責通知，並不等同硬性停止 API 使用；若要限制實際用量，仍要設定 API quota，或使用 Google Cloud 當下可用的 spend-cap 功能。
+再到 **Billing → Budgets & alerts** 建立預算與告警，例如 50%、80%、100%。一般 Budget alert 只負責通知，並不會自動停止 API 使用；要限制 API 請求量，仍要另外設定 quota。
 
 ## 7. 回 Travel OS 驗證
 
 回到你自己的 Travel OS：
 
 1. 開啟「設定」。
-2. 在 Step 2 貼入 Browser Key。
+2. 在「Google Maps」步驟貼入 Browser Key。
 3. Travel OS 不會把 Key放進 URL、repository 或備份檔。
 4. 若勾選「記住這台裝置」，受限制的 Browser Key 會和公開 Firebase Web config 一起保存在目前瀏覽器的 localStorage；密碼不保存。
 5. 按「驗證 Google + Firebase 並啟用雲端」。

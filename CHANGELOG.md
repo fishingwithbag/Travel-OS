@@ -6,6 +6,9 @@
 
 ### Changed
 
+- 設定精靈重做為六段式流程：網站 → Firebase → Google Maps → 登入 → 驗證 → 完成；每一步都提供零基礎操作路徑與完成條件。
+- Firebase 精靈明確要求 Spark、Email/Password、Realtime Database Locked mode 與 Travel OS Rules，並提供 Rules 一鍵複製與 `firebaseConfig` 解析預覽。
+- Google Maps 設定改為獨立 Billing project，避免為 Maps 啟用 Billing 時把 Firebase Spark project 升級為 Blaze。
 - Self-host 第一次使用改以 Firebase 雲端同步為 onboarding 主流程，本機 IndexedDB 保留為 Demo／離線／fallback。
 - Google Maps Browser Key 回到設定精靈，實際驗證 Maps JavaScript 與 Places；UI 遮罩 Key，並引導設定 Website/API restrictions、quota 與 billing alerts。
 - Browser Key 可隨 Firebase 公開 config 選擇性記住在目前裝置；密碼與 Server Key 永不保存。Routes／Geocoding／Weather Server Key 仍只允許存在使用者自己的後端。

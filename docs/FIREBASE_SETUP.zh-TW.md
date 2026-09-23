@@ -1,72 +1,180 @@
 # Firebase 設定指南
 
-Travel OS 的 self-host 版本把雲端同步當作第一次使用的主流程。先將 Travel OS 部署到自己控制的網站，準備好自己的 Firebase 與 Google Cloud 後，第一次開啟網站會自動進入雲端同步設定精靈。官方公開體驗站只提供本機模式，不接受 Firebase、API key 或帳號密碼。
+這份文件假設你第一次使用 Firebase。請照順序操作，不要跳步。Travel OS 的 Firebase 只負責 Authentication、Realtime Database 與多人同步；Google Maps 請使用另一個 Google Cloud project。
 
-開始前請先完成[自行部署](SELF_HOSTING.zh-TW.md)。不要在由陌生人控制或無法核對原始碼的 Travel OS 網站輸入帳號密碼。
+> 重要：這個 Firebase project 請維持 **Spark 免費方案**。不要在同一 project 連結 Cloud Billing，也不要直接拿它去開 Google Maps API。Firebase 官方說，同一 project 連結 Cloud Billing 或使用 Google Maps API 時，會從 Spark 升級成 Blaze。
 
-## 1. 建立 Firebase 專案與 Web app
+開始前，請先完成[GitHub Pages 自行部署](SELF_HOSTING.zh-TW.md)，並確認你已經能開啟自己的 Travel OS 網址。
 
-1. 在 Firebase Console 建立專案。
-2. 新增 Web app；不需要先啟用 Hosting。
-3. 複製完整的 `firebaseConfig`。內容應包含 `apiKey`、`authDomain`、`databaseURL`、`projectId`、`storageBucket`、`messagingSenderId`、`appId`。
+## 1. 建立 Firebase Project
 
-請勿貼上 service account、Admin SDK 私鑰或任何 server secret。Travel OS 會拒絕這些格式。
+1. 開啟 [Firebase Console](https://console.firebase.google.com/)。
+2. 按 **Create a project / 建立專案**。
+3. Project name 可填 `My Travel OS`。
+4. Google Analytics 不是 Travel OS 必要功能，可略過。
+5. 建立完成後進入 Project Overview。
+6. 保持 **Spark** 免費方案；如果流程要求你連結 Billing／升級 Blaze，先停止並確認自己是否選錯 project。
 
-## 2. 啟用登入
+官方說明：[Firebase pricing plans](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)
 
-在 Authentication → Sign-in method 啟用 Email/Password，接著到 Users 建立允許使用 Travel OS 的登入帳號。Travel OS 前端不提供自行註冊，避免公開自架站被濫用來建立大量 Auth 使用者。一般 Email/Password 登入不需要將公開體驗站加入 Authorized domains。只有啟用 Google、Email Link 或其他 redirect 流程時，才在 Settings → Authorized domains 加入你自己部署網站的網域；本機測試需要時加入 `localhost`。
+## 2. Register Web App
 
-## 3. 建立 Realtime Database
+目的：讓 Firebase 知道「Travel OS 是一個 Web App」，並產生前端連線需要的 `firebaseConfig`。
 
-建立 Realtime Database，地區可依主要使用者所在地選擇。不要使用公開讀寫的測試規則。
+1. 在 Firebase Console 的 **Project Overview** 頁面，點 **`</>` Web** 圖示。
+2. 如果 project 已經有其他 App，改按 **Add app → Web**。
+3. **App nickname** 輸入 `Travel OS`。
+4. 如果看到 **Also set up Firebase Hosting**，不要勾。Travel OS 已經使用 GitHub Pages。
+5. 按 **Register app**。
+6. Firebase 會先顯示一份 `firebaseConfig`，這時先不用複製。等 Realtime Database 建好後，再重新取得一次最新版本，確保有 `databaseURL`。
 
-將 repository 的 [`firebase/database.rules.json`](../firebase/database.rules.json) 部署到**你自己的 Firebase 專案**。可在 Firebase Console 的 Rules 分頁貼上，或使用 repository 提供的受保護 CLI 流程：
+官方說明：[Add Firebase to your JavaScript project](https://firebase.google.com/docs/web/setup)
+
+## 3. 啟用 Email/Password Authentication
+
+Authentication 是「登入帳號管理」，不是 Google Cloud IAM。
+
+1. Firebase Console 左側進入 **Security → Authentication**。
+2. 第一次使用時按 **Get started**。
+3. 切到 **Sign-in method**。
+4. 點 **Email/Password**。
+5. 打開 **Email/Password** 的 Enable。
+6. 不需要開 **Email link (passwordless sign-in)**。
+7. 按 **Save**。
+
+官方說明：[Password-based Authentication](https://firebase.google.com/docs/auth/web/password-auth)
+
+## 4. 建立第一個登入帳號
+
+Travel OS 目前不提供公開註冊，所以由 Firebase project 擁有者決定哪些帳號可以登入。
+
+1. 留在 **Security → Authentication**。
+2. 切到 **Users**。
+3. 按 **Add user**。
+4. Email 輸入你自己的 Email。
+5. 設定一組密碼（Firebase 預設至少 6 字元；若你另外設定更嚴格 Password policy，請遵守該規則）。
+6. 建立後記住這組 Email / Password；稍後會填到 Travel OS 設定精靈的「登入」步驟。
+
+旅伴日後也可以在同一個 Users 頁面用 **Add user** 建立帳號。Travel OS 的 owner／editor／viewer 角色不是 IAM，而是旅程資料與 Database Rules 的權限。
+
+## 5. 建立 Realtime Database
+
+Realtime Database 是實際存放 Travel OS 雲端旅程的地方。
+
+1. Firebase Console 左側進入 **Databases & Storage → Realtime Database**。
+2. 按 **Create database**。
+3. 選擇離主要使用者較近的 Database location。建立後 location 不適合當成隨時可改的設定，請先確認再建立。
+4. Security Rules starting mode 請選 **Locked mode**。
+5. **不要選 Test mode**。Firebase 官方說 Test mode 允許任何人讀取與覆寫資料。
+6. 按 **Done**。
+
+建立後 Database URL 通常會是：
+
+```text
+https://DATABASE_NAME.firebaseio.com
+```
+
+或：
+
+```text
+https://DATABASE_NAME.REGION.firebasedatabase.app
+```
+
+官方說明：[Realtime Database Web setup](https://firebase.google.com/docs/database/web/start)
+
+## 6. 部署 Travel OS Realtime Database Rules
+
+Locked mode 目前會拒絕所有 Web client 讀寫，所以要換成 Travel OS 的 Rules。
+
+最簡單的方法：
+
+1. 回 Travel OS 設定精靈的 Firebase 頁。
+2. 按 **複製 Travel OS Rules**。
+3. 回 Firebase Console → **Realtime Database**。
+4. 切到 **Rules / Security Rules**。
+5. 將編輯器裡原本內容全部選取並刪除。
+6. 貼上剛才複製的 Travel OS Rules。
+7. 按 **Publish**。
+
+這組 Rules 會以 Firebase Authentication 的 UID 與旅程 membership 控制 owner／editor／viewer，並驗證 Travel OS 資料格式。Firebase 官方說 Realtime Database Rules 會在 Firebase server 端對每次 read/write 強制執行。
+
+官方說明：[Realtime Database Security](https://firebase.google.com/docs/database/security) · [Security Rules getting started](https://firebase.google.com/docs/database/security/get-started)
+
+進階使用者若想用 CLI，可使用：
 
 ```bash
 npm run firebase:rules:configure -- --project YOUR_PROJECT_ID
 npm run firebase:rules:deploy
 ```
 
-OpenSource repository 不會從 `firebase projects:list`、目前登入帳號或既有 `.firebaserc` 推測 production target。Database deploy 另有 `predeploy` guard；即使直接執行 `firebase deploy --only database --project ...`，目標也必須和本機明確核准的 project 完全一致。
+OpenSource repository 不會自行猜 Firebase project；Database deploy 會經過 deployment boundary guard。
 
-專案維護者若同時管理其他私人 Firebase，可在本機建立不進 Git 的 `.firebase-private-projects.local.json`：
+## 7. 重新取得「最新」firebaseConfig
 
-```json
-{
-  "blockedProjects": ["PRIVATE_PROJECT_ID"]
-}
+現在 Authentication 與 Realtime Database 都建立好了，才回去取得最後要貼進 Travel OS 的 config。
+
+操作路徑：
+
+```text
+Firebase Console
+→ 左上齒輪 ⚙
+→ Project settings
+→ General
+→ 往下找到 Your apps
+→ 點 Travel OS Web App
+→ SDK setup and configuration
+→ 選 Config
 ```
 
-列在這裡的 project 永遠不能從 Travel OS OpenSource repository 部署 Rules。
+你會看到類似：
 
-這組規則預設拒絕所有未授權存取，並以旅程 membership 實作 owner／editor／viewer 權限。
+```js
+const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "my-travel-os.firebaseapp.com",
+  databaseURL: "https://my-travel-os-default-rtdb.REGION.firebasedatabase.app",
+  projectId: "my-travel-os",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
+};
+```
 
-## 4. 準備 Google Maps Browser Key
+請從：
 
-雲端設定精靈同時需要你自己的 Google Maps Browser Key。請依 [Google Cloud / Maps Browser Key 設定指南](GOOGLE_CLOUD_SETUP.zh-TW.md)建立 Key，並完成 Website restrictions、API restrictions、quota 與 Billing alert。
+```text
+const firebaseConfig = {
+```
 
-Browser Key 不是 Server Key。不要將 Routes、Geocoding、Weather 使用的後端 Server Key 貼進 Travel OS。
+一路複製到最後：
 
-## 5. 在 Travel OS 連線
+```text
+};
+```
 
-1. 開啟「設定」。
-2. 貼上整段 Firebase Web config。
-3. 貼上受限制的 Google Maps Browser Key。
-4. 輸入該 Firebase 專案中的 Email 與密碼。
-5. 使用 Firebase Console 已建立的帳號，按「驗證 Google + Firebase 並啟用雲端」。
-6. 精靈會先載入 Maps JavaScript API 並驗證 Places，再進行 Firebase 本人範圍的診斷寫入並立即刪除，最後載入該帳號可見的旅程。
+不要複製 `npm install firebase`、`import ...` 等程式碼，也不要只複製 `apiKey`。
 
-「連線成功」只代表登入、基本 Rules 與診斷讀寫可用，不等於完整安全稽核。修改規則後應執行 repository 的 Emulator 測試。
+如果 config 裡沒有 `databaseURL`，通常代表你是在 Realtime Database 建立前複製了舊 config。請回上面的 Project settings 路徑重新取得最新版本。
 
-## Google API 金鑰邊界
+## 8. 貼回 Travel OS
 
-- **Browser Key**：由 self-host 使用者自己建立，設定精靈會驗證 Maps JavaScript API / Places。這把 Key 在瀏覽器技術上可見，所以必須使用 Website restrictions、API restrictions 與 quota；UI 遮罩只避免肩窺，不代表 Key 變成秘密。
-- **Server Key**：Routes、Geocoding、Weather 等伺服器 API 必須由使用者自己的後端使用 Server Key 呼叫。Server Key 不得放進瀏覽器、`localStorage`、repository 或前端建置產物，也不會被設定精靈接受。
+1. 回到你自己的 Travel OS 網站。
+2. 開啟設定精靈 → **Firebase**。
+3. 找到 **把剛才複製的完整 firebaseConfig 貼在這裡**。
+4. 貼上整段 `const firebaseConfig = { ... };`。
+5. 按 **下一步**。
+6. Travel OS 會先顯示已辨識的：
+   - Project ID
+   - Auth Domain
+   - Realtime Database URL
+7. 如果這三項正確，再繼續 Google Maps 設定。
 
-## 常見問題
+## 9. 常見錯誤
 
-- `Email 或密碼不正確`：確認帳號屬於目前 config 指向的專案。
-- `尚未啟用 Email/Password`：到 Authentication 啟用登入方式。
-- `目前網域尚未加入`：把網站網域加入 Authorized domains。
-- `Rules 拒絕存取`：部署本 repository 的 Rules，並確認 `databaseURL` 指向正確 instance。
-- 切換專案後看不到原資料：資料依 Firebase instance、project 與 UID 隔離，這是預期行為。
+- **firebaseConfig 缺少 databaseURL**：先建立 Realtime Database，再回 Project settings → General → Your apps → Travel OS → SDK setup and configuration → Config 重新複製。
+- **Email 或密碼不正確**：確認帳號存在於目前這個 Firebase project 的 Authentication → Users。
+- **Email/Password 尚未啟用**：Security → Authentication → Sign-in method → Email/Password → Enable → Save。
+- **PERMISSION_DENIED / Rules 拒絕存取**：確認 Realtime Database → Rules 已發布 Travel OS Rules，而不是 Locked mode 原始規則或 Test mode。
+- **看到 Blaze / Billing**：這個 Firebase project 應維持 Spark。Google Maps Billing 請放在另一個 Google Cloud project。
+
+完成這一頁後，再依 [Google Cloud / Maps Browser Key 設定指南](GOOGLE_CLOUD_SETUP.zh-TW.md)設定 Google Maps。

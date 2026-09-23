@@ -49,13 +49,14 @@ Travel OS 把每天的安排、航班、住宿、同行群組與費用放回同�
 
 ### 1. 建立自己的雲端 Travel OS（主流程）
 
-1. 按 repository 上方的 **Use this template** 建立個人副本。
-2. 在副本的 **Settings → Pages** 選擇 **GitHub Actions**。
-3. 開啟自己的 Travel OS；第一次啟動會自動進入「雲端同步設定精靈」。
-4. 依序完成自己的 **Firebase Web config → Google Maps Browser Key → Firebase 帳號登入**。精靈會引導設定 Website/API restrictions，並驗證 Maps JavaScript／Places 與 Firebase 連線。
-5. 驗證完成後進入雲端模式，旅程以自己的 Firebase 為同步核心，可跨裝置並支援多人權限。
+1. 登入 GitHub，在本 repository 按 **Use this template → Create a new repository**。
+2. Owner 選自己的 GitHub 帳號；Repository name 建議填 `Travel-OS`。GitHub Free 請使用 **Public** repository。
+3. 建立後進入自己的 repository → **Settings → Pages → Build and deployment → Source → GitHub Actions**。
+4. 到 **Actions** 等待 Pages workflow 成功，再回 **Settings → Pages → Visit site** 開啟自己的網站。網址通常是 `https://你的帳號.github.io/Travel-OS/`。
+5. 第一次開啟自己的 Travel OS，網站會自動進入分步設定精靈，依序完成 **網站確認 → Firebase → Google Maps → Firebase 登入 → 自動驗證**。
+6. 驗證完成後進入雲端模式，旅程以自己的 Firebase 為同步核心，可跨裝置並支援多人權限。
 
-完整步驟請見[自行部署指南](docs/SELF_HOSTING.zh-TW.md)、[Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)與 [Google Cloud / Maps Key 指南](docs/GOOGLE_CLOUD_SETUP.zh-TW.md)。
+完整步驟請見[自行部署指南](docs/SELF_HOSTING.zh-TW.md)、[Firebase 設定指南](docs/FIREBASE_SETUP.zh-TW.md)與 [Google Cloud / Maps Key 指南](docs/GOOGLE_CLOUD_SETUP.zh-TW.md)。設定精靈本身也會逐步告訴你要開哪個官方頁面、按哪裡、填什麼，以及哪些選項不要選。
 
 ### 2. 本機模式（Demo／離線／暫時略過雲端）
 

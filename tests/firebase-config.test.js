@@ -19,6 +19,9 @@ describe('Firebase runtime config', () => {
   it('rejects a database URL by itself', () => {
     expect(() => parseFirebaseConfig('{"databaseURL":"https://sample.firebaseio.com"}')).toThrow(/缺少/);
   });
+  it('explains how to recover when firebaseConfig was copied before Realtime Database existed', () => {
+    expect(() => parseFirebaseConfig('{"apiKey":"a","authDomain":"sample.firebaseapp.com","projectId":"sample","appId":"1:web:a"}')).toThrow(/Realtime Database.*Project settings/s);
+  });
   it('accepts the same config through individual wizard fields', () => {
     expect(parseFirebaseConfigInput({
       firebase_apiKey:'example-browser-key', firebase_authDomain:'sample.firebaseapp.com',

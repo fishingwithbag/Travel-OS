@@ -29,6 +29,7 @@ export function parseFirebaseConfig(raw) {
   const config = {};
   for (const field of ALLOWED_FIELDS) if (typeof parsed[field] === 'string' && parsed[field].trim()) config[field] = parsed[field].trim();
   const missing = REQUIRED_FIELDS.filter((field) => !config[field]);
+  if (missing.includes('databaseURL')) throw new ValidationError('firebaseConfig 缺少 databaseURL。請先建立 Realtime Database，再回 Firebase Console → Project settings → General → Your apps → Travel OS → SDK setup and configuration → Config，重新複製最新的完整 firebaseConfig。');
   if (missing.length) throw new ValidationError(`Firebase config 缺少：${missing.join('、')}。`);
   if (!/^https:\/\/[a-z0-9.-]+\.(firebaseio\.com|firebasedatabase\.app)$/i.test(config.databaseURL)) throw new ValidationError('databaseURL 必須是 Firebase Realtime Database 的 HTTPS 網址。');
   if (!/^[a-z0-9-]+$/i.test(config.projectId)) throw new ValidationError('projectId 格式不正確。');
