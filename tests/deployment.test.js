@@ -5,21 +5,22 @@ import { isSharedPublicDemo, shouldOpenCloudOnboarding } from '../src/config/dep
 
 describe('shared demo guard', () => {
   it('locks the official shared GitHub Pages host', () => {
-    expect(isSharedPublicDemo('fishingwithbag.github.io')).toBe(true);
-    expect(isSharedPublicDemo('FISHINGWITHBAG.GITHUB.IO')).toBe(true);
+    expect(isSharedPublicDemo('fishingwithbag.github.io', '/Travel-OS/')).toBe(true);
+    expect(isSharedPublicDemo('FISHINGWITHBAG.GITHUB.IO', '/Travel-OS/index.html')).toBe(true);
   });
 
   it('leaves local and independently hosted copies configurable', () => {
-    expect(isSharedPublicDemo('localhost')).toBe(false);
-    expect(isSharedPublicDemo('traveler.github.io')).toBe(false);
-    expect(isSharedPublicDemo('fishingwithbag.github.io.example.com')).toBe(false);
+    expect(isSharedPublicDemo('localhost', '/Travel-OS/')).toBe(false);
+    expect(isSharedPublicDemo('traveler.github.io', '/Travel-OS/')).toBe(false);
+    expect(isSharedPublicDemo('fishingwithbag.github.io', '/My-Travel-OS/')).toBe(false);
+    expect(isSharedPublicDemo('fishingwithbag.github.io.example.com', '/Travel-OS/')).toBe(false);
   });
 
   it('opens cloud onboarding first on self-hosted copies unless local mode was explicitly chosen', () => {
-    expect(shouldOpenCloudOnboarding('traveler.github.io', '')).toBe(true);
-    expect(shouldOpenCloudOnboarding('traveler.github.io', 'cloud')).toBe(true);
-    expect(shouldOpenCloudOnboarding('traveler.github.io', 'local')).toBe(false);
-    expect(shouldOpenCloudOnboarding('fishingwithbag.github.io', '')).toBe(false);
+    expect(shouldOpenCloudOnboarding('traveler.github.io', '/Travel-OS/', '')).toBe(true);
+    expect(shouldOpenCloudOnboarding('traveler.github.io', '/Travel-OS/', 'cloud')).toBe(true);
+    expect(shouldOpenCloudOnboarding('traveler.github.io', '/Travel-OS/', 'local')).toBe(false);
+    expect(shouldOpenCloudOnboarding('fishingwithbag.github.io', '/Travel-OS/', '')).toBe(false);
   });
 
   it('keeps the public repository unbound from production Firebase and guarded on deploy', () => {

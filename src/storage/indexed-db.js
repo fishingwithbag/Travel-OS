@@ -1,4 +1,5 @@
-const DB_NAME = 'travel-os';
+import { indexedDbNameForDeployment } from './browser-scope.js';
+
 const DB_VERSION = 1;
 const STORE = 'trips';
 
@@ -11,10 +12,15 @@ function requestResult(request) {
 
 export class IndexedDbTripStore {
   #database;
+  #databaseName;
+
+  constructor(databaseName = indexedDbNameForDeployment()) {
+    this.#databaseName = databaseName;
+  }
 
   async connect() {
     if (this.#database) return this;
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(this.#databaseName, DB_VERSION);
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE, { keyPath: 'id' });
     };

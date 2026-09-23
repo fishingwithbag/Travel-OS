@@ -1,9 +1,17 @@
-const SHARED_DEMO_HOSTS = new Set(['fishingwithbag.github.io']);
+const SHARED_DEMO_HOST = 'fishingwithbag.github.io';
+const SHARED_DEMO_PATH = '/Travel-OS/';
 
-export function isSharedPublicDemo(hostname) {
-  return SHARED_DEMO_HOSTS.has(String(hostname || '').trim().toLowerCase());
+function normalizePath(pathname) {
+  const value = `/${String(pathname || '/').replace(/^\/+|\/+$/g, '')}/`;
+  return value.replace(/\/+/g, '/');
 }
 
-export function shouldOpenCloudOnboarding(hostname, preference = '') {
-  return !isSharedPublicDemo(hostname) && preference !== 'local';
+export function isSharedPublicDemo(hostname, pathname = '/') {
+  const host = String(hostname || '').trim().toLowerCase();
+  const path = normalizePath(pathname);
+  return host === SHARED_DEMO_HOST && (path === SHARED_DEMO_PATH || path.startsWith(`${SHARED_DEMO_PATH}index.html/`));
+}
+
+export function shouldOpenCloudOnboarding(hostname, pathname = '/', preference = '') {
+  return !isSharedPublicDemo(hostname, pathname) && preference !== 'local';
 }

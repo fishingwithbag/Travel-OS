@@ -6,6 +6,7 @@ import { parseFirebaseConfigInput, parseRememberedConnection } from './config/fi
 import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployment.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { prepareStoreSwitch } from './storage/store-switch.js';
+import { localStorageKey } from './storage/browser-scope.js';
 import { mapSearchUrl, recommendedWebsiteRestriction, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
 
 let store = new IndexedDbTripStore();
@@ -15,7 +16,12 @@ let setupStep = 0;
 let highestSetupStep = 0;
 const $ = (selector) => document.querySelector(selector);
 const typeLabels = { place: '景點', meal: '餐飲', stay: '住宿', flight: '航班', transport: '交通', other: '其他' };
-const sharedPublicDemo = isSharedPublicDemo(location.hostname);
+const sharedPublicDemo = isSharedPublicDemo(location.hostname, location.pathname);
+const STORAGE_KEYS = Object.freeze({
+  theme:localStorageKey('theme'),
+  onboardingMode:localStorageKey('onboarding-mode'),
+  connection:localStorageKey('connection'),
+});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
@@ -150,7 +156,7 @@ $('#settings-button').addEventListener('click', () => {
   if (!sharedPublicDemo) setSetupStep(state.mode === 'cloud' ? 5 : 0);
   openDialog('settings-dialog');
 });
-$('#theme-button').addEventListener('click', () => { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; localStorage.setItem('travel-os:theme', next); });
+$('#theme-button').addEventListener('click', () => { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; localStorage.setItem(STORAGE_KEYS.theme, next); });
 
 $('#trip-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; setError(form, '');
@@ -215,9 +221,9 @@ $('#connection-form').addEventListener('submit', async (event) => {
     const connection = await cloudStore.connect(config, { email:input.email, password:input.password });
     progress.innerHTML += '<span>4／4　Firebase 診斷讀寫已完成。</span>';
     state.googleMapsKey = googleMapsKey;
-    localStorage.setItem('travel-os:onboarding-mode', 'cloud');
-    if (input.remember) localStorage.setItem('travel-os:connection', JSON.stringify({ firebase:config, googleMapsKey }));
-    else localStorage.removeItem('travel-os:connection');
+    localStorage.setItem(STORAGE_KEYS.onboardingMode, 'cloud');
+    if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config, googleMapsKey }));
+    else localStorage.removeItem(STORAGE_KEYS.connection);
     const warnings = await activateStore(cloudStore, 'cloud', connection);
     form.elements.password.value = '';
     $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps / Places：驗證成功</span>`;
@@ -258,7 +264,7 @@ $('#setup-finish-button').addEventListener('click', () => $('#settings-dialog').
 $('#local-mode-button').addEventListener('click', async () => {
   const localStore = await new IndexedDbTripStore().connect();
   await activateStore(localStore, 'local');
-  localStorage.setItem('travel-os:onboarding-mode', 'local');
+  localStorage.setItem(STORAGE_KEYS.onboardingMode, 'local');
   $('#connection-form').closest('dialog').close();
   showToast('已進入本機模式；之後仍可從設定啟用雲端同步。');
 });
@@ -300,12 +306,12 @@ $('#import-form').addEventListener('submit', async (event) => {
 for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
 
 async function start() {
-  document.documentElement.dataset.theme = localStorage.getItem('travel-os:theme') || 'light';
+  document.documentElement.dataset.theme = localStorage.getItem(STORAGE_KEYS.theme) || 'light';
   $('#current-site-url').textContent = location.href.split('#')[0].split('?')[0];
   $('#maps-referrer-recommendation').textContent = recommendedWebsiteRestriction(location.origin) || '請填入你實際部署網站的 HTTPS origin';
   let initialSetupStep = 0;
   if (sharedPublicDemo) {
-    localStorage.removeItem('travel-os:connection');
+    localStorage.removeItem(STORAGE_KEYS.connection);
     $('#official-demo-url-warning').hidden = false;
     $('#shared-host-warning').hidden = false;
     $('#connection-form').classList.add('setup-readonly');
@@ -315,7 +321,7 @@ async function start() {
     $('#cloud-setup-button').hidden = true;
     $('#local-start-button').textContent = '建立第一趟旅程';
   }
-  const remembered = localStorage.getItem('travel-os:connection');
+  const remembered = localStorage.getItem(STORAGE_KEYS.connection);
   if (remembered) {
     try {
       const connection = parseRememberedConnection(remembered);
@@ -323,15 +329,15 @@ async function start() {
       $('#connection-form').elements.googleMapsKey.value = connection.googleMapsKey || '';
       state.googleMapsKey = connection.googleMapsKey || '';
       $('#connection-form').elements.remember.checked = true;
-      localStorage.setItem('travel-os:connection', JSON.stringify(connection));
+      localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify(connection));
       highestSetupStep = connection.googleMapsKey ? 3 : 1;
       initialSetupStep = connection.googleMapsKey ? 3 : 1;
       renderFirebasePreview(connection.firebase);
-    } catch { localStorage.removeItem('travel-os:connection'); }
+    } catch { localStorage.removeItem(STORAGE_KEYS.connection); }
   }
   await store.connect(); state.trips = await store.listTrips(); state.trips.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)); state.currentTripId = state.trips[0]?.id || ''; render();
   if (sharedPublicDemo) setSetupStep(0); else setSetupStep(initialSetupStep);
-  if (shouldOpenCloudOnboarding(location.hostname, localStorage.getItem('travel-os:onboarding-mode') || '')) openDialog('settings-dialog');
+  if (shouldOpenCloudOnboarding(location.hostname, location.pathname, localStorage.getItem(STORAGE_KEYS.onboardingMode) || '')) openDialog('settings-dialog');
 }
 
 start().catch(() => { $('#save-status').textContent = '儲存空間無法使用'; showToast('無法開啟本機儲存空間，請檢查瀏覽器設定。'); });

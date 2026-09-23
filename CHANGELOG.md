@@ -6,6 +6,7 @@
 
 ### Changed
 
+- 瀏覽器本機資料改依部署路徑隔離。同一個 `username.github.io` 底下的不同 Travel OS repository，不再共用 IndexedDB 旅程、Firebase/Maps 設定、onboarding 狀態或主題。舊版未分路徑的共用資料不自動搬移，避免再次跨 repository 混用。
 - 設定精靈重做為六段式流程：網站 → Firebase → Google Maps → 登入 → 驗證 → 完成；每一步都提供零基礎操作路徑與完成條件。
 - Firebase 精靈明確要求 Spark、Email/Password、Realtime Database Locked mode 與 Travel OS Rules，並提供 Rules 一鍵複製與 `firebaseConfig` 解析預覽。
 - Google Maps 設定改為獨立 Billing project，避免為 Maps 啟用 Billing 時把 Firebase Spark project 升級為 Blaze。

@@ -4,6 +4,10 @@
 
 本機模式將旅程放在目前瀏覽器的 IndexedDB。清除瀏覽器網站資料可能一併刪除旅程，請定期匯出完整備份。
 
+每個部署路徑都有自己的瀏覽器儲存 namespace。例如同一個 GitHub 帳號下的 `https://user.github.io/Travel-OS/` 與 `https://user.github.io/Travel-OS-Test/`，不會共用旅程、Firebase/Maps 設定或 onboarding 狀態。這可避免從 Template 建立另一個 repository 時誤讀同一個 `github.io` origin 上其他 Travel OS 的資料。
+
+早期 beta 曾使用未分 deployment path 的共用 `travel-os` IndexedDB。因為舊資料本身沒有記錄它原本屬於哪一個 repository，更新後不會自動把這批舊資料搬進新的 namespace，以免再次造成跨 repository 資料混用。
+
 Firebase 模式只在自行部署的版本開放，並是 self-host 第一次使用的主要 onboarding 路徑；只連線到使用者在設定精靈提供的專案。旅程以 `tripId` 儲存，讀寫權限依 membership 與已登入 UID 判定。切換模式或專案時，現有 adapter 會登出並停止使用舊連線；不同專案的資料不合併。官方公開體驗站會清除先前記住的雲端連線設定並停用相關欄位。
 
 ## 記住這台裝置
