@@ -60,10 +60,10 @@ function setSetupStep(nextStep) {
     button.dataset.complete = String(index < highestSetupStep || (state.mode === 'cloud' && index < 5));
     button.disabled = index > highestSetupStep && state.mode !== 'cloud';
   }
-  $('#setup-back-button').hidden = setupStep === 0 || setupStep === 5;
-  $('#setup-next-button').hidden = setupStep >= 4;
-  $('#setup-verify-button').hidden = setupStep !== 4;
-  $('#setup-create-trip-button').hidden = setupStep !== 5 || state.trips.length > 0;
+  $('#setup-back-button').hidden = setupStep === 0;
+  $('#setup-next-button').hidden = sharedPublicDemo ? setupStep >= 5 : setupStep >= 4;
+  $('#setup-verify-button').hidden = sharedPublicDemo || setupStep !== 4;
+  $('#setup-create-trip-button').hidden = sharedPublicDemo || setupStep !== 5 || state.trips.length > 0;
   $('#setup-finish-button').hidden = setupStep !== 5;
   if (setupStep === 4) renderVerificationSummary();
   setError($('#connection-form'), '');
@@ -231,6 +231,7 @@ $('#connection-form').addEventListener('submit', async (event) => {
 
 $('#setup-next-button').addEventListener('click', () => {
   const form = $('#connection-form'); setError(form, '');
+  if (sharedPublicDemo) { setSetupStep(setupStep + 1); return; }
   try { validateSetupStep(setupStep); setSetupStep(setupStep + 1); }
   catch (error) { setError(form, error); }
 });
@@ -306,14 +307,10 @@ async function start() {
   if (sharedPublicDemo) {
     localStorage.removeItem('travel-os:connection');
     $('#shared-host-warning').hidden = false;
-    $('#external-service-fields').disabled = true;
-    $('#setup-workspace').hidden = true;
-    $('#setup-back-button').hidden = true;
-    $('#setup-next-button').hidden = true;
-    $('#setup-verify-button').hidden = true;
-    $('#setup-create-trip-button').hidden = true;
-    $('#setup-finish-button').hidden = true;
-    $('#connection-summary').innerHTML = '<strong>公開體驗站</strong><span>僅限本機模式，不接受雲端設定或帳密</span>';
+    $('#connection-form').classList.add('setup-readonly');
+    highestSetupStep = 5;
+    for (const field of $('#external-service-fields').querySelectorAll('input, textarea')) field.disabled = true;
+    $('#connection-summary').innerHTML = '<strong>公開體驗站 · 教學模式</strong><span>可完整閱讀設定指南；Firebase config、API Key 與帳密輸入已停用</span>';
     $('#cloud-setup-button').hidden = true;
     $('#local-start-button').textContent = '建立第一趟旅程';
   }
@@ -332,7 +329,7 @@ async function start() {
     } catch { localStorage.removeItem('travel-os:connection'); }
   }
   await store.connect(); state.trips = await store.listTrips(); state.trips.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)); state.currentTripId = state.trips[0]?.id || ''; render();
-  if (!sharedPublicDemo) setSetupStep(initialSetupStep);
+  if (sharedPublicDemo) setSetupStep(0); else setSetupStep(initialSetupStep);
   if (shouldOpenCloudOnboarding(location.hostname, localStorage.getItem('travel-os:onboarding-mode') || '')) openDialog('settings-dialog');
 }
 

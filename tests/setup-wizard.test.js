@@ -15,6 +15,12 @@ describe('zero-basis setup wizard', () => {
     expect(html).toContain('STEP 5 · VERIFY');
   });
 
+  it('keeps hidden panels hidden and does not fade the whole guide', () => {
+    const css = fs.readFileSync(`${root}src/styles.css`, 'utf8');
+    expect(css).toContain('[hidden] { display:none!important; }');
+    expect(css).not.toContain('.connection-fields:disabled { opacity:.48; }');
+  });
+
   it('documents the critical Firebase safety path in the wizard itself', () => {
     expect(html).toContain('Spark 免費方案');
     expect(html).toContain('不要選 Test mode');
