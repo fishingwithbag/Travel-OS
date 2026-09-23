@@ -14,7 +14,7 @@
 8. 在 **Build and deployment** 的 **Source** 選 **GitHub Actions**。
 9. 回 repository 上方 **Actions**，等待 Pages workflow 顯示綠色成功。
 10. 再回 **Settings → Pages**，點 **Visit site**。
-11. 你的網址通常會是 `https://你的帳號.github.io/Travel-OS/`。請記住這個網址，Google Maps Browser Key 的 Website restriction 會用到它。
+11. 你的網址通常會是 `https://你的帳號.github.io/旅遊網頁命名的名稱/`。請記住這個網址，Google Maps Browser Key 的 Website restriction 會用到它。
 
 這份副本會使用你的 GitHub 帳號、網域與 Actions。你可以核對 commit、workflow 和部署紀錄；上游 repository 無法修改你已部署的版本，除非你自行同步更新。
 
