@@ -7,7 +7,7 @@
 1. 登入 GitHub，開啟 [Travel OS repository](https://github.com/fishingwithbag/Travel-OS)。
 2. 在 repository 頁面按 **Use this template** → **Create a new repository**。
 3. **Owner** 選你的 GitHub 帳號。
-4. **Repository name** 建議輸入 `你想取的名稱`。若使用 GitHub Free，請選 **Public**。
+4. **Repository name** 輸入 `你想為此旅遊網頁命名的名稱`。若使用 GitHub Free，請選 **Public**。
 5. 按 **Create repository**。
 6. 進入剛建立的 repository，點上方 **Settings**。
 7. 左側選單找到 **Pages**。
