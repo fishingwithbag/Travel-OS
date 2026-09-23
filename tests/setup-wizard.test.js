@@ -36,4 +36,10 @@ describe('zero-basis setup wizard', () => {
     expect(html).toContain('API restrictions');
     expect(html).toContain('不要保留 unrestricted');
   });
+
+  it('contains a dedicated warning for the official demo URL', () => {
+    expect(html).toContain('official-demo-url-warning');
+    expect(html).toContain('官方 Demo 教學網址');
+    expect(html).toContain('請勿在此設定 Firebase、Google API Key 或登入帳密');
+  });
 });

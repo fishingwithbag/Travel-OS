@@ -306,6 +306,7 @@ async function start() {
   let initialSetupStep = 0;
   if (sharedPublicDemo) {
     localStorage.removeItem('travel-os:connection');
+    $('#official-demo-url-warning').hidden = false;
     $('#shared-host-warning').hidden = false;
     $('#connection-form').classList.add('setup-readonly');
     highestSetupStep = 5;
