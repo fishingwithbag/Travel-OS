@@ -30,7 +30,7 @@ function normalizeObjectSyntax(text) {
     .replace(/,\s*([}\]])/g, '$1');
 }
 
-export function parseFirebaseConfig(raw) {
+export function parseFirebaseConfig(raw, databaseURLOverride = '') {
   const text = String(raw || '').trim();
   if (!text) throw new ValidationError('請貼上 Firebase Web config。');
   if (text.length > 10_000) throw new ValidationError('Firebase config 內容過長。');
@@ -41,8 +41,16 @@ export function parseFirebaseConfig(raw) {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new ValidationError('Firebase config 必須是物件。');
   const config = {};
   for (const field of ALLOWED_FIELDS) if (typeof parsed[field] === 'string' && parsed[field].trim()) config[field] = parsed[field].trim();
+  const explicitDatabaseURL = String(databaseURLOverride || '').trim();
+  if (explicitDatabaseURL) {
+    const normalizedExplicit = normalizeRealtimeDatabaseUrl(explicitDatabaseURL);
+    if (config.databaseURL && normalizeRealtimeDatabaseUrl(config.databaseURL) !== normalizedExplicit) {
+      throw new ValidationError('firebaseConfig 內的 databaseURL 與你另外貼上的 Realtime Database URL 不一致，請確認兩者屬於同一個 Firebase 專案。');
+    }
+    config.databaseURL = normalizedExplicit;
+  }
   const missing = REQUIRED_FIELDS.filter((field) => !config[field]);
-  if (missing.includes('databaseURL')) throw new ValidationError('firebaseConfig 缺少 databaseURL。請先建立 Realtime Database，再回 Firebase Console → Project settings → General → Your apps → Travel OS → SDK setup and configuration → Config，重新複製最新的完整 firebaseConfig。');
+  if (missing.includes('databaseURL')) throw new ValidationError('請貼上 Realtime Database URL。請到 Firebase 控制台 → Realtime Database →「資料」頁籤，複製頁面上方顯示的 HTTPS 資料庫網址。');
   if (missing.length) throw new ValidationError(`Firebase config 缺少：${missing.join('、')}。`);
   config.databaseURL = normalizeRealtimeDatabaseUrl(config.databaseURL);
   if (!/^[a-z0-9-]+$/i.test(config.projectId)) throw new ValidationError('projectId 格式不正確。');
@@ -50,7 +58,7 @@ export function parseFirebaseConfig(raw) {
 }
 
 export function parseFirebaseConfigInput(input) {
-  if (String(input.firebaseConfig || '').trim()) return parseFirebaseConfig(input.firebaseConfig);
+  if (String(input.firebaseConfig || '').trim()) return parseFirebaseConfig(input.firebaseConfig, input.firebase_databaseURL);
   const config = Object.fromEntries(ALLOWED_FIELDS.map((field) => [field, String(input[`firebase_${field}`] || '').trim()]).filter(([, value]) => value));
   return parseFirebaseConfig(JSON.stringify(config));
 }

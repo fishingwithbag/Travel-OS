@@ -249,10 +249,13 @@ $('#copy-rules-button').addEventListener('click', async () => {
   catch (error) { setError($('#connection-form'), error); }
 });
 
-$('#connection-form').elements.firebaseConfig.addEventListener('change', () => {
+function updateFirebaseConfigPreview() {
   try { renderFirebasePreview(parseFirebaseConfigInput(formData($('#connection-form')))); }
-  catch { $('#firebase-config-preview').innerHTML = '<span>設定尚未完整；完成 Realtime Database 後，請重新複製最新 firebaseConfig。</span>'; }
-});
+  catch { $('#firebase-config-preview').innerHTML = '<span>設定尚未完整；請貼上 firebaseConfig，並從 Realtime Database →「資料」頁籤另外貼上 HTTPS 資料庫網址。</span>'; }
+}
+
+$('#connection-form').elements.firebaseConfig.addEventListener('change', updateFirebaseConfigPreview);
+$('#connection-form').elements.firebase_databaseURL.addEventListener('change', updateFirebaseConfigPreview);
 
 $('#setup-create-trip-button').addEventListener('click', () => {
   $('#settings-dialog').close();

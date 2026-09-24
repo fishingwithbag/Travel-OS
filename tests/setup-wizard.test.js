@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const html = fs.readFileSync(`${root}index.html`, 'utf8');
+const app = fs.readFileSync(`${root}src/app.js`, 'utf8');
 
 describe('zero-basis setup wizard', () => {
   it('uses six separate setup panels instead of one long configuration page', () => {
@@ -23,11 +24,20 @@ describe('zero-basis setup wizard', () => {
 
   it('documents the critical Firebase safety path in the wizard itself', () => {
     expect(html).toContain('Spark 免費方案');
-    expect(html).toContain('不要選 Test mode');
-    expect(html).toContain('Locked mode');
+    expect(html).toContain('不要選測試模式');
+    expect(html).toContain('鎖定模式');
     expect(html).toContain('copy-rules-button');
-    expect(html).toContain('SDK setup and configuration');
+    expect(html).toContain('SDK 設定與配置');
     expect(html).toContain('const firebaseConfig = {');
+  });
+
+  it('explains that Realtime Database URL is copied separately from the Data tab', () => {
+    expect(html).toContain('複製 Realtime Database URL');
+    expect(html).toContain('Realtime Database →「資料」');
+    expect(html).toContain('不要複製資料區裡顯示的');
+    expect(html).toContain('firebaseConfig 裡沒有 databaseURL 也沒關係');
+    expect(app).toContain("elements.firebase_databaseURL.addEventListener('change', updateFirebaseConfigPreview)");
+    expect(app).not.toContain('請重新複製最新 firebaseConfig');
   });
 
   it('separates the billed Maps project from the Spark Firebase project', () => {

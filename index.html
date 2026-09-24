@@ -172,26 +172,31 @@
             <section class="setup-panel" data-setup-step="1" hidden>
               <p class="eyebrow">STEP 2 · FIREBASE</p>
               <h3>建立免費的 Firebase 雲端同步</h3>
-              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。這個 Firebase Project 請維持 <strong>Spark 免費方案</strong>，不要替它連結 Cloud Billing；Google Maps 會在下一步使用另一個 Google Cloud Project。</p>
-              <div class="warning-card"><strong>看到 Billing / Blaze 時先停下來</strong><span>Firebase 官方說，Spark 專案若連結 Cloud Billing，或在同一 project 使用 Google Maps API，會升級成 Blaze。這就是為什麼 Travel OS 把 Firebase 與 Google Maps 分成兩個 project。</span></div>
+              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。這個 Firebase 專案請維持 <strong>Spark 免費方案</strong>，不要替它連結 Cloud Billing（雲端帳單）；Google Maps 會在下一步使用另一個 Google Cloud 專案。</p>
+              <div class="warning-card"><strong>看到「帳單 / Blaze」時先停下來</strong><span>Firebase 官方說，Spark 專案若連結 Cloud Billing（雲端帳單），或在同一個專案使用 Google Maps API，會升級成 Blaze。這就是為什麼 Travel OS 把 Firebase 與 Google Maps 分成兩個專案。</span></div>
               <ol class="setup-steps detailed">
-                <li><strong>建立 Firebase Project：</strong>開啟 Firebase Console → <strong>Create a project / 建立專案</strong>。Project name 可填 <code>My Travel OS</code>。Google Analytics 可略過。保持 Spark 免費方案。</li>
-                <li><strong>建立 Web App：</strong>進入 <strong>Project Overview</strong> → 點 <strong>&lt;/&gt; Web</strong>（若已有 App，點 Add app → Web）→ App nickname 填 <code>Travel OS</code> → <strong>不要勾 Firebase Hosting</strong> → Register app。此時先不要複製 config。</li>
-                <li><strong>啟用登入：</strong>左側 <strong>Build / Security → Authentication</strong> → Get started → <strong>Sign-in method</strong> → <strong>Email/Password</strong> → Enable → Save。不要開 Email link。</li>
-                <li><strong>建立你的登入帳號：</strong>Authentication → <strong>Users</strong> → <strong>Add user</strong> → 輸入你自己的 Email 與密碼。這組帳密稍後會填回 Travel OS。</li>
-                <li><strong>建立 Realtime Database：</strong>左側 <strong>Build / Databases &amp; Storage → Realtime Database</strong> → <strong>Create database</strong> → 選適合你的 location → 起始規則選 <strong>Locked mode</strong> → Done。<strong>不要選 Test mode。</strong></li>
-                <li><strong>部署 Travel OS Rules：</strong>Realtime Database → <strong>Rules / Security Rules</strong> → 將原本內容全部替換成 Travel OS Rules → <strong>Publish</strong>。Firebase Rules 會在伺服器端保護每次讀寫。</li>
-                <li><strong>最後再取得 firebaseConfig：</strong>左上齒輪 ⚙ → <strong>Project settings</strong> → <strong>General</strong> → 往下找到 <strong>Your apps</strong> → Travel OS → <strong>SDK setup and configuration</strong> → 選 <strong>Config</strong>。</li>
-                <li><strong>複製的範圍：</strong>從 <code>const firebaseConfig = {</code> 開始，一路複製到最後的 <code>};</code>。不要複製 npm install、import 程式碼，也不要只複製 apiKey。</li>
+                <li><strong>建立 Firebase 專案：</strong>開啟 Firebase 控制台 → <strong>建立專案</strong>。專案名稱可填 <code>My Travel OS</code>。Google Analytics 可略過，並維持 Spark 免費方案。</li>
+                <li><strong>註冊網頁應用程式：</strong>進入 <strong>專案總覽</strong> → 點 <strong>&lt;/&gt; 網頁</strong>（若已有應用程式，點「新增應用程式」→「網頁」）→「應用程式暱稱」填 <code>Travel OS</code> → <strong>不要勾選 Firebase Hosting</strong> → 按「註冊應用程式」。</li>
+                <li><strong>啟用電子郵件／密碼登入：</strong>左側進入 <strong>Authentication（驗證）</strong> →「開始使用」→「登入方式」→「電子郵件地址/密碼」→ 啟用 →「儲存」。不要啟用「電子郵件連結」。</li>
+                <li><strong>建立你的登入帳號：</strong>Authentication →「使用者」→「新增使用者」→ 輸入你自己的電子郵件與密碼。這組帳密稍後會填回 Travel OS。</li>
+                <li><strong>建立 Realtime Database：</strong>左側進入 <strong>Realtime Database</strong> →「建立資料庫」→ 選擇適合的位置 → 起始安全規則選 <strong>鎖定模式</strong> →「完成」。<strong>不要選測試模式。</strong></li>
+                <li><strong>複製 Realtime Database URL：</strong>留在 <strong>Realtime Database →「資料」</strong>頁籤。頁面上方會顯示一串以 <code>https://</code> 開頭的資料庫網址，旁邊有連結圖示。<strong>請只複製上方這串網址</strong>，不要複製資料區裡顯示的 <code>/: null</code>。</li>
+                <li><strong>部署 Travel OS 規則：</strong>Realtime Database →「<strong>規則</strong>」頁籤 → 將原本內容全部替換成 Travel OS Rules → 按「<strong>發布</strong>」。Firebase Rules 會在伺服器端保護每次讀寫。</li>
+                <li><strong>取得 firebaseConfig：</strong>左側「設定」齒輪 →「<strong>專案設定</strong>」→「<strong>一般</strong>」→ 往下找到「<strong>您的應用程式</strong>」→ Travel OS →「<strong>SDK 設定與配置</strong>」→ 選「<strong>設定</strong>」。</li>
+                <li><strong>複製 firebaseConfig：</strong>從 <code>const firebaseConfig = {</code> 開始，一路複製到最後的 <code>};</code>。<strong>不用自己加入 databaseURL</strong>；Travel OS 會把你上一步另外複製的 Realtime Database URL 自動合併進設定。</li>
               </ol>
-              <div class="setup-actions-inline"><a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">開啟 Firebase Console</a><button id="copy-rules-button" class="secondary" type="button">複製 Travel OS Rules</button></div>
-              <details><summary>查看 Firebase 官方文件</summary><div class="setup-links"><a href="https://firebase.google.com/docs/web/setup" target="_blank" rel="noopener noreferrer">建立 Web App / firebaseConfig</a><a href="https://firebase.google.com/docs/auth/web/password-auth" target="_blank" rel="noopener noreferrer">Email/Password Authentication</a><a href="https://firebase.google.com/docs/database/web/start" target="_blank" rel="noopener noreferrer">Realtime Database</a><a href="https://firebase.google.com/docs/database/security" target="_blank" rel="noopener noreferrer">Database Security Rules</a><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans" target="_blank" rel="noopener noreferrer">Spark / Blaze 方案</a></div></details>
+              <div class="setup-actions-inline"><a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">開啟 Firebase 控制台</a><button id="copy-rules-button" class="secondary" type="button">複製 Travel OS Rules</button></div>
+              <details><summary>查看 Firebase 官方文件</summary><div class="setup-links"><a href="https://firebase.google.com/docs/web/setup?hl=zh-TW" target="_blank" rel="noopener noreferrer">建立網頁應用程式／firebaseConfig</a><a href="https://firebase.google.com/docs/auth/web/password-auth?hl=zh-TW" target="_blank" rel="noopener noreferrer">電子郵件／密碼驗證</a><a href="https://firebase.google.com/docs/database/web/start?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database</a><a href="https://firebase.google.com/docs/database/security?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database 安全規則</a><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans?hl=zh-TW" target="_blank" rel="noopener noreferrer">Spark / Blaze 方案</a></div></details>
               <label>把剛才複製的完整 firebaseConfig 貼在這裡
-                <textarea name="firebaseConfig" rows="9" spellcheck="false" placeholder='const firebaseConfig = {&#10;  apiKey: "...",&#10;  authDomain: "...",&#10;  databaseURL: "https://...firebasedatabase.app",&#10;  projectId: "...",&#10;  appId: "..."&#10;};'></textarea>
+                <textarea name="firebaseConfig" rows="9" spellcheck="false" placeholder='const firebaseConfig = {&#10;  apiKey: "...",&#10;  authDomain: "...",&#10;  projectId: "...",&#10;  appId: "..."&#10;};'></textarea>
               </label>
-              <p class="field-help">Travel OS 只會讀取公開的 Firebase Web config。Service Account、private key、Admin SDK 憑證會被拒絕。</p>
+              <p class="field-help">Travel OS 只會讀取公開的 Firebase 網頁設定。服務帳戶（Service Account）、私密金鑰（private key）、Admin SDK 憑證都會被拒絕。firebaseConfig 裡沒有 databaseURL 也沒關係。</p>
+              <label>Realtime Database URL
+                <input name="firebase_databaseURL" type="url" placeholder="https://你的資料庫.firebaseio.com" autocomplete="off" />
+              </label>
+              <p class="field-help">取得位置：Firebase 控制台 → Realtime Database →「資料」頁籤 → 複製頁面上方顯示的 HTTPS 網址。不要複製下方資料樹中的 <code>/: null</code>。</p>
               <div id="firebase-config-preview" class="setup-check-result" aria-live="polite"><span>貼上後按「下一步」，Travel OS 會先確認 Project ID、Auth Domain 與 Realtime Database URL。</span></div>
-              <details><summary>只有找不到完整 config 時才用逐欄輸入</summary><div class="setup-fields"><label>API key<input name="firebase_apiKey" autocomplete="off" /></label><label>Auth domain<input name="firebase_authDomain" placeholder="project.firebaseapp.com" /></label><label>Database URL<input name="firebase_databaseURL" type="url" placeholder="https://project.firebasedatabase.app" /></label><label>Project ID<input name="firebase_projectId" /></label><label>App ID<input name="firebase_appId" /></label><label>Storage bucket（選填）<input name="firebase_storageBucket" /></label><label>Messaging sender ID（選填）<input name="firebase_messagingSenderId" /></label><label>Measurement ID（選填）<input name="firebase_measurementId" /></label></div></details>
+              <details><summary>只有找不到完整 firebaseConfig 時才用逐欄輸入</summary><div class="setup-fields"><label>API 金鑰<input name="firebase_apiKey" autocomplete="off" /></label><label>驗證網域<input name="firebase_authDomain" placeholder="project.firebaseapp.com" /></label><label>專案 ID<input name="firebase_projectId" /></label><label>應用程式 ID<input name="firebase_appId" /></label><label>儲存空間 bucket（選填）<input name="firebase_storageBucket" /></label><label>訊息傳送者 ID（選填）<input name="firebase_messagingSenderId" /></label><label>Measurement ID（選填）<input name="firebase_measurementId" /></label></div></details>
             </section>
 
             <section class="setup-panel" data-setup-step="2" hidden>
@@ -219,7 +224,7 @@
               <h3>輸入你剛才在 Firebase Authentication 建立的帳號</h3>
               <p>這不是 Google Cloud IAM。Authentication 只負責回答「現在登入 Travel OS 的人是誰」；Travel OS 的 owner／editor／viewer 是另一層旅程權限。</p>
               <div class="field-pair"><label>Firebase 使用者 Email<input name="email" type="email" autocomplete="username" placeholder="you@example.com" /></label><label>Firebase 使用者密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
-              <p class="field-help">帳號來源：Firebase Console → Authentication → Users → Add user。Travel OS 不會保存你的密碼。</p>
+              <p class="field-help">帳號來源：Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」。Travel OS 不會保存你的密碼。</p>
               <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開 Firebase config 與受限制 Browser Key（不保存密碼）</label>
             </section>
 
@@ -236,7 +241,7 @@
               <p class="eyebrow">READY</p>
               <h3>你的 Travel OS 雲端已連線</h3>
               <div id="setup-complete-summary" class="setup-check-result success"></div>
-              <p>接下來可以建立第一趟旅程。若之後要讓旅伴登入，先到 Firebase Console → Authentication → Users → Add user 建立他們的帳號；旅程內的 owner／editor／viewer 權限由 Travel OS 資料與 Rules 控制，不是 Google Cloud IAM。</p>
+              <p>接下來可以建立第一趟旅程。若之後要讓旅伴登入，先到 Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」建立他們的帳號；旅程內的 owner／editor／viewer 權限由 Travel OS 資料與 Rules 控制，不是 Google Cloud IAM。</p>
             </section>
           </fieldset>
         </div>

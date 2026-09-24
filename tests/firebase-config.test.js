@@ -19,8 +19,26 @@ describe('Firebase runtime config', () => {
   it('rejects a database URL by itself', () => {
     expect(() => parseFirebaseConfig('{"databaseURL":"https://sample.firebaseio.com"}')).toThrow(/缺少/);
   });
-  it('explains how to recover when firebaseConfig was copied before Realtime Database existed', () => {
-    expect(() => parseFirebaseConfig('{"apiKey":"a","authDomain":"sample.firebaseapp.com","projectId":"sample","appId":"1:web:a"}')).toThrow(/Realtime Database.*Project settings/s);
+  it('explains where to copy the Realtime Database URL when config does not include it', () => {
+    expect(() => parseFirebaseConfig('{"apiKey":"a","authDomain":"sample.firebaseapp.com","projectId":"sample","appId":"1:web:a"}')).toThrow(/Realtime Database URL.*資料/s);
+  });
+  it('merges a separately copied Realtime Database URL into firebaseConfig', () => {
+    expect(parseFirebaseConfigInput({
+      firebaseConfig:'const firebaseConfig = { apiKey:"a", authDomain:"sample.firebaseapp.com", projectId:"sample", appId:"1:web:a" };',
+      firebase_databaseURL:'https://sample-default-rtdb.firebaseio.com/',
+    })).toMatchObject({ projectId:'sample', databaseURL:'https://sample-default-rtdb.firebaseio.com' });
+  });
+  it('treats the same database URL with a trailing slash as equivalent', () => {
+    expect(parseFirebaseConfigInput({
+      firebaseConfig:raw,
+      firebase_databaseURL:'https://sample-default-rtdb.asia-southeast1.firebasedatabase.app/',
+    })).toMatchObject({ databaseURL:'https://sample-default-rtdb.asia-southeast1.firebasedatabase.app' });
+  });
+  it('rejects mismatched database URLs instead of silently overriding config', () => {
+    expect(() => parseFirebaseConfigInput({
+      firebaseConfig:raw,
+      firebase_databaseURL:'https://another-default-rtdb.firebaseio.com',
+    })).toThrow(/不一致/);
   });
   it('accepts the same config through individual wizard fields', () => {
     expect(parseFirebaseConfigInput({
