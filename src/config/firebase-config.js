@@ -5,6 +5,19 @@ const ALLOWED_FIELDS = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'sto
 const REQUIRED_FIELDS = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'];
 const FORBIDDEN_MARKERS = ['private_key', 'private_key_id', 'client_email', 'service_account', 'BEGIN PRIVATE KEY'];
 
+function normalizeRealtimeDatabaseUrl(value) {
+  let url;
+  try { url = new URL(String(value || '').trim()); }
+  catch { throw new ValidationError('databaseURL 必須是 Firebase Realtime Database 的 HTTPS 網址。'); }
+  const host = url.hostname.toLowerCase();
+  const isFirebaseHost = /(^|\.)(firebaseio\.com|firebasedatabase\.app)$/.test(host);
+  const hasOnlyRootPath = !url.search && !url.hash && (!url.pathname || url.pathname === '/');
+  if (url.protocol !== 'https:' || !isFirebaseHost || !hasOnlyRootPath || url.username || url.password || url.port) {
+    throw new ValidationError('databaseURL 必須是 Firebase Realtime Database 的 HTTPS 網址。');
+  }
+  return `${url.protocol}//${url.hostname}`;
+}
+
 function normalizeObjectSyntax(text) {
   const objectStart = text.indexOf('{');
   const objectEnd = text.lastIndexOf('}');
@@ -31,7 +44,7 @@ export function parseFirebaseConfig(raw) {
   const missing = REQUIRED_FIELDS.filter((field) => !config[field]);
   if (missing.includes('databaseURL')) throw new ValidationError('firebaseConfig 缺少 databaseURL。請先建立 Realtime Database，再回 Firebase Console → Project settings → General → Your apps → Travel OS → SDK setup and configuration → Config，重新複製最新的完整 firebaseConfig。');
   if (missing.length) throw new ValidationError(`Firebase config 缺少：${missing.join('、')}。`);
-  if (!/^https:\/\/[a-z0-9.-]+\.(firebaseio\.com|firebasedatabase\.app)$/i.test(config.databaseURL)) throw new ValidationError('databaseURL 必須是 Firebase Realtime Database 的 HTTPS 網址。');
+  config.databaseURL = normalizeRealtimeDatabaseUrl(config.databaseURL);
   if (!/^[a-z0-9-]+$/i.test(config.projectId)) throw new ValidationError('projectId 格式不正確。');
   return Object.freeze(config);
 }
