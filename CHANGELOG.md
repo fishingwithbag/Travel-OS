@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+### Added
+
+- 每日行程加入「下一個安排」摘要，直接顯示備註、主要／備用停車場及各自的 Google Maps 導航；完整時間軸也顯示這些資訊。
+- 行程可選填目的地 Google Maps 連結與停車資訊。沒有連結時以地址或名稱搜尋；地圖外部導航不需 API Key。
+
 ### Changed
 
 - Firebase 設定精靈不再假設 `firebaseConfig` 一定包含 `databaseURL`。使用者可從 Realtime Database「資料」頁籤另外複製資料庫網址，Travel OS 會自動合併並驗證；Firebase 操作路徑同步改為繁體中文介面名稱。

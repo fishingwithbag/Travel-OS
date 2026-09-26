@@ -9,6 +9,15 @@ export function mapSearchUrl(query) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`;
 }
 
+export function itemMapUrl(item) {
+  return item.mapsUrl || mapSearchUrl(item.location || item.title);
+}
+
+export function parkingMapUrl(spot) {
+  if (!spot?.name) return '';
+  return spot.mapsUrl || mapSearchUrl(spot.name);
+}
+
 export function validateMapsBrowserKey(value) {
   const key = String(value || '').trim();
   if (!/^AIza[0-9A-Za-z_-]{20,}$/.test(key)) throw new ValidationError('Google Maps Browser Key 格式不正確。');

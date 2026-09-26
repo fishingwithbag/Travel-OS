@@ -46,6 +46,39 @@ function cleanOptional(value, max, field) {
   return text;
 }
 
+function cleanMapsUrl(value, field) {
+  const text = cleanOptional(value, 600, field);
+  if (!text) return '';
+  let url;
+  try { url = new URL(text); }
+  catch { throw new ValidationError(`${field}請貼上有效的 Google Maps HTTPS 連結。`, field); }
+  const host = url.hostname.toLowerCase();
+  const isMapsUrl = (['google.com', 'www.google.com'].includes(host) && url.pathname.startsWith('/maps'))
+    || host === 'maps.google.com'
+    || host === 'maps.app.goo.gl'
+    || (host === 'goo.gl' && url.pathname.startsWith('/maps/'));
+  if (url.protocol !== 'https:' || !isMapsUrl) {
+    throw new ValidationError(`${field}只接受 Google Maps HTTPS 連結。`, field);
+  }
+  return url.href;
+}
+
+function cleanParking(input) {
+  const primary = {
+    name:cleanOptional(input.parkingPrimaryName ?? input.parking?.primary?.name, 120, '主要停車場'),
+    mapsUrl:cleanMapsUrl(input.parkingPrimaryMapsUrl ?? input.parking?.primary?.mapsUrl, '主要停車場地圖'),
+  };
+  const backup = {
+    name:cleanOptional(input.parkingBackupName ?? input.parking?.backup?.name, 120, '備用停車場'),
+    mapsUrl:cleanMapsUrl(input.parkingBackupMapsUrl ?? input.parking?.backup?.mapsUrl, '備用停車場地圖'),
+  };
+  const notes = cleanOptional(input.parkingNotes ?? input.parking?.notes, 300, '停車備註');
+  if (primary.mapsUrl && !primary.name) throw new ValidationError('請先填寫主要停車場名稱。', 'parkingPrimaryName');
+  if (backup.mapsUrl && !backup.name) throw new ValidationError('請先填寫備用停車場名稱。', 'parkingBackupName');
+  if (!primary.name && !backup.name && !notes) return null;
+  return { primary, backup, notes };
+}
+
 function validTimeZone(value, field) {
   const timeZone = clean(value, 64, field);
   try { new Intl.DateTimeFormat('zh-TW', { timeZone }).format(); }
@@ -88,7 +121,8 @@ export function createItem(input, trip, id = crypto.randomUUID(), options = {}) 
   const item = {
     id, date: input.date, type: input.type, title: clean(input.title, 100, '名稱'),
     startTime, location: cleanOptional(input.location, 200, '地址／位置'),
-    notes: cleanOptional(input.notes, 1000, '備註'), groupId,
+    mapsUrl: cleanMapsUrl(input.mapsUrl, '目的地地圖'),
+    notes: cleanOptional(input.notes, 1000, '備註'), parking:cleanParking(input), groupId,
     amountMinor: amount == null ? null : Math.round(amount * 100), currency,
   };
   if (input.type === 'flight') {
@@ -171,7 +205,7 @@ export function createBackup(trips, mode = 'private') {
   const exportTrips = mode === 'share' ? privateCopy.map((trip) => ({
     ...trip,
     groups:[],
-    items:trip.items.map(({ notes, groupId, amountMinor, currency, ...item }) => ({ ...item, notes:'', groupId:'', amountMinor:null, currency:trip.currency })),
+    items:trip.items.map(({ notes, parking, mapsUrl, groupId, amountMinor, currency, ...item }) => ({ ...item, notes:'', parking:null, mapsUrl:'', groupId:'', amountMinor:null, currency:trip.currency })),
   })) : privateCopy;
   return { schemaVersion:SCHEMA_VERSION, exportedAt:new Date().toISOString(), mode:mode === 'share' ? 'share' : 'private', trips:exportTrips };
 }

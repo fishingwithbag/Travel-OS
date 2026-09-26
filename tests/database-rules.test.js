@@ -159,6 +159,21 @@ describe('Realtime Database tenant isolation', () => {
     }));
   });
 
+  it('allows safe destination and parking maps but rejects unsafe links and extra parking fields', async () => {
+    const ownerData = ref(environment.authenticatedContext('owner').database(), 'trips/trip-a/data');
+    const item = {
+      id:'item-a', date:'2027-01-01', type:'place', title:'Sample museum', currency:'USD',
+      mapsUrl:'https://maps.app.goo.gl/sample',
+      parking:{
+        primary:{ name:'Main garage', mapsUrl:'https://www.google.com/maps/search/?api=1&query=garage' },
+        backup:{ name:'Backup garage', mapsUrl:'' }, notes:'Side entrance',
+      },
+    };
+    await assertSucceeds(update(ownerData, { items:{ 'item-a':item }, revision:2 }));
+    await assertFails(update(ownerData, { items:{ 'item-a':{ ...item, mapsUrl:'https://example.com/phishing' } }, revision:3 }));
+    await assertFails(update(ownerData, { items:{ 'item-a':{ ...item, parking:{ ...item.parking, unexpected:'value' } } }, revision:3 }));
+  });
+
   it('requires revisions to advance by exactly one and rejects stale or skipped writes', async () => {
     const ownerData = ref(environment.authenticatedContext('owner').database(), 'trips/trip-a/data');
     await assertFails(update(ownerData, { title:'Stale', revision:1 }));
