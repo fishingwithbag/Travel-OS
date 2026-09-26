@@ -1,8 +1,8 @@
 # Firebase 設定指南
 
-這份文件假設你第一次使用 Firebase。請照順序操作，不要跳步。Travel OS 的 Firebase 只負責 Authentication、Realtime Database 與多人同步；Google Maps 請使用另一個 Google Cloud project。
+這份文件假設你第一次使用 Firebase。請照順序操作，不要跳步。Travel OS 的 Firebase 只負責 Authentication、Realtime Database 與多人同步；目前的 Google Maps 外部導航不需要 Google Cloud project 或 API Key。
 
-> 重要：這個 Firebase project 請維持 **Spark 免費方案**。不要在同一 project 連結 Cloud Billing，也不要直接拿它去開 Google Maps API。Firebase 官方說，同一 project 連結 Cloud Billing 或使用 Google Maps API 時，會從 Spark 升級成 Blaze。
+> 重要：這個 Firebase project 請維持 **Spark 免費方案**。目前不需要連結 Cloud Billing 或啟用 Google Maps API；連結 Cloud Billing 會升級成 Blaze。
 
 開始前，請先完成[GitHub Pages 自行部署](SELF_HOSTING.zh-TW.md)，並確認你已經能開啟自己的 Travel OS 網址。
 
@@ -189,6 +189,6 @@ const firebaseConfig = {
 - **Email 或密碼不正確**：確認帳號存在於目前 Firebase 專案的 Authentication →「使用者」。
 - **電子郵件地址/密碼尚未啟用**：Authentication →「登入方式」→「電子郵件地址/密碼」→ 啟用 → 儲存。
 - **PERMISSION_DENIED / Rules 拒絕存取**：確認 Realtime Database →「規則」已發布 Travel OS Rules，而不是鎖定模式原始規則或測試模式。
-- **看到 Blaze / Billing**：這個 Firebase project 應維持 Spark。Google Maps Billing 請放在另一個 Google Cloud project。
+- **看到 Blaze / Billing**：目前的設定流程不需要 Billing；請確認 Firebase project 仍維持 Spark。
 
-完成這一頁後，再依 [Google Cloud / Maps Browser Key 設定指南](GOOGLE_CLOUD_SETUP.zh-TW.md)設定 Google Maps。
+完成這一頁後，可閱讀 [Google Maps 導航說明](GOOGLE_CLOUD_SETUP.zh-TW.md)；目前不需另外設定 Google Cloud。

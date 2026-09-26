@@ -197,6 +197,8 @@ describe('Realtime Database tenant isolation', () => {
 
   it('isolates diagnostic writes by uid', async () => {
     await assertSucceeds(set(ref(environment.authenticatedContext('owner').database(), 'diagnostics/owner/check'), { createdAt:Date.now() }));
+    await assertSucceeds(get(ref(environment.authenticatedContext('owner').database(), 'diagnostics/owner/check')));
     await assertFails(set(ref(environment.authenticatedContext('editor').database(), 'diagnostics/owner/check'), { createdAt:Date.now() }));
+    await assertFails(get(ref(environment.authenticatedContext('editor').database(), 'diagnostics/owner/check')));
   });
 });

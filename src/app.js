@@ -7,11 +7,11 @@ import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployme
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { prepareStoreSwitch } from './storage/store-switch.js';
 import { localStorageKey } from './storage/browser-scope.js';
-import { itemMapUrl, parkingMapUrl, recommendedWebsiteRestriction, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
+import { itemMapUrl, parkingMapUrl } from './providers/maps.js';
 import { nextStop } from './domain/next-stop.js';
 
 let store = new IndexedDbTripStore();
-const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, googleMapsKey:'' };
+const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
 let pendingBackup = null;
 let setupStep = 0;
 let highestSetupStep = 0;
@@ -69,8 +69,7 @@ function renderVerificationSummary() {
   try {
     const input = formData(form);
     const config = parseFirebaseConfigInput(input);
-    const key = validateMapsBrowserKey(input.googleMapsKey);
-    $('#verification-summary').innerHTML = `<strong>準備驗證以下設定</strong><span>Firebase：${escapeHtml(config.projectId)}</span><span>Database：${escapeHtml(config.databaseURL)}</span><span>Maps Key：${escapeHtml(`${key.slice(0,6)}••••${key.slice(-4)}`)}</span><span>登入帳號：${escapeHtml(input.email || '')}</span>`;
+    $('#verification-summary').innerHTML = `<strong>準備驗證以下設定</strong><span>Firebase：${escapeHtml(config.projectId)}</span><span>Database：${escapeHtml(config.databaseURL)}</span><span>登入帳號：${escapeHtml(input.email || '')}</span><span>Google Maps 外部導航不需要 API Key</span>`;
   } catch (error) {
     $('#verification-summary').textContent = error instanceof ValidationError ? error.message : '設定尚未完成。';
   }
@@ -102,10 +101,6 @@ function validateSetupStep(step) {
   if (step === 1) {
     const config = parseFirebaseConfigInput(input);
     renderFirebasePreview(config);
-  }
-  if (step === 2) {
-    validateMapsBrowserKey(input.googleMapsKey);
-    if (!form.elements.mapsRestrictionsReady.checked) throw new ValidationError('請先完成 Website restrictions 與 API restrictions，並勾選確認。');
   }
   if (step === 3) {
     if (!String(input.email || '').trim()) throw new ValidationError('請輸入你在 Firebase Authentication → Users 建立的 Email。');
@@ -203,7 +198,7 @@ $('#group-form').addEventListener('submit', async (event) => {
 function updateConnectionSummary() {
   const summary = $('#connection-summary');
   if (state.mode === 'cloud') {
-    summary.innerHTML = `<strong>雲端同步已啟用</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')} · Maps/Places 已驗證</span>`;
+    summary.innerHTML = `<strong>雲端同步已啟用</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')}</span>`;
     $('#save-status').textContent = '已連接自己的 Firebase';
   } else if (sharedPublicDemo) {
     summary.innerHTML = '<strong>公開體驗站</strong><span>僅限本機模式，不接受雲端設定或帳密</span>';
@@ -233,26 +228,22 @@ $('#connection-form').addEventListener('submit', async (event) => {
     catch (error) { setError(form, error); }
     return;
   }
-  const progress = $('#connection-progress'); progress.innerHTML = '<span>1／4　正在檢查 Firebase 與 Google 設定…</span>';
+  const progress = $('#connection-progress'); progress.innerHTML = '<span>1／3　正在檢查 Firebase 設定…</span>';
   try {
     if (sharedPublicDemo) throw new ValidationError('公開體驗站僅提供本機模式；請先建立由自己控制的網站副本。');
     const input = formData(form);
     if (!input.email || !input.password) throw new ValidationError('請輸入 Firebase Email 與密碼。');
     const config = parseFirebaseConfigInput(input);
-    const googleMapsKey = validateMapsBrowserKey(input.googleMapsKey);
-    progress.innerHTML += '<span>2／4　正在驗證 Maps JavaScript API 與 Places…</span>';
-    await verifyMapsBrowserKey(googleMapsKey);
-    progress.innerHTML += '<span>3／4　正在登入指定的 Firebase 專案…</span>';
+    progress.innerHTML += '<span>2／3　正在登入指定的 Firebase 專案，並測試本人範圍讀寫…</span>';
     const cloudStore = new FirebaseTripStore();
     const connection = await cloudStore.connect(config, { email:input.email, password:input.password });
-    progress.innerHTML += '<span>4／4　Firebase 診斷讀寫已完成。</span>';
-    state.googleMapsKey = googleMapsKey;
-    localStorage.setItem(STORAGE_KEYS.onboardingMode, 'cloud');
-    if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config, googleMapsKey }));
-    else localStorage.removeItem(STORAGE_KEYS.connection);
+    progress.innerHTML += '<span>3／3　Firebase 診斷讀寫已完成，正在載入旅程…</span>';
     const warnings = await activateStore(cloudStore, 'cloud', connection);
+    localStorage.setItem(STORAGE_KEYS.onboardingMode, 'cloud');
+    if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config }));
+    else localStorage.removeItem(STORAGE_KEYS.connection);
     form.elements.password.value = '';
-    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps / Places：驗證成功</span>`;
+    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：外部導航可直接使用，無需 API Key</span>`;
     setSetupStep(5);
     showToast(warnings.length ? `已連接 ${connection.projectId}；另略過 ${warnings.length} 筆失效或損壞的雲端資料。` : `已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
   } catch (error) {
@@ -337,7 +328,6 @@ for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListene
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem(STORAGE_KEYS.theme) || 'light';
   $('#current-site-url').textContent = location.href.split('#')[0].split('?')[0];
-  $('#maps-referrer-recommendation').textContent = recommendedWebsiteRestriction(location.origin) || '請填入你實際部署網站的 HTTPS origin';
   let initialSetupStep = 0;
   if (sharedPublicDemo) {
     localStorage.removeItem(STORAGE_KEYS.connection);
@@ -346,7 +336,7 @@ async function start() {
     $('#connection-form').classList.add('setup-readonly');
     highestSetupStep = 5;
     for (const field of $('#external-service-fields').querySelectorAll('input, textarea')) field.disabled = true;
-    $('#connection-summary').innerHTML = '<strong>公開體驗站 · 教學模式</strong><span>可完整閱讀設定指南；Firebase config、API Key 與帳密輸入已停用</span>';
+    $('#connection-summary').innerHTML = '<strong>公開體驗站 · 教學模式</strong><span>可完整閱讀設定指南；Firebase config 與帳密輸入已停用</span>';
     $('#cloud-setup-button').hidden = true;
     $('#local-start-button').textContent = '建立第一趟旅程';
   }
@@ -355,12 +345,10 @@ async function start() {
     try {
       const connection = parseRememberedConnection(remembered);
       $('#connection-form').elements.firebaseConfig.value = JSON.stringify(connection.firebase, null, 2);
-      $('#connection-form').elements.googleMapsKey.value = connection.googleMapsKey || '';
-      state.googleMapsKey = connection.googleMapsKey || '';
       $('#connection-form').elements.remember.checked = true;
       localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify(connection));
-      highestSetupStep = connection.googleMapsKey ? 3 : 1;
-      initialSetupStep = connection.googleMapsKey ? 3 : 1;
+      highestSetupStep = 3;
+      initialSetupStep = 3;
       renderFirebasePreview(connection.firebase);
     } catch { localStorage.removeItem(STORAGE_KEYS.connection); }
   }
