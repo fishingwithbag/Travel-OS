@@ -109,8 +109,28 @@
               "location": {
                 ".validate": "newData.isString() && newData.val().length <= 200"
               },
+              "mapsUrl": {
+                ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))"
+              },
               "notes": {
                 ".validate": "newData.isString() && newData.val().length <= 1000"
+              },
+              "parking": {
+                ".validate": "newData.hasChildren(['primary','backup','notes'])",
+                "primary": {
+                  ".validate": "newData.hasChildren(['name','mapsUrl'])",
+                  "name": { ".validate": "newData.isString() && newData.val().length <= 120" },
+                  "mapsUrl": { ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))" },
+                  "$other": { ".validate": false }
+                },
+                "backup": {
+                  ".validate": "newData.hasChildren(['name','mapsUrl'])",
+                  "name": { ".validate": "newData.isString() && newData.val().length <= 120" },
+                  "mapsUrl": { ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))" },
+                  "$other": { ".validate": false }
+                },
+                "notes": { ".validate": "newData.isString() && newData.val().length <= 300" },
+                "$other": { ".validate": false }
               },
               "groupId": {
                 ".validate": "newData.isString() && newData.val().length <= 100 && (newData.val() === '' || newData.parent().parent().parent().child('groups').child(newData.val()).exists())"

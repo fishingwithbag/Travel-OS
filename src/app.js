@@ -7,7 +7,8 @@ import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployme
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { prepareStoreSwitch } from './storage/store-switch.js';
 import { localStorageKey } from './storage/browser-scope.js';
-import { mapSearchUrl, recommendedWebsiteRestriction, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
+import { itemMapUrl, parkingMapUrl, recommendedWebsiteRestriction, validateMapsBrowserKey, verifyMapsBrowserKey } from './providers/maps.js';
+import { nextStop } from './domain/next-stop.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, googleMapsKey:'' };
@@ -38,6 +39,25 @@ function openDialog(id) {
   dialog.querySelector('input,select,textarea,button')?.focus();
 }
 function formData(form) { return Object.fromEntries(new FormData(form).entries()); }
+
+function mapLink(item, label = '在 Google Maps 開啟') {
+  if (!item.location && !item.mapsUrl && !['place', 'meal', 'stay'].includes(item.type)) return '';
+  return `<a class="map-link" href="${escapeHtml(itemMapUrl(item))}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${label}：${item.title}`)}">${escapeHtml(label)} <span aria-hidden="true">↗</span></a>`;
+}
+
+function parkingHtml(item) {
+  const parking = item.parking;
+  if (!parking) return '';
+  const rows = [
+    ['主要停車場', parking.primary],
+    ['備用停車場', parking.backup],
+  ].filter(([, spot]) => spot?.name);
+  return `<div class="item-parking"><strong>停車</strong><div>${rows.map(([label, spot]) => `<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(label)}：${escapeHtml(spot.name)}"><small>${label}</small><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>`).join('')}${parking.notes ? `<p class="parking-notes">${escapeHtml(parking.notes)}</p>` : ''}</div></div>`;
+}
+
+function itemNotesHtml(item) {
+  return item.notes ? `<p class="item-notes"><strong>備註</strong><span>${escapeHtml(item.notes)}</span></p>` : '';
+}
 
 function renderFirebasePreview(config) {
   const preview = $('#firebase-config-preview');
@@ -121,8 +141,14 @@ function render() {
   tripSelect.replaceChildren(...state.trips.map((entry) => new Option(entry.title, entry.id, false, entry.id === trip.id)));
   $('#day-tabs').innerHTML = dates.map((date, index) => `<button class="day-tab" type="button" data-date="${date}" role="tab" aria-selected="${date === state.selectedDate}"><small>DAY ${index + 1}</small><strong>${formatDay(date)}</strong></button>`).join('');
   const items = trip.items.filter((item) => item.date === state.selectedDate).sort((a,b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
+  const upcoming = nextStop(items, state.selectedDate, trip.timeZone);
+  $('#next-stop').hidden = !upcoming;
+  if (upcoming) {
+    $('#next-stop-heading').textContent = upcoming.title;
+    $('#next-stop-details').innerHTML = `<p class="next-stop-meta">${escapeHtml(upcoming.startTime || '彈性時間')} · ${escapeHtml(typeLabels[upcoming.type])}</p>${itemNotesHtml(upcoming)}${parkingHtml(upcoming)}${!upcoming.parking && ['place', 'meal', 'stay'].includes(upcoming.type) ? '<p class="parking-unset">停車資訊未設定</p>' : ''}<div class="next-stop-actions">${mapLink(upcoming, 'Google Maps')}</div>`;
+  }
   $('#day-heading').textContent = formatDay(state.selectedDate);
-  $('#timeline').innerHTML = items.map((item) => `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${item.location ? `<a class="map-link" href="${mapSearchUrl(item.location)}" target="_blank" rel="noopener noreferrer">在 Google Maps 開啟</a>` : ''}</div><span class="type-badge">${typeLabels[item.type]}</span></li>`).join('');
+  $('#timeline').innerHTML = items.map((item) => `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${itemNotesHtml(item)}${parkingHtml(item)}${mapLink(item)}</div><span class="type-badge">${typeLabels[item.type]}</span></li>`).join('');
   $('#timeline-empty').hidden = items.length > 0;
   $('#summary-days').textContent = dates.length;
   $('#summary-items').textContent = trip.items.length;

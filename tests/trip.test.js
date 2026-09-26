@@ -41,6 +41,27 @@ describe('trip domain', () => {
     expect(shared.trips[0].items[0]).toMatchObject({ notes:'', groupId:'', amountMinor:null });
   });
 
+  it('retains optional parking and exact Maps links in private data but removes them from share copies', () => {
+    const trip = createTrip({ title:'Sample', destination:'Anywhere', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-parking');
+    const item = createItem({
+      date:'2027-01-01', type:'meal', title:'Sample café', notes:'Meet at entrance',
+      mapsUrl:'https://maps.app.goo.gl/sample',
+      parkingPrimaryName:'Sample garage', parkingPrimaryMapsUrl:'https://www.google.com/maps/search/?api=1&query=sample',
+      parkingBackupName:'Backup lot', parkingNotes:'Entrance on side street',
+    }, trip, 'item-parking');
+    trip.items = [item];
+    expect(validateTrip(trip).items[0].parking).toMatchObject({ primary:{ name:'Sample garage' }, backup:{ name:'Backup lot' }, notes:'Entrance on side street' });
+    expect(createBackup([trip], 'private').trips[0].items[0].parking.primary.name).toBe('Sample garage');
+    expect(createBackup([trip], 'share').trips[0].items[0]).toMatchObject({ notes:'', parking:null, mapsUrl:'' });
+  });
+
+  it('rejects unsafe map links and parking links without names', () => {
+    const trip = createTrip({ title:'Sample', destination:'Anywhere', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' });
+    expect(() => createItem({ date:'2027-01-01', type:'place', title:'Sample', mapsUrl:'javascript:alert(1)' }, trip)).toThrow(/Google Maps HTTPS/);
+    expect(() => createItem({ date:'2027-01-01', type:'place', title:'Sample', mapsUrl:'https://www.google.com/url?q=https://example.com' }, trip)).toThrow(/Google Maps HTTPS/);
+    expect(() => createItem({ date:'2027-01-01', type:'place', title:'Sample', parkingPrimaryMapsUrl:'https://maps.app.goo.gl/sample' }, trip)).toThrow(/主要停車場名稱/);
+  });
+
   it('normalizes imported values instead of trusting raw objects', () => {
     const trip = createTrip({ title:'Import', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-import');
     const backup = validateBackup({ schemaVersion:1, trips:[trip] });
