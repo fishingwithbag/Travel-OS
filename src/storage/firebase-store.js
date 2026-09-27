@@ -49,13 +49,14 @@ export class FirebaseTripStore {
     this.#auth = authModule.getAuth(this.#app);
     this.#database = databaseModule.getDatabase(this.#app);
     try {
+      await authModule.setPersistence(this.#auth, authModule.inMemoryPersistence);
       const result = await authModule.signInWithEmailAndPassword(this.#auth, credentials.email, credentials.password);
       this.#uid = result.user.uid;
       await this.#diagnose();
       return { uid:this.#uid, email:result.user.email, projectId:config.projectId };
     } catch (error) {
       await this.disconnect();
-      throw new ValidationError(this.#message(error?.code));
+      throw error instanceof ValidationError ? error : new ValidationError(this.#message(error?.code));
     }
   }
 
@@ -69,11 +70,14 @@ export class FirebaseTripStore {
   }
 
   async #diagnose() {
-    const { ref, set, remove } = this.#modules;
+    const { ref, set, get, remove } = this.#modules;
     const path = `diagnostics/${this.#uid}/${crypto.randomUUID()}`;
     const target = ref(this.#database, path);
-    await set(target, { createdAt:Date.now() });
-    await remove(target);
+    const createdAt = Date.now();
+    await set(target, { createdAt });
+    try {
+      if ((await get(target)).val()?.createdAt !== createdAt) throw new ValidationError('Firebase 診斷讀取失敗；請檢查 Realtime Database Rules。');
+    } finally { await remove(target); }
   }
 
   async listTrips() {

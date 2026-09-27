@@ -15,6 +15,8 @@ async function connectedStore() {
   const appModule = { initializeApp:vi.fn(() => ({ name:'app' })), deleteApp:vi.fn(async () => {}) };
   const authModule = {
     getAuth:vi.fn(() => ({ name:'auth' })),
+    inMemoryPersistence:{ type:'NONE' },
+    setPersistence:vi.fn(async () => {}),
     signInWithEmailAndPassword:vi.fn(async () => ({ user:{ uid:'owner', email:'owner@example.com' } })),
     signOut:vi.fn(async () => {}),
   };
@@ -23,18 +25,30 @@ async function connectedStore() {
     ref:vi.fn((database, path = '') => ({ database, path })),
     set:vi.fn(async () => {}),
     remove:vi.fn(async () => {}),
-    get:vi.fn(),
+    get:vi.fn(async () => snapshot({ createdAt:databaseModule.set.mock.calls.at(-1)?.[1]?.createdAt })),
     update:vi.fn(async () => {}),
     runTransaction:vi.fn(),
   };
   const store = new FirebaseTripStore(async () => [appModule, authModule, databaseModule]);
   await store.connect({ projectId:'test-project' }, { email:'owner@example.com', password:'secret' });
+  expect(authModule.setPersistence).toHaveBeenCalledWith({ name:'auth' }, authModule.inMemoryPersistence);
+  expect(databaseModule.get).toHaveBeenCalledOnce();
   databaseModule.set.mockClear();
   databaseModule.remove.mockClear();
+  databaseModule.get.mockClear();
   return { store, appModule, authModule, databaseModule };
 }
 
 describe('Firebase trip normalization', () => {
+  it('rejects an unreadable diagnostic and removes its temporary record', async () => {
+    const appModule = { initializeApp:vi.fn(() => ({})), deleteApp:vi.fn(async () => {}) };
+    const authModule = { getAuth:vi.fn(() => ({})), inMemoryPersistence:{ type:'NONE' }, setPersistence:vi.fn(async () => {}), signInWithEmailAndPassword:vi.fn(async () => ({ user:{ uid:'owner' } })), signOut:vi.fn(async () => {}) };
+    const databaseModule = { getDatabase:vi.fn(() => ({})), ref:vi.fn((_, path) => path), set:vi.fn(async () => {}), get:vi.fn(async () => snapshot(null)), remove:vi.fn(async () => {}) };
+    const store = new FirebaseTripStore(async () => [appModule, authModule, databaseModule]);
+    await expect(store.connect({ projectId:'test-project' }, { email:'owner@example.com', password:'secret' })).rejects.toThrow(/診斷讀取失敗/);
+    expect(databaseModule.remove).toHaveBeenCalledOnce();
+  });
+
   it('restores arrays omitted by Realtime Database when they are empty', () => {
     expect(normalizeFirebaseTrip({ id:'trip-a' })).toMatchObject({ groups:[], items:[] });
   });
