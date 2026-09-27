@@ -4,7 +4,7 @@
 
 > 重要：這個 Firebase project 請維持 **Spark 免費方案**。目前不需要連結 Cloud Billing 或啟用 Google Maps API；連結 Cloud Billing 會升級成 Blaze。
 
-開始前，請先完成[GitHub Pages 自行部署](SELF_HOSTING.zh-TW.md)，並確認你已經能開啟自己的 Travel OS 網址。
+開始前，請先完成[GitHub Pages 自行部署](SELF_HOSTING.zh-TW.md)，並確認你已經能開啟自己的 Travel OS 網址。若還沒有 Google 帳戶，先依[Google 官方說明](https://support.google.com/accounts/answer/27441?hl=zh-hant)建立；Firebase 控制台使用 Google 帳戶登入。建立 Firebase project 時，Google Cloud project 也會一併建立，無需為目前的 Maps 外部導航再建立一個專案。[Firebase 官方專案說明](https://firebase.google.com/docs/projects/learn-more)
 
 ## 1. 建立 Firebase 專案
 

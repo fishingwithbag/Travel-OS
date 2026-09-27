@@ -4,7 +4,7 @@
 
 ## GitHub Pages
 
-1. 登入 GitHub，開啟 [Travel OS repository](https://github.com/fishingwithbag/Travel-OS)。
+1. 如果還沒有 GitHub 帳號，先依[GitHub 官方註冊說明](https://docs.github.com/en/account-and-profile/how-tos/account-management/creating-an-account-on-github)建立帳號並驗證電子郵件；未驗證信箱無法建立 repository。然後登入 GitHub，開啟 [Travel OS repository](https://github.com/fishingwithbag/Travel-OS)。
 2. 在 repository 頁面按 **Use this template** → **Create a new repository**。
 3. **Owner** 選你的 GitHub 帳號。
 4. **Repository name** 輸入 `你想為此旅遊網頁命名的名稱`。若使用 GitHub Free，請選 **Public**。
@@ -12,7 +12,7 @@
 6. 進入剛建立的 repository，點上方 **Settings**。
 7. 左側選單找到 **Pages**。
 8. 在 **Build and deployment** 的 **Source** 選 **GitHub Actions**。
-9. 回 repository 上方 **Actions**，等待 Pages workflow 顯示綠色成功。
+9. 回 repository 上方 **Actions**，選 **Deploy GitHub Pages**。若沒有執行紀錄，按 **Run workflow**（選 `main`）；若先前因 Pages 尚未啟用而失敗，在這裡重新執行。等待 workflow 顯示綠色成功。
 10. 再回 **Settings → Pages**，點 **Visit site**。
 11. 你的網址通常會是 `https://你的帳號.github.io/旅遊網頁命名的名稱/`。請確認設定精靈顯示的是你自己的網址。
 

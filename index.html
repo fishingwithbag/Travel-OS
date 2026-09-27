@@ -173,14 +173,14 @@
               <p>正式雲端模式必須在你自己控制的網站中設定。GitHub Pages 可以免費託管這個網站；Travel OS repository 已經準備好 GitHub Actions，不需要你寫部署程式。</p>
               <div class="setup-card"><strong>你現在開啟的網站</strong><code id="current-site-url"></code><strong id="official-demo-url-warning" class="demo-url-warning" hidden>⚠ 您目前開啟的是官方 Demo 教學網址，請勿在此設定 Firebase、Google API Key 或登入帳密。請先建立自己的 Travel OS 網站，再進行正式設定。</strong><span>如果這是你自己的 GitHub Pages 或自訂網域，就可以繼續。</span></div>
               <ol class="setup-steps detailed">
-                <li><strong>登入 GitHub</strong>，開啟 Travel OS repository。</li>
+                <li><strong>還沒有 GitHub 帳號？</strong>先依 GitHub 官方說明註冊，完成電子郵件驗證，再登入 GitHub；已有帳號就直接登入。然後開啟 Travel OS repository。</li>
                 <li>點右上方附近的 <strong>Use this template</strong> → <strong>Create a new repository</strong>。</li>
                 <li><strong>Owner</strong> 選你的帳號；Repository name 建議填 <code>Travel-OS</code>；GitHub Free 請選 <strong>Public</strong>。</li>
                 <li>建立後進入你的 repository → <strong>Settings</strong> → 左側 <strong>Pages</strong>。</li>
                 <li>在 <strong>Build and deployment</strong> 的 <strong>Source</strong> 選 <strong>GitHub Actions</strong>。</li>
-                <li>到 <strong>Actions</strong> 頁面等待 Pages workflow 變成綠色成功，再回 <strong>Settings → Pages</strong> 點 <strong>Visit site</strong>。</li>
+                <li>到 <strong>Actions</strong> 頁面查看 <strong>Deploy GitHub Pages</strong>。若尚未執行，選它並按 <strong>Run workflow</strong>（branch 選 <code>main</code>）；若先前因尚未開啟 Pages 而失敗，也請在此重新執行。看到綠色成功後，再回 <strong>Settings → Pages</strong> 點 <strong>Visit site</strong>。</li>
               </ol>
-              <div class="setup-links"><a href="https://github.com/fishingwithbag/Travel-OS/generate" target="_blank" rel="noopener noreferrer">建立自己的 Travel OS repository</a><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site" target="_blank" rel="noopener noreferrer">GitHub 官方 Pages 說明</a></div>
+              <div class="setup-links"><a href="https://docs.github.com/en/account-and-profile/how-tos/account-management/creating-an-account-on-github" target="_blank" rel="noopener noreferrer">GitHub 官方註冊說明</a><a href="https://github.com/fishingwithbag/Travel-OS/generate" target="_blank" rel="noopener noreferrer">建立自己的 Travel OS repository</a><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site" target="_blank" rel="noopener noreferrer">GitHub 官方 Pages 說明</a></div>
               <label class="check-row"><input name="siteReady" type="checkbox" /> 我已經能在自己的網址正常開啟 Travel OS。</label>
             </section>
 
@@ -190,7 +190,7 @@
               <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。這個 Firebase 專案請維持 <strong>Spark 免費方案</strong>，不要替它連結 Cloud Billing（雲端帳單）；下一步的 Google Maps 外部導航不需要 API Key。</p>
               <div class="warning-card"><strong>看到「帳單 / Blaze」時先停下來</strong><span>此設定流程不需要啟用付費 Google Maps API。Firebase 專案若連結 Cloud Billing（雲端帳單），會升級成 Blaze；請確認仍使用 Spark。</span></div>
               <ol class="setup-steps detailed">
-                <li><strong>建立 Firebase 專案：</strong>開啟 Firebase 控制台 → <strong>建立專案</strong>。專案名稱可填 <code>My Travel OS</code>。Google Analytics 可略過，並維持 Spark 免費方案。</li>
+                <li><strong>建立 Firebase 專案：</strong>先用自己的 Google 帳戶登入 Firebase 控制台；沒有 Google 帳戶就先依官方說明建立。按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。Google Analytics 可略過，並維持 Spark 免費方案。這個 Firebase 專案本身也會是 Google Cloud 專案，不必再建一個給目前的 Maps 導航。</li>
                 <li><strong>註冊網頁應用程式：</strong>進入 <strong>專案總覽</strong> → 點 <strong>&lt;/&gt; 網頁</strong>（若已有應用程式，點「新增應用程式」→「網頁」）→「應用程式暱稱」填 <code>Travel OS</code> → <strong>不要勾選 Firebase Hosting</strong> → 按「註冊應用程式」。</li>
                 <li><strong>啟用電子郵件／密碼登入：</strong>左側進入 <strong>Authentication（驗證）</strong> →「開始使用」→「登入方式」→「電子郵件地址/密碼」→ 啟用 →「儲存」。不要啟用「電子郵件連結」。</li>
                 <li><strong>建立你的登入帳號：</strong>Authentication →「使用者」→「新增使用者」→ 輸入你自己的電子郵件與密碼。這組帳密稍後會填回 Travel OS。</li>
@@ -201,7 +201,7 @@
                 <li><strong>複製 firebaseConfig：</strong>從 <code>const firebaseConfig = {</code> 開始，一路複製到最後的 <code>};</code>。<strong>不用自己加入 databaseURL</strong>；Travel OS 會把你上一步另外複製的 Realtime Database URL 自動合併進設定。</li>
               </ol>
               <div class="setup-actions-inline"><a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">開啟 Firebase 控制台</a><button id="copy-rules-button" class="secondary" type="button">複製 Travel OS Rules</button></div>
-              <details><summary>查看 Firebase 官方文件</summary><div class="setup-links"><a href="https://firebase.google.com/docs/web/setup?hl=zh-TW" target="_blank" rel="noopener noreferrer">建立網頁應用程式／firebaseConfig</a><a href="https://firebase.google.com/docs/auth/web/password-auth?hl=zh-TW" target="_blank" rel="noopener noreferrer">電子郵件／密碼驗證</a><a href="https://firebase.google.com/docs/database/web/start?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database</a><a href="https://firebase.google.com/docs/database/security?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database 安全規則</a><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans?hl=zh-TW" target="_blank" rel="noopener noreferrer">Spark / Blaze 方案</a></div></details>
+              <details><summary>查看 Firebase 官方文件</summary><div class="setup-links"><a href="https://support.google.com/accounts/answer/27441?hl=zh-hant" target="_blank" rel="noopener noreferrer">建立 Google 帳戶</a><a href="https://firebase.google.com/docs/web/setup?hl=zh-TW" target="_blank" rel="noopener noreferrer">建立網頁應用程式／firebaseConfig</a><a href="https://firebase.google.com/docs/auth/web/password-auth?hl=zh-TW" target="_blank" rel="noopener noreferrer">電子郵件／密碼驗證</a><a href="https://firebase.google.com/docs/database/web/start?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database</a><a href="https://firebase.google.com/docs/database/security?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database 安全規則</a><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans?hl=zh-TW" target="_blank" rel="noopener noreferrer">Spark / Blaze 方案</a></div></details>
               <label>把剛才複製的完整 firebaseConfig 貼在這裡
                 <textarea name="firebaseConfig" rows="9" spellcheck="false" placeholder='const firebaseConfig = {&#10;  apiKey: "...",&#10;  authDomain: "...",&#10;  projectId: "...",&#10;  appId: "..."&#10;};'></textarea>
               </label>
