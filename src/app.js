@@ -53,11 +53,45 @@ function mapLink(item, label = '在 Google Maps 開啟') {
 function parkingHtml(item) {
   const parking = item.parking;
   if (!parking) return '';
-  const rows = [
-    ['主要停車場', parking.primary],
-    ['備用停車場', parking.backup],
-  ].filter(([, spot]) => spot?.name);
-  return `<div class="item-parking"><strong>停車</strong><div>${rows.map(([label, spot]) => `<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(label)}：${escapeHtml(spot.name)}"><small>${label}</small><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>`).join('')}${parking.notes ? `<p class="parking-notes">${escapeHtml(parking.notes)}</p>` : ''}</div></div>`;
+  const sets = parking.mode === 'split'
+    ? currentTrip().groups.filter(group=>!item.groupId || group.id === item.groupId).map(group=>({name:group.name,set:parking.byGroup?.[group.id]}))
+    : [{name:'共用停車',set:parking}];
+  return sets.map(({name,set})=> {
+    const rows = [['主要停車場',set?.primary],['備用停車場',set?.backup]].filter(([,spot])=>spot?.name);
+    return `<div class="item-parking"><strong>${escapeHtml(name)}</strong><div>${rows.map(([label,spot])=>`<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(name)}${label}：${escapeHtml(spot.name)}"><small>${label}</small><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>${spot.walkMinutes == null ? '' : `<p>步行 ${spot.walkMinutes} 分鐘</p>`}${spot.feeMinor == null ? '' : `<p>預估停車費 ${escapeHtml(spot.currency)} ${(spot.feeMinor/100).toFixed(2)}</p>`}${spot.note ? `<p class="parking-notes">${escapeHtml(spot.note)}</p>` : ''}`).join('')}${set?.notes ? `<p class="parking-notes">${escapeHtml(set.notes)}</p>` : ''}${rows.length ? '' : '<p class="parking-unset">停車場未設定</p>'}</div></div>`;
+  }).join('');
+}
+
+function buildParkingEditor(parking, trip) {
+  const field = (prefix,key,label,value,type='text',attrs='') => `<label>${escapeHtml(label)}<input name="${prefix}${key}" type="${type}" value="${escapeHtml(value ?? '')}" ${attrs} /></label>`;
+  const setFields = (prefix,name,set={}) => `<fieldset class="parking-set"><legend>${escapeHtml(name)}</legend>${['primary','backup'].map((kind,index)=> {
+    const spot=set[kind] || {}; const label=`${name} ${index ? '備用' : '主要'}停車場`; const p=prefix+kind;
+    return `<details ${index ? '' : 'open'}><summary>${index ? '備用停車場' : '主要停車場'}</summary>${field(p,'Name',label+'名稱',spot.name,'text','maxlength="120"')}${field(p,'Maps',label+' Google Maps 連結',spot.mapsUrl,'url','maxlength="600"')}
+      <div class="field-pair">${field(p,'Walk',label+'步行分鐘',spot.walkMinutes,'number','min="0" max="1440" step="1"')}${field(p,'Fee',label+'預估費用',spot.feeMinor == null ? '' : spot.feeMinor/100,'number','min="0" max="1000000000" step="0.01"')}</div>
+      ${field(p,'Currency',label+'幣別',spot.currency || trip.currency,'text','maxlength="3"')}${field(p,'Note',label+'備註',spot.note,'text','maxlength="300"')}</details>`;
+  }).join('')}${field(prefix,'Notes',name+'停車備註',set.notes,'text','maxlength="300"')}</fieldset>`;
+  const form=$('#item-form');
+  form.elements.parkingMode.value=parking?.mode || 'shared';
+  form.elements.parkingMode.querySelector('[value="split"]').disabled=!trip.groups.length;
+  $('#parking-editor').innerHTML=`<div data-parking-mode="shared">${setFields('ps','共用',parking || {})}</div><div data-parking-mode="split">${trip.groups.map((group,index)=>setFields('pg'+index,group.name,parking?.byGroup?.[group.id])).join('')}</div>`;
+  updateParkingMode();
+}
+
+function updateParkingMode() {
+  for (const section of $('#parking-editor').querySelectorAll('[data-parking-mode]')) {
+    section.hidden=section.dataset.parkingMode !== $('#item-form').elements.parkingMode.value;
+    for (const control of section.querySelectorAll('input')) control.disabled=section.hidden || itemSaving;
+  }
+}
+
+function readParkingEditor(trip) {
+  const form=$('#item-form'); const value=name=>form.elements.namedItem(name)?.value || '';
+  const readSet=prefix=>({
+    ...Object.fromEntries(['primary','backup'].map(kind=>{const p=prefix+kind;return [kind,{name:value(p+'Name'),mapsUrl:value(p+'Maps'),walkMinutes:value(p+'Walk'),feeMinor:value(p+'Fee') === '' ? '' : Math.round(Number(value(p+'Fee'))*100),currency:value(p+'Currency'),note:value(p+'Note')}];})),
+    notes:value(prefix+'Notes'),
+  });
+  const byGroup=Object.fromEntries(trip.groups.map((group,index)=>[group.id,readSet('pg'+index)]).filter(([,set])=>set.notes || [set.primary,set.backup].some(spot=>spot.name || spot.mapsUrl || spot.walkMinutes !== '' || spot.feeMinor !== '' || spot.note)));
+  return {...readSet('ps'),mode:value('parkingMode'),byGroup};
 }
 
 function itemNotesHtml(item) {
@@ -91,6 +125,7 @@ function openItemDialog(item = null) {
   }
   form.elements.date.min = trip.startDate; form.elements.date.max = trip.endDate;
   form.elements.endDate.min = trip.startDate; form.elements.endDate.max = trip.endDate;
+  buildParkingEditor(item?.parking,trip);
   $('#flight-fields').hidden = item?.type !== 'flight';
   $('#end-fields').hidden = item?.type === 'flight';
   $('#item-dialog-title').textContent = item ? '編輯安排' : '新增安排';
@@ -110,6 +145,7 @@ function editingTrip() {
 function setItemSaving(busy) {
   itemSaving = busy;
   for (const control of $('#item-form').querySelectorAll('input,select,textarea,button')) control.disabled = busy;
+  updateParkingMode();
 }
 
 function renderFirebasePreview(config) {
@@ -249,6 +285,7 @@ $('#trip-form').addEventListener('submit', async (event) => {
 });
 
 $('#item-form select[name="type"]').addEventListener('change', (event) => { $('#flight-fields').hidden = event.target.value !== 'flight'; $('#end-fields').hidden = event.target.value === 'flight'; });
+$('#item-form select[name="parkingMode"]').addEventListener('change', updateParkingMode);
 $('#item-dialog').addEventListener('cancel', event => { if (itemSaving) event.preventDefault(); });
 $('#item-dialog').addEventListener('close', () => {
   const id = itemEditor?.id; itemEditor = null;
@@ -259,7 +296,7 @@ $('#item-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; setError(form, '');
   if (itemSaving) return;
   try {
-    const trip = editingTrip(); const input = formData(form); const editing = Boolean(itemEditor.id);
+    const trip = editingTrip(); const input = {...formData(form),parking:readParkingEditor(trip)}; const editing = Boolean(itemEditor.id);
     const updated = editing ? editItem(trip,itemEditor.id,input) : { ...trip, items:[...trip.items,createItem(input,trip)] };
     setItemSaving(true); await saveTrip(updated); state.selectedDate = input.date; render();
     form.closest('dialog').close(); showToast(editing ? '安排已更新。' : '安排已加入行程。');

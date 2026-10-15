@@ -97,3 +97,12 @@
 已將測試版經審查的行程編輯、分組導航、時間提示、航班顯示與 Firebase 首次建立／transaction 修復移入正式開源專案的 release-readiness 分支；沒有複製原私人網站或測試 Firebase 設定。正式 main 與 Pages 尚未變更。
 
 本分支 npm ci 成功且依賴稽核為 0 vulnerabilities；79 項單元測試及 production build 通過。正式 PR 的 Rules CI 仍待執行，真實 Spark 雲端與完整新手驗收維持未完成。發布清單見 RELEASE_ACCEPTANCE.zh-TW.md。
+
+## 第三項修復：分組停車（2026-10-15）
+
+- 恢復共用／任意數量群組的主備停車、獨立地圖連結、步行分鐘、費用幣別與備註；下一站與時間線使用同一顯示邏輯。模式切換保留隱藏資料。
+- 83 項單元測試及 production build 通過；依賴稽核 0 vulnerabilities。新增測試涵蓋三組、舊格式、備份與 Firebase 往返、數字群組 ID、分享副本及無效輸入。
+- 實際本機瀏覽器建立兩組合成資料，保存不同幣別費用、主備停車與備註；重整仍存在，切換模式及再次編輯保留內容。地圖連結儲存與呈現已檢查，未將合成網址聲稱為真實導航驗證。
+- 390×844 手機視窗：clientWidth／scrollWidth 同為 375；無水平溢出。截圖僅有合成資料，存於忽略追蹤的 private 目錄。
+- 新增 Rules 欄位驗證及 editor／viewer 測試。已找到本機 Java 21，但 Emulator 啟動受到 Windows loopback 連線錯誤阻礙；正式 PR CI 尚待結果。真實 Spark 寫入、新版 Rules 發布與多人驗證尚未完成。
+- 本輪不更改計費、Google 設定或正式站。景點庫、收藏、租車、費用、成員、Places 及自動路程仍依發布清單追蹤。

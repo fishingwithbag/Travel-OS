@@ -31,6 +31,22 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('accepts group parking while rejecting unknown groups, invalid metadata and viewer writes', async () => {
+    const editor=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    const spot={name:'Garage',mapsUrl:'',walkMinutes:5,feeMinor:1500,currency:'USD',note:'North entrance'};
+    const parking={primary:spot,backup:{name:'',mapsUrl:''},notes:'',mode:'split',byGroup:{a:{primary:spot,backup:spot,notes:'A'}}};
+    const item={id:'item-a',date:'2027-01-01',type:'place',title:'Museum',currency:'USD',parking};
+    const groups={a:{id:'a',name:'A'},b:{id:'b',name:'B'}};
+    await assertSucceeds(update(editor,{groups,items:{'item-a':item},revision:2}));
+    for(const change of [{walkMinutes:-1},{walkMinutes:1.5},{feeMinor:-1},{feeMinor:1.5},{currency:'X'},{currency:null},{name:''},{name:'',mapsUrl:'https://maps.app.goo.gl/sample',walkMinutes:null,feeMinor:null,note:null}]) {
+      const changed={...parking,byGroup:{a:{...parking.byGroup.a,primary:{...spot,...change}}}};
+      await assertFails(update(editor,{items:{'item-a':{...item,parking:changed}},revision:3}));
+    }
+    await assertFails(update(editor,{items:{'item-a':{...item,parking:{...parking,byGroup:{outsider:parking.byGroup.a}}}},revision:3}));
+    await assertFails(update(editor,{groups:null,revision:3}));
+    await assertFails(update(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),{items:null,revision:3}));
+    await assertSucceeds(update(editor,{items:{'item-a':{...item,parking:{...parking,mode:'shared'}}},revision:3}));
+  });
   it('allows editor schedule updates and removal but rejects invalid intervals and viewer changes', async () => {
     const editorData=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
     const item={id:'item-a',date:'2027-01-01',type:'place',title:'Evening',currency:'USD',startTime:'23:00',endDate:'2027-01-02',endTime:'01:00',transitMode:'walking',transitMinutes:15};

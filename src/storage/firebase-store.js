@@ -3,7 +3,10 @@ import { validateTrip, ValidationError } from '../domain/trip.js';
 export function normalizeFirebaseTrip(value) {
   if (!value) return value;
   const toList = (entry) => Array.isArray(entry) ? entry.filter(Boolean) : Object.values(entry || {});
-  return { ...value, groups:toList(value.groups), items:toList(value.items) };
+  const items=toList(value.items).map(item=>Array.isArray(item.parking?.byGroup)
+    ? {...item,parking:{...item.parking,byGroup:Object.fromEntries(Object.entries(item.parking.byGroup).filter(([,set])=>set != null))}}
+    : item);
+  return { ...value, groups:toList(value.groups), items };
 }
 
 export function parseFirebaseTrip(value) {

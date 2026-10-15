@@ -131,11 +131,9 @@
         <label>備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
         <fieldset class="parking-fields">
           <legend>停車資訊（選填）</legend>
-          <label>主要停車場名稱<input name="parkingPrimaryName" maxlength="120" placeholder="例：車站旁停車場" /></label>
-          <label>主要停車場 Google Maps 連結<input name="parkingPrimaryMapsUrl" type="url" maxlength="600" placeholder="未貼連結時依名稱搜尋" /></label>
-          <label>備用停車場名稱<input name="parkingBackupName" maxlength="120" /></label>
-          <label>備用停車場 Google Maps 連結<input name="parkingBackupMapsUrl" type="url" maxlength="600" /></label>
-          <label>停車備註<textarea name="parkingNotes" maxlength="300" rows="2" placeholder="例：入口在後方、限高資訊"></textarea></label>
+          <label>停車模式<select name="parkingMode"><option value="shared">所有群組共用</option><option value="split">各群組分開停車</option></select></label>
+          <p class="field-help">分組停車依同行群組設定。切換模式會保留另一模式的內容；停車費是預估資訊，不會自動加入行程費用。</p>
+          <div id="parking-editor"></div>
         </fieldset>
         <p class="form-error" role="alert"></p>
         <p id="item-delete-warning" class="warning-card" hidden>刪除後無法從此畫面復原；請確認刪除的是這筆安排。</p>

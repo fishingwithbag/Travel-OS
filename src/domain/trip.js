@@ -63,7 +63,28 @@ function cleanMapsUrl(value, field) {
   return url.href;
 }
 
-function cleanParking(input) {
+function cleanParkingSpot(raw = {}, label) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('停車場資料格式不正確。');
+  const spot = { name:cleanOptional(raw.name,120,label), mapsUrl:cleanMapsUrl(raw.mapsUrl,`${label}地圖`) };
+  if (spot.mapsUrl && !spot.name) throw new ValidationError(`請先填寫${label}名稱。`);
+  if (raw.walkMinutes !== '' && raw.walkMinutes != null) {
+    const minutes = Number(raw.walkMinutes);
+    if (!Number.isInteger(minutes) || minutes < 0 || minutes > 1440) throw new ValidationError('停車場步行分鐘須為 0–1440 的整數。');
+    spot.walkMinutes = minutes;
+  }
+  if (raw.feeMinor !== '' && raw.feeMinor != null) {
+    const fee = Number(raw.feeMinor);
+    const currency = String(raw.currency || '').trim().toUpperCase();
+    if (!Number.isSafeInteger(fee) || fee < 0 || fee > 100_000_000_000 || !/^[A-Z]{3}$/.test(currency)) throw new ValidationError('停車費須為有效金額，並填寫三碼幣別。');
+    spot.feeMinor = fee; spot.currency = currency;
+  }
+  const note = cleanOptional(raw.note,300,'停車場備註');
+  if (note) spot.note = note;
+  if (!spot.name && Object.keys(spot).length > 2) throw new ValidationError(`請先填寫${label}名稱，再填步行時間、費用或備註。`);
+  return spot;
+}
+
+function cleanParking(input, trip) {
   const primary = {
     name:cleanOptional(input.parkingPrimaryName ?? input.parking?.primary?.name, 120, '主要停車場'),
     mapsUrl:cleanMapsUrl(input.parkingPrimaryMapsUrl ?? input.parking?.primary?.mapsUrl, '主要停車場地圖'),
@@ -75,8 +96,25 @@ function cleanParking(input) {
   const notes = cleanOptional(input.parkingNotes ?? input.parking?.notes, 300, '停車備註');
   if (primary.mapsUrl && !primary.name) throw new ValidationError('請先填寫主要停車場名稱。', 'parkingPrimaryName');
   if (backup.mapsUrl && !backup.name) throw new ValidationError('請先填寫備用停車場名稱。', 'parkingBackupName');
-  if (!primary.name && !backup.name && !notes) return null;
-  return { primary, backup, notes };
+  const parking = {
+    primary:cleanParkingSpot({...input.parking?.primary,...primary},'主要停車場'),
+    backup:cleanParkingSpot({...input.parking?.backup,...backup},'備用停車場'), notes,
+  };
+  const raw = input.parking;
+  if (raw?.mode && !['shared','split'].includes(raw.mode)) throw new ValidationError('停車模式不支援。');
+  if (raw?.byGroup != null) {
+    if (typeof raw.byGroup !== 'object' || Array.isArray(raw.byGroup)) throw new ValidationError('分組停車資料格式不正確。');
+    parking.byGroup = Object.fromEntries(Object.entries(raw.byGroup).map(([id,set]) => {
+      if (!trip.groups.some(group=>group.id === id) || /[.#$\[\]\/]/.test(id)) throw new ValidationError('停車資料包含不存在或無效的群組。');
+      if (!set || typeof set !== 'object' || Array.isArray(set)) throw new ValidationError('分組停車資料格式不正確。');
+      return [id,{primary:cleanParkingSpot(set.primary,'主要停車場'),backup:cleanParkingSpot(set.backup,'備用停車場'),notes:cleanOptional(set.notes,300,'停車備註')}];
+    }));
+    if (!Object.keys(parking.byGroup).length) delete parking.byGroup;
+  }
+  if (raw?.mode === 'split' && !trip.groups.length) throw new ValidationError('請先新增同行群組，再設定分組停車。');
+  if (raw?.mode) parking.mode = raw.mode;
+  if (!primary.name && !backup.name && !notes && !parking.byGroup && raw?.mode !== 'split') return null;
+  return parking;
 }
 
 function validTimeZone(value, field) {
@@ -122,7 +160,7 @@ export function createItem(input, trip, id = crypto.randomUUID(), options = {}) 
     id, date: input.date, type: input.type, title: clean(input.title, 100, '名稱'),
     startTime, location: cleanOptional(input.location, 200, '地址／位置'),
     mapsUrl: cleanMapsUrl(input.mapsUrl, '目的地地圖'),
-    notes: cleanOptional(input.notes, 1000, '備註'), parking:cleanParking(input), groupId,
+    notes: cleanOptional(input.notes, 1000, '備註'), parking:cleanParking(input,trip), groupId,
     amountMinor: amount == null ? null : Math.round(amount * 100), currency,
   };
   const endTime = cleanOptional(input.endTime, 5, '結束時間');

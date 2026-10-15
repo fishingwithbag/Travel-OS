@@ -130,19 +130,121 @@
               "parking": {
                 ".validate": "newData.hasChildren(['primary','backup','notes'])",
                 "primary": {
-                  ".validate": "newData.hasChildren(['name','mapsUrl'])",
-                  "name": { ".validate": "newData.isString() && newData.val().length <= 120" },
-                  "mapsUrl": { ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))" },
-                  "$other": { ".validate": false }
+                  ".validate": "newData.hasChildren(['name','mapsUrl']) && (newData.child('name').val() !== '' || (newData.child('mapsUrl').val() === '' && !newData.child('walkMinutes').exists() && !newData.child('feeMinor').exists() && !newData.child('note').exists())) && (!newData.child('feeMinor').exists() || newData.child('currency').exists())",
+                  "name": {
+                    ".validate": "newData.isString() && newData.val().length <= 120"
+                  },
+                  "mapsUrl": {
+                    ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))"
+                  },
+                  "$other": {
+                    ".validate": false
+                  },
+                  "walkMinutes": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440 && newData.val() % 1 === 0"
+                  },
+                  "feeMinor": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000000 && newData.val() % 1 === 0"
+                  },
+                  "currency": {
+                    ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+                  },
+                  "note": {
+                    ".validate": "newData.isString() && newData.val().length <= 300"
+                  }
                 },
                 "backup": {
-                  ".validate": "newData.hasChildren(['name','mapsUrl'])",
-                  "name": { ".validate": "newData.isString() && newData.val().length <= 120" },
-                  "mapsUrl": { ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))" },
-                  "$other": { ".validate": false }
+                  ".validate": "newData.hasChildren(['name','mapsUrl']) && (newData.child('name').val() !== '' || (newData.child('mapsUrl').val() === '' && !newData.child('walkMinutes').exists() && !newData.child('feeMinor').exists() && !newData.child('note').exists())) && (!newData.child('feeMinor').exists() || newData.child('currency').exists())",
+                  "name": {
+                    ".validate": "newData.isString() && newData.val().length <= 120"
+                  },
+                  "mapsUrl": {
+                    ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))"
+                  },
+                  "$other": {
+                    ".validate": false
+                  },
+                  "walkMinutes": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440 && newData.val() % 1 === 0"
+                  },
+                  "feeMinor": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000000 && newData.val() % 1 === 0"
+                  },
+                  "currency": {
+                    ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+                  },
+                  "note": {
+                    ".validate": "newData.isString() && newData.val().length <= 300"
+                  }
                 },
-                "notes": { ".validate": "newData.isString() && newData.val().length <= 300" },
-                "$other": { ".validate": false }
+                "notes": {
+                  ".validate": "newData.isString() && newData.val().length <= 300"
+                },
+                "$other": {
+                  ".validate": false
+                },
+                "mode": {
+                  ".validate": "newData.val() === 'shared' || (newData.val() === 'split' && newData.parent().parent().parent().parent().child('groups').hasChildren())"
+                },
+                "byGroup": {
+                  "$groupId": {
+                    ".validate": "newData.hasChildren(['primary','backup','notes']) && newData.parent().parent().parent().parent().parent().child('groups').child($groupId).exists()",
+                    "primary": {
+                      ".validate": "newData.hasChildren(['name','mapsUrl']) && (newData.child('name').val() !== '' || (newData.child('mapsUrl').val() === '' && !newData.child('walkMinutes').exists() && !newData.child('feeMinor').exists() && !newData.child('note').exists())) && (!newData.child('feeMinor').exists() || newData.child('currency').exists())",
+                      "name": {
+                        ".validate": "newData.isString() && newData.val().length <= 120"
+                      },
+                      "mapsUrl": {
+                        ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))"
+                      },
+                      "$other": {
+                        ".validate": false
+                      },
+                      "walkMinutes": {
+                        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440 && newData.val() % 1 === 0"
+                      },
+                      "feeMinor": {
+                        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000000 && newData.val() % 1 === 0"
+                      },
+                      "currency": {
+                        ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+                      },
+                      "note": {
+                        ".validate": "newData.isString() && newData.val().length <= 300"
+                      }
+                    },
+                    "backup": {
+                      ".validate": "newData.hasChildren(['name','mapsUrl']) && (newData.child('name').val() !== '' || (newData.child('mapsUrl').val() === '' && !newData.child('walkMinutes').exists() && !newData.child('feeMinor').exists() && !newData.child('note').exists())) && (!newData.child('feeMinor').exists() || newData.child('currency').exists())",
+                      "name": {
+                        ".validate": "newData.isString() && newData.val().length <= 120"
+                      },
+                      "mapsUrl": {
+                        ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))"
+                      },
+                      "$other": {
+                        ".validate": false
+                      },
+                      "walkMinutes": {
+                        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440 && newData.val() % 1 === 0"
+                      },
+                      "feeMinor": {
+                        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000000 && newData.val() % 1 === 0"
+                      },
+                      "currency": {
+                        ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+                      },
+                      "note": {
+                        ".validate": "newData.isString() && newData.val().length <= 300"
+                      }
+                    },
+                    "notes": {
+                      ".validate": "newData.isString() && newData.val().length <= 300"
+                    },
+                    "$other": {
+                      ".validate": false
+                    }
+                  }
+                }
               },
               "groupId": {
                 ".validate": "newData.isString() && newData.val().length <= 100 && (newData.val() === '' || newData.parent().parent().parent().child('groups').child(newData.val()).exists())"
