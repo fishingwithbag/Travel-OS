@@ -141,7 +141,30 @@ export function createTrip(input, id = crypto.randomUUID()) {
   if (!/^[A-Z]{3}$/.test(currency)) throw new ValidationError('幣別請使用三碼代號。', 'currency');
   const timeZone = validTimeZone(input.timeZone || 'UTC', '時區');
   const now = new Date().toISOString();
-  return { schemaVersion: SCHEMA_VERSION, id, title, destination, startDate: dates[0], endDate: dates.at(-1), timeZone, currency, groups: [], items: [], places: [], rentals: [], createdAt: now, updatedAt: now, revision: 1 };
+  return { schemaVersion: SCHEMA_VERSION, id, title, destination, startDate: dates[0], endDate: dates.at(-1), timeZone, currency, groups: [], items: [], places: [], rentals: [], stays: [], createdAt: now, updatedAt: now, revision: 1 };
+}
+
+export function createStay(input, trip, id = crypto.randomUUID()) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new ValidationError('住宿資料格式不正確。');
+  const groupId=cleanOptional(input.groupId,100,'群組 ID');
+  if (groupId && !trip.groups.some(group=>group.id === groupId)) throw new ValidationError('住宿資料包含不存在的群組。');
+  for (const event of ['checkIn','checkOut']) {
+    const date=input[`${event}Date`],time=input[`${event}Time`];
+    if (!isRealDate(date) || date < trip.startDate || date > trip.endDate || !clockTime.test(time)) throw new ValidationError('請填寫旅程範圍內的入住／退房日期及有效時間。');
+  }
+  if (`${input.checkOutDate}T${input.checkOutTime}` < `${input.checkInDate}T${input.checkInTime}`) throw new ValidationError('退房不可早於入住（依旅程當地時間）。');
+  const currency=String(input.currency || trip.currency).trim().toUpperCase();
+  const amount=input.amount === '' || input.amount == null ? null : Number(input.amount);
+  if (!/^[A-Z]{3}$/.test(currency) || (amount != null && (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000_000))) throw new ValidationError('請填寫有效住宿費用及三碼幣別。');
+  const guests=Number(input.guests);
+  if (!Number.isInteger(guests) || guests < 1 || guests > 1000) throw new ValidationError('住宿人數須為 1–1000 的整數。');
+  return {id:clean(id,100,'住宿 ID'),title:clean(input.title,100,'住宿名稱'),groupId,location:clean(input.location,200,'住宿地址'),mapsUrl:cleanMapsUrl(input.mapsUrl,'住宿地圖'),checkInDate:input.checkInDate,checkInTime:input.checkInTime,checkOutDate:input.checkOutDate,checkOutTime:input.checkOutTime,booking:cleanOptional(input.booking,100,'預訂編號'),notes:cleanOptional(input.notes,1000,'住宿備註'),room:cleanOptional(input.room,100,'房型'),guests,amountMinor:amount == null ? null : Math.round(amount*100),currency};
+}
+
+export function stayItemInput(stay,event) {
+  if (!['checkIn','checkOut'].includes(event)) throw new ValidationError('不支援的住宿行程。');
+  return {type:'stay',title:`${event === 'checkIn' ? '入住' : '退房'} · ${stay.title}`,date:stay[`${event}Date`],startTime:stay[`${event}Time`],location:stay.location,mapsUrl:stay.mapsUrl,groupId:stay.groupId,
+    notes:[stay.room,`${stay.guests} 人`,stay.booking ? `預訂編號：${stay.booking}` : '',stay.notes].filter(Boolean).join('\n')};
 }
 
 export function createRental(input, trip, id = crypto.randomUUID()) {
@@ -293,6 +316,12 @@ export function validateTrip(value) {
     return createRental({...rental,amount:rental.amountMinor == null ? '' : rental.amountMinor/100},base,clean(rental?.id,100,'租車 ID'));
   });
   uniqueIds(rentals,'租車');
+  if (value.stays != null && (!Array.isArray(value.stays) || value.stays.length > 1000)) throw new ValidationError('住宿資料格式或數量不正確。');
+  const stays=(value.stays ?? []).map(stay=> {
+    if (stay?.amountMinor != null && (!Number.isSafeInteger(stay.amountMinor) || stay.amountMinor < 0 || stay.amountMinor > 100_000_000_000)) throw new ValidationError('住宿費用不正確。');
+    return createStay({...stay,amount:stay.amountMinor == null ? '' : stay.amountMinor/100},base,clean(stay?.id,100,'住宿 ID'));
+  });
+  uniqueIds(stays,'住宿');
   const items = value.items.map((item) => {
     const amountMinor = item?.amountMinor;
     if (amountMinor != null && (!Number.isSafeInteger(Number(amountMinor)) || Number(amountMinor) < 0 || Number(amountMinor) > 100_000_000_000)) throw new ValidationError('費用金額不正確。', 'amountMinor');
@@ -312,7 +341,7 @@ export function validateTrip(value) {
   const createdAt = String(value.createdAt || '');
   const updatedAt = String(value.updatedAt || '');
   if (!isoDateTime.test(createdAt) || !isoDateTime.test(updatedAt) || !Number.isFinite(Date.parse(createdAt)) || !Number.isFinite(Date.parse(updatedAt)) || Date.parse(updatedAt) < Date.parse(createdAt)) throw new ValidationError('旅程時間戳記格式不正確。');
-  return { ...base, items, places, rentals, createdAt, updatedAt, revision };
+  return { ...base, items, places, rentals, stays, createdAt, updatedAt, revision };
 }
 
 export function validateBackup(value) {
@@ -330,6 +359,7 @@ export function createBackup(trips, mode = 'private') {
     groups:[],
     places:[],
     rentals:[],
+    stays:[],
     items:trip.items.map(({ notes, parking, mapsUrl, groupId, amountMinor, currency, ...item }) => ({ ...item, notes:'', parking:null, mapsUrl:'', groupId:'', amountMinor:null, currency:trip.currency })),
   })) : privateCopy;
   return { schemaVersion:SCHEMA_VERSION, exportedAt:new Date().toISOString(), mode:mode === 'share' ? 'share' : 'private', trips:exportTrips };

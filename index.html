@@ -94,6 +94,11 @@
             </section>
           </aside>
         </div>
+        <section id="stays-panel" class="panel places-panel" aria-labelledby="stays-heading">
+          <div class="panel-heading"><div><p class="eyebrow">STAYS</p><h2 id="stays-heading">住宿預訂</h2></div><button class="primary small" data-new-stay type="button">新增住宿</button></div>
+          <p class="muted compact">保存預訂、房型、人數及入住／退房時間（旅程時區）。預訂費用供參考，實際支出請另外記帳。</p>
+          <ul id="stay-list" class="place-list"></ul><p id="stay-empty" class="muted">尚無住宿預訂。</p>
+        </section>
         <section class="panel places-panel rental-panel" aria-labelledby="rentals-heading">
           <div class="panel-heading"><div><p class="eyebrow">RENTAL CARS</p><h2 id="rentals-heading">租車與取還車</h2></div><button class="primary small" data-new-rental type="button">新增租車</button></div>
           <p class="muted compact">可為任意群組建立多筆租車。日期與時間使用旅程時區；預訂費用僅供參考，加入取還車安排時不會重複計費。</p>
@@ -118,6 +123,23 @@
       </section>
     </main>
 
+    <dialog id="stay-dialog">
+      <form id="stay-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">STAY RESERVATION</p><h2 id="stay-dialog-title">新增住宿</h2></header>
+        <label>住宿名稱<input name="title" maxlength="100" required /></label>
+        <label>住宿群組<select name="groupId"><option value="">所有人共用</option></select></label>
+        <label>住宿地址<input name="location" maxlength="200" required /></label>
+        <label>住宿 Google Maps 連結<input name="mapsUrl" type="url" maxlength="600" /></label>
+        <div class="field-pair"><label>入住日期<input name="checkInDate" type="date" required /></label><label>入住時間<input name="checkInTime" type="time" required /></label></div>
+        <div class="field-pair"><label>退房日期<input name="checkOutDate" type="date" required /></label><label>退房時間<input name="checkOutTime" type="time" required /></label></div>
+        <div class="field-pair"><label>房型<input name="room" maxlength="100" /></label><label>住宿人數<input name="guests" type="number" min="1" max="1000" step="1" required /></label></div>
+        <label>住宿預訂編號<input name="booking" maxlength="100" /></label>
+        <div class="field-pair"><label>住宿預訂費用<input name="amount" type="number" min="0" max="1000000000" step="0.01" /></label><label>住宿費用幣別<input name="currency" maxlength="3" required /></label></div>
+        <label>住宿備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <p class="form-error" role="alert"></p><p id="stay-delete-warning" class="warning-card" hidden>確定刪除住宿預訂？已加入每日行程的入住／退房安排會保留。</p>
+        <footer><button id="stay-delete-button" class="secondary" type="button" hidden>刪除住宿</button><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">儲存住宿</button></footer>
+      </form>
+    </dialog>
     <dialog id="rental-dialog">
       <form id="rental-form" method="dialog" class="dialog-form">
         <header><p class="eyebrow">RENTAL CAR</p><h2 id="rental-dialog-title">新增租車</h2></header>

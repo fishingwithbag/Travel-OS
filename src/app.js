@@ -12,6 +12,7 @@ import { nextStop } from './domain/next-stop.js';
 import { formatFlightSchedule } from './domain/flight-schedule.js';
 import { durationMinutes, scheduleWarnings } from './domain/schedule.js';
 import { setupRentalUi } from './ui/rentals.js';
+import { setupStayUi } from './ui/stays.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
@@ -32,6 +33,7 @@ const STORAGE_KEYS = Object.freeze({
   connection:localStorageKey('connection'),
 });
 const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast});
+const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
@@ -259,6 +261,7 @@ function render() {
   $('#item-form input[name="currency"]').value = trip.currency;
   renderPlaces();
   rentalUi.render();
+  stayUi.render();
 }
 
 function renderPlaces() {
@@ -546,7 +549,7 @@ $('#import-form').addEventListener('submit', async (event) => {
   } finally { button.disabled = false; }
 });
 
-for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !itemSaving && !placeSaving && !rentalUi.isSaving()) dialog.close(); });
+for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving()) dialog.close(); });
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem(STORAGE_KEYS.theme) || 'light';

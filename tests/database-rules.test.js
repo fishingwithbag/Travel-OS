@@ -31,6 +31,14 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('validates stay reservations, chronological check-out and guest counts',async()=>{
+    const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    const stay={id:'stay-a',title:'Sample hotel',location:'Sample street',checkInDate:'2027-01-01',checkInTime:'15:00',checkOutDate:'2027-01-02',checkOutTime:'11:00',guests:2,currency:'EUR',booking:'DEMO-ONLY'};
+    await assertSucceeds(update(target,{stays:{'stay-a':stay},revision:2}));
+    for(const change of [{guests:0},{guests:1.5},{checkOutDate:'2027-01-01',checkOutTime:'14:00'},{checkOutDate:'2027-01-03'},{groupId:'missing'},{amountMinor:-1},{mapsUrl:'javascript:alert(1)'}]) await assertFails(update(target,{stays:{'stay-a':{...stay,...change}},revision:3}));
+    await assertFails(update(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),{stays:null,revision:3}));
+    await assertSucceeds(update(target,{stays:null,revision:3}));
+  });
   it('allows grouped rental bookings while rejecting invalid groups, dates and viewer writes', async () => {
     const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
     const rental={id:'rental-a',groupId:'a',company:'Sample rental',pickupDate:'2027-01-01',pickupTime:'10:00',pickupLocation:'Station',returnDate:'2027-01-02',returnTime:'18:00',returnLocation:'Airport',amountMinor:12000,currency:'USD',booking:'DEMO-ONLY'};
