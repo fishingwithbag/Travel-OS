@@ -1,6 +1,6 @@
 import './styles.css';
 import travelOsDatabaseRules from '../firebase/database.rules.json?raw';
-import { addGroup, createBackup, createItem, createPlace, createTrip, editItem, expenseTotals, filterPlaces, placeItemInput, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
+import { addGroup, createBackup, createItem, createPlace, createTrip, editItem, expenseTotals, filterPlaces, placeItemInput, restoredTripCopy, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfigInput, parseRememberedConnection } from './config/firebase-config.js';
 import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployment.js';
@@ -18,6 +18,7 @@ import { setupExpenseUi } from './ui/expenses.js';
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
 let pendingBackup = null;
+let importSaving = false;
 let itemEditor = null;
 let itemSaving = false;
 let placeEditor = null;
@@ -527,32 +528,47 @@ $('#import-file').addEventListener('change', async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
   if (file.size > 5_000_000) { showToast('備份檔案不可超過 5 MB。'); return; }
   try {
-    if (state.mode !== 'local') throw new ValidationError('請先切換至本機模式，再預覽及匯入備份。');
     pendingBackup = validateBackup(JSON.parse(await file.text()));
     const itemCount = pendingBackup.trips.reduce((sum, trip) => sum + trip.items.length, 0);
     const placeCount = pendingBackup.trips.reduce((sum, trip) => sum + trip.places.length, 0);
     $('#import-summary').innerHTML = `<strong>${pendingBackup.trips.length} 趟旅程</strong><span>${itemCount} 筆安排 · ${placeCount} 個景點 · ${pendingBackup.mode === 'share' ? '分享副本' : '完整備份'}</span>`;
+    $('#import-cloud-choice').hidden = state.mode !== 'cloud';
+    $('#import-trip-select').replaceChildren(...pendingBackup.trips.map((trip,index)=>new Option(`${trip.title} · ${trip.startDate} — ${trip.endDate}`,String(index))));
+    $('#import-warning').textContent = state.mode === 'cloud' ? '只匯入所選的一趟，建立全新旅程並由目前登入帳號擁有；既有旅程不會被覆蓋。備份不包含原專案設定或成員權限。' : '匯入會取代目前本機模式的所有旅程；請先匯出現有資料的完整備份。';
+    $('#import-confirm').textContent = state.mode === 'cloud' ? '匯入為新的雲端旅程' : '確認取代本機資料';
+    $('#import-confirm').disabled = !pendingBackup.trips.length && state.mode === 'cloud';
     openDialog('import-dialog');
   } catch (error) { showToast(error instanceof ValidationError ? error.message : '備份檔案無法解析。'); }
   event.target.value = '';
 });
 $('#import-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (!pendingBackup || state.mode !== 'local') return;
+  if (!pendingBackup) return;
   const form = event.currentTarget;
   const button = form.querySelector('[type="submit"]');
   if (button.disabled) return;
-  button.disabled = true;
+  importSaving = true;
+  for (const control of form.elements) control.disabled = true;
   try {
+    if (state.mode === 'cloud') {
+      const source=pendingBackup.trips[Number($('#import-trip-select').value)];
+      if (!source) throw new ValidationError('請選擇一趟旅程。');
+      const copy=restoredTripCopy(source);
+      await store.saveTrip(copy);
+      state.trips.push(copy);state.currentTripId=copy.id;state.selectedDate=copy.startDate;
+      pendingBackup=null;form.closest('dialog').close();render();showToast('已還原為新的雲端旅程；原旅程保留。');
+      return;
+    }
     await store.replaceAll(pendingBackup.trips);
     state.trips = pendingBackup.trips; state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
     const count = pendingBackup.trips.length; pendingBackup = null; form.closest('dialog').close(); render(); showToast(`已還原 ${count} 趟旅程。`);
-  } catch {
-    showToast('備份還原失敗；請確認瀏覽器儲存空間後重試。');
-  } finally { button.disabled = false; }
+  } catch (error) {
+    setError(form,error instanceof ValidationError ? error : new ValidationError(state.mode === 'cloud' ? '雲端還原失敗；請檢查連線、Rules 與旅程數量限制，再重試。原旅程未被覆蓋。' : '備份還原失敗；請確認瀏覽器儲存空間後重試。'));
+  } finally { importSaving = false; for (const control of form.elements) control.disabled = false; }
 });
+$('#import-dialog').addEventListener('cancel',event=>{if(importSaving) event.preventDefault();});
 
-for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving()) dialog.close(); });
+for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !importSaving && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving()) dialog.close(); });
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem(STORAGE_KEYS.theme) || 'light';

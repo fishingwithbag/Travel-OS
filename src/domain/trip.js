@@ -375,6 +375,12 @@ export function validateBackup(value) {
   return { schemaVersion:SCHEMA_VERSION, exportedAt:String(value.exportedAt || ''), mode:value.mode === 'share' ? 'share' : 'private', trips };
 }
 
+export function restoredTripCopy(value,id=crypto.randomUUID()) {
+  const trip=validateTrip(value);
+  const now=new Date().toISOString();
+  return validateTrip({...trip,id,revision:1,createdAt:now,updatedAt:now});
+}
+
 export function createBackup(trips, mode = 'private') {
   const privateCopy = structuredClone(trips);
   const exportTrips = mode === 'share' ? privateCopy.map((trip) => ({

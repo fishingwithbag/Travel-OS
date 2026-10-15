@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { vi } from 'vitest';
-import { createItem, createTrip, touchTrip } from '../src/domain/trip.js';
+import { createItem, createTrip, restoredTripCopy, touchTrip } from '../src/domain/trip.js';
 import { commitIfRevisionMatches, FirebaseTripStore, normalizeFirebaseTrip, parseFirebaseTrip, serializeFirebaseTrip } from '../src/storage/firebase-store.js';
 
 
@@ -41,6 +41,20 @@ async function connectedStore() {
 }
 
 describe('Firebase trip normalization', () => {
+  it('restores as a fresh trip owned by the current user without writing the source ID or importing members',async()=>{
+    const {store,databaseModule}=await connectedStore();
+    const source=createTrip({title:'Backup',destination:'Sample',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'source');
+    source.revision=20;source.members={stranger:'owner'};
+    const copy=restoredTripCopy(source,'restored');
+    expect(copy).toMatchObject({id:'restored',revision:1,title:'Backup'});
+    expect(copy).not.toHaveProperty('members');
+    expect(source.revision).toBe(20);
+    databaseModule.get.mockResolvedValueOnce(snapshot({source:true}));
+    await store.saveTrip(copy);
+    const updates=databaseModule.update.mock.calls[0][1];
+    expect(Object.keys(updates)).toEqual(['trips/restored','userTrips/owner/restored']);
+    expect(updates['trips/restored'].members).toEqual({owner:'owner'});
+  });
   it('rejects an unreadable diagnostic and removes its temporary record', async () => {
     const appModule = { initializeApp:vi.fn(() => ({})), deleteApp:vi.fn(async () => {}) };
     const authModule = { getAuth:vi.fn(() => ({})), inMemoryPersistence:{ type:'NONE' }, setPersistence:vi.fn(async () => {}), signInWithEmailAndPassword:vi.fn(async () => ({ user:{ uid:'owner' } })), signOut:vi.fn(async () => {}) };

@@ -2,6 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFile } from 'node:fs/promises';
 import { get, ref, runTransaction, set, update } from 'firebase/database';
+import {createExpense,createPlace,createRental,createStay,createTrip,restoredTripCopy} from '../src/domain/trip.js';
+import {serializeFirebaseTrip} from '../src/storage/firebase-store.js';
 
 let environment;
 
@@ -31,6 +33,19 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('creates a restored cloud copy with every restored collection and fresh owner membership',async()=>{
+    const source={...createTrip({title:'Restore sample',destination:'Sample',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'source'),groups:[{id:'a',name:'A'}]};
+    source.places=[createPlace({title:'Sample café',favorite:true},'p')];
+    source.rentals=[createRental({company:'Sample rental',groupId:'a',pickupDate:'2027-01-01',pickupTime:'09:00',pickupLocation:'Station',returnDate:'2027-01-02',returnTime:'18:00',returnLocation:'Airport'},source,'r')];
+    source.stays=[createStay({title:'Sample hotel',location:'Sample street',checkInDate:'2027-01-01',checkInTime:'15:00',checkOutDate:'2027-01-02',checkOutTime:'11:00',guests:2},source,'s')];
+    source.expenses=[createExpense({title:'Sample dinner',date:'2027-01-01',amount:'10',splitCount:3,currency:'USD'},source,'e')];
+    const copy=serializeFirebaseTrip(restoredTripCopy(source,'restored'));
+    await assertSucceeds(update(ref(environment.authenticatedContext('owner').database()),{'trips/restored':{ownerId:'owner',members:{owner:'owner'},data:copy},'userTrips/owner/restored':true}));
+    await assertFails(get(ref(environment.authenticatedContext('viewer').database(),'trips/restored')));
+    const restored=(await get(ref(environment.authenticatedContext('owner').database(),'trips/restored/data'))).val();
+    expect(restored.places.p.favorite).toBe(true);expect(restored.expenses.e.splitCount).toBe(3);
+    expect(restored.rentals.r.groupId).toBe('a');expect(restored.stays.s.guests).toBe(2);
+  });
   it('validates independent expenses and refuses viewer edits and invalid splits',async()=>{
     const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
     const expense={id:'expense-a',title:'Sample dinner',date:'2027-01-01',amountMinor:1000,currency:'USD',splitCount:3,payer:'Sample payer'};

@@ -381,8 +381,10 @@
       <form id="import-form" class="dialog-form">
         <header><p class="eyebrow">IMPORT PREVIEW</p><h2>確認匯入備份</h2></header>
         <div id="import-summary" class="connection-summary"></div>
-        <p class="muted">匯入會取代目前本機模式的所有旅程；雲端模式不允許批次覆蓋。</p>
-        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">確認取代本機資料</button></footer>
+        <label id="import-cloud-choice" hidden>選擇要還原的旅程<select id="import-trip-select"></select></label>
+        <p id="import-warning" class="muted">匯入會取代目前本機模式的所有旅程。</p>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button id="import-confirm" class="primary" type="submit">確認取代本機資料</button></footer>
       </form>
     </dialog>
 
