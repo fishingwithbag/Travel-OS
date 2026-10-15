@@ -125,6 +125,22 @@ export function createItem(input, trip, id = crypto.randomUUID(), options = {}) 
     notes: cleanOptional(input.notes, 1000, '備註'), parking:cleanParking(input), groupId,
     amountMinor: amount == null ? null : Math.round(amount * 100), currency,
   };
+  const endTime = cleanOptional(input.endTime, 5, '結束時間');
+  const endDate = cleanOptional(input.endDate, 10, '結束日期');
+  if (input.type !== 'flight' && (endTime || endDate)) {
+    const date = endDate || input.date;
+    if (!startTime || !clockTime.test(endTime) || !isRealDate(date) || date < input.date || date > trip.endDate || (date === input.date && endTime < startTime)) {
+      throw new ValidationError('請填寫開始與結束時間；跨午夜請選擇下一天的結束日期，且不得超過旅程日期。', 'endTime');
+    }
+    item.endDate = date;
+    item.endTime = endTime;
+  }
+  const transitMode = cleanOptional(input.transitMode, 10, '交通方式');
+  if (transitMode && !['driving','walking','transit','other'].includes(transitMode)) throw new ValidationError('交通方式不支援。', 'transitMode');
+  const transitMinutes = input.transitMinutes === '' || input.transitMinutes == null ? null : Number(input.transitMinutes);
+  if (transitMinutes != null && (!transitMode || !Number.isInteger(transitMinutes) || transitMinutes < 0 || transitMinutes > 1440)) throw new ValidationError('請選擇交通方式，交通分鐘須為 0–1440 的整數。', 'transitMinutes');
+  if (transitMode) item.transitMode = transitMode;
+  if (transitMinutes != null) item.transitMinutes = transitMinutes;
   if (input.type === 'flight') {
     const departureTimeZone = cleanOptional(input.departureTimeZone, 64, '出發時區');
     const arrivalTimeZone = cleanOptional(input.arrivalTimeZone, 64, '抵達時區');
@@ -147,6 +163,13 @@ export function addGroup(trip, name, id = crypto.randomUUID()) {
   const normalized = clean(name, 50, '群組名稱');
   if (trip.groups.some((group) => group.name.toLocaleLowerCase() === normalized.toLocaleLowerCase())) throw new ValidationError('已經有同名群組。', 'name');
   return { id, name: normalized };
+}
+
+export function editItem(trip, id, input) {
+  const existing = trip.items.find((item) => item.id === id);
+  if (!existing) throw new ValidationError('此安排已不存在，請重新載入旅程。');
+  const updated = createItem({ ...existing, ...existing.flight, amount:existing.amountMinor == null ? '' : existing.amountMinor / 100, ...input }, trip, id);
+  return { ...trip, items:trip.items.map((item) => item.id === id ? updated : item) };
 }
 
 export function expenseTotals(items) {

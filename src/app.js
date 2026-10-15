@@ -1,18 +1,22 @@
 import './styles.css';
 import travelOsDatabaseRules from '../firebase/database.rules.json?raw';
-import { addGroup, createBackup, createItem, createTrip, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
+import { addGroup, createBackup, createItem, createTrip, editItem, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfigInput, parseRememberedConnection } from './config/firebase-config.js';
 import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployment.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { prepareStoreSwitch } from './storage/store-switch.js';
 import { localStorageKey } from './storage/browser-scope.js';
-import { itemMapUrl, parkingMapUrl } from './providers/maps.js';
+import { itemMapUrl, parkingMapUrl, routeMapUrl, dayRouteSections } from './providers/maps.js';
 import { nextStop } from './domain/next-stop.js';
+import { formatFlightSchedule } from './domain/flight-schedule.js';
+import { durationMinutes, scheduleWarnings } from './domain/schedule.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
 let pendingBackup = null;
+let itemEditor = null;
+let itemSaving = false;
 let setupStep = 0;
 let highestSetupStep = 0;
 const $ = (selector) => document.querySelector(selector);
@@ -30,6 +34,7 @@ function showToast(message) { const toast = $('#toast'); toast.textContent = mes
 function setError(form, error) {
   const target = form.querySelector('.form-error');
   if (!error) { target.textContent = ''; return; }
+  if (['PERMISSION_DENIED','database/permission-denied'].includes(error.code)) { target.textContent = '資料庫拒絕寫入。請確認此帳號有編輯權限，且已發布目前版本的 Firebase Rules；你輸入的內容仍保留在此視窗。'; return; }
   target.textContent = error instanceof ValidationError ? error.message : '發生未預期的錯誤，請再試一次。';
 }
 function openDialog(id) {
@@ -59,6 +64,54 @@ function itemNotesHtml(item) {
   return item.notes ? `<p class="item-notes"><strong>備註</strong><span>${escapeHtml(item.notes)}</span></p>` : '';
 }
 
+function flightScheduleHtml(item) {
+  const schedule = formatFlightSchedule(item);
+  return schedule ? `<p class="item-notes"><strong>起降</strong><span>${escapeHtml(schedule)}</span></p>` : '';
+}
+
+function itemTimingHtml(item) {
+  const duration = durationMinutes(item);
+  const mode = {driving:'開車',walking:'步行',transit:'大眾交通',other:'其他'}[item.transitMode];
+  return `${duration == null ? '' : `<p class="timeline-meta">至 ${escapeHtml(item.endDate !== item.date ? item.endDate + ' ' : '')}${escapeHtml(item.endTime)} · ${duration} 分鐘（旅程當地時間）</p>`}${mode ? `<p class="timeline-meta">前往下一站：${mode}${item.transitMinutes == null ? ' · 時間未設定' : ` · ${item.transitMinutes} 分鐘（手動）`}</p>` : ''}`;
+}
+
+function openItemDialog(item = null) {
+  const trip = currentTrip();
+  if (!trip) return;
+  const form = $('#item-form');
+  form.reset();
+  itemEditor = { tripId:trip.id, id:item?.id || '', revision:trip.revision };
+  const values = item ? { ...item, ...item.flight, amount:item.amountMinor == null ? '' : item.amountMinor / 100,
+    parkingPrimaryName:item.parking?.primary?.name || '', parkingPrimaryMapsUrl:item.parking?.primary?.mapsUrl || '',
+    parkingBackupName:item.parking?.backup?.name || '', parkingBackupMapsUrl:item.parking?.backup?.mapsUrl || '', parkingNotes:item.parking?.notes || '' }
+    : { date:state.selectedDate, currency:trip.currency };
+  for (const [name,value] of Object.entries(values)) {
+    const control = form.elements.namedItem(name);
+    if (control && typeof value !== 'object') control.value = value ?? '';
+  }
+  form.elements.date.min = trip.startDate; form.elements.date.max = trip.endDate;
+  form.elements.endDate.min = trip.startDate; form.elements.endDate.max = trip.endDate;
+  $('#flight-fields').hidden = item?.type !== 'flight';
+  $('#end-fields').hidden = item?.type === 'flight';
+  $('#item-dialog-title').textContent = item ? '編輯安排' : '新增安排';
+  $('#item-save-button').textContent = item ? '儲存變更' : '加入行程';
+  $('#item-delete-button').hidden = !item;
+  $('#item-delete-button').textContent = '刪除安排';
+  $('#item-delete-warning').hidden = true;
+  openDialog('item-dialog');
+}
+
+function editingTrip() {
+  const trip = currentTrip();
+  if (!itemEditor || trip?.id !== itemEditor.tripId || trip.revision !== itemEditor.revision) throw new ValidationError('旅程已變更，請關閉視窗後重新開啟安排。');
+  return trip;
+}
+
+function setItemSaving(busy) {
+  itemSaving = busy;
+  for (const control of $('#item-form').querySelectorAll('input,select,textarea,button')) control.disabled = busy;
+}
+
 function renderFirebasePreview(config) {
   const preview = $('#firebase-config-preview');
   preview.innerHTML = `<strong>✓ Firebase Web config 已辨識</strong><span>Project ID：${escapeHtml(config.projectId)}</span><span>Auth Domain：${escapeHtml(config.authDomain)}</span><span>Realtime Database：${escapeHtml(config.databaseURL)}</span>`;
@@ -69,7 +122,7 @@ function renderVerificationSummary() {
   try {
     const input = formData(form);
     const config = parseFirebaseConfigInput(input);
-    $('#verification-summary').innerHTML = `<strong>準備驗證以下設定</strong><span>Firebase：${escapeHtml(config.projectId)}</span><span>Database：${escapeHtml(config.databaseURL)}</span><span>登入帳號：${escapeHtml(input.email || '')}</span><span>Google Maps 外部導航不需要 API Key</span>`;
+    $('#verification-summary').innerHTML = `<strong>準備驗證以下設定</strong><span>Firebase：${escapeHtml(config.projectId)}</span><span>Database：${escapeHtml(config.databaseURL)}</span><span>登入帳號：${escapeHtml(input.email || '')}</span><span>Google Maps：免 Key 外部導航與路線</span><span>Spark 免費額度內同步；不使用付費 API</span>`;
   } catch (error) {
     $('#verification-summary').textContent = error instanceof ValidationError ? error.message : '設定尚未完成。';
   }
@@ -136,14 +189,22 @@ function render() {
   tripSelect.replaceChildren(...state.trips.map((entry) => new Option(entry.title, entry.id, false, entry.id === trip.id)));
   $('#day-tabs').innerHTML = dates.map((date, index) => `<button class="day-tab" type="button" data-date="${date}" role="tab" aria-selected="${date === state.selectedDate}"><small>DAY ${index + 1}</small><strong>${formatDay(date)}</strong></button>`).join('');
   const items = trip.items.filter((item) => item.date === state.selectedDate).sort((a,b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
+  $('#day-routes').innerHTML = dayRouteSections(items, trip.groups).map(({ name, segments }) => `<div class="day-route-group"><strong>${escapeHtml(name)}</strong>${segments.length ? segments.map((segment, index) => `<div>${segment.url ? `<a href="${escapeHtml(segment.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}${segment.titles.length === 1 ? '地點' : '今日開車路線'}${segments.length > 1 ? ` · 第 ${index + 1} 段` : ''} ↗</a>` : '<p>地址過長，無法建立此段 Google Maps 連結；請使用各站地圖入口。</p>'}<small>${segment.titles.map(escapeHtml).join(' → ')}</small></div>`).join('') : '<small>今天尚無可導航的地點</small>'}</div>`).join('');
   const upcoming = nextStop(items, state.selectedDate, trip.timeZone);
+  const warnings = scheduleWarnings(trip.items, trip.groups);
   $('#next-stop').hidden = !upcoming;
   if (upcoming) {
     $('#next-stop-heading').textContent = upcoming.title;
-    $('#next-stop-details').innerHTML = `<p class="next-stop-meta">${escapeHtml(upcoming.startTime || '彈性時間')} · ${escapeHtml(typeLabels[upcoming.type])}</p>${itemNotesHtml(upcoming)}${parkingHtml(upcoming)}${!upcoming.parking && ['place', 'meal', 'stay'].includes(upcoming.type) ? '<p class="parking-unset">停車資訊未設定</p>' : ''}<div class="next-stop-actions">${mapLink(upcoming, 'Google Maps')}</div>`;
+    $('#next-stop-details').innerHTML = `<p class="next-stop-meta">${escapeHtml(upcoming.startTime || '彈性時間')} · ${escapeHtml(typeLabels[upcoming.type])}</p>${itemTimingHtml(upcoming)}${flightScheduleHtml(upcoming)}${itemNotesHtml(upcoming)}${parkingHtml(upcoming)}${!upcoming.parking && ['place', 'meal', 'stay'].includes(upcoming.type) ? '<p class="parking-unset">停車資訊未設定</p>' : ''}<div class="next-stop-actions">${mapLink(upcoming, 'Google Maps')}<button class="secondary" data-edit-item="${escapeHtml(upcoming.id)}" type="button">編輯下一個安排</button></div>`;
   }
   $('#day-heading').textContent = formatDay(state.selectedDate);
-  $('#timeline').innerHTML = items.map((item) => `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${itemNotesHtml(item)}${parkingHtml(item)}${mapLink(item)}</div><span class="type-badge">${typeLabels[item.type]}</span></li>`).join('');
+  $('#timeline').innerHTML = items.map((item, index) => {
+    const next = items[index + 1];
+    const canRoute = next && ['place','meal','stay','transport'].includes(item.type) && ['place','meal','stay','transport'].includes(next.type) && (!item.groupId || !next.groupId || item.groupId === next.groupId);
+    const route = canRoute ? `<div class="route-leg"><a href="${escapeHtml(routeMapUrl(item, next, 'driving'))}" target="_blank" rel="noopener noreferrer">Google Maps 開車路線 ↗</a><a href="${escapeHtml(routeMapUrl(item, next, 'walking'))}" target="_blank" rel="noopener noreferrer">Google Maps 步行路線 ↗</a><span>路程與時間請在 Google Maps 查看。</span></div>` : '';
+    const warningHtml = warnings.has(item.id) ? `<ul class="schedule-warnings">${warnings.get(item.id).map(message=>`<li>${escapeHtml(message)}</li>`).join('')}</ul>` : '';
+    return `<li class="timeline-item"><div class="timeline-time">${escapeHtml(item.startTime || '彈性')}</div><div><h3>${escapeHtml(item.title)}</h3><p class="timeline-meta">${escapeHtml([item.location, item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : '', item.groupId ? trip.groups.find((group) => group.id === item.groupId)?.name : ''].filter(Boolean).join(' · '))}</p>${itemTimingHtml(item)}${warningHtml}${flightScheduleHtml(item)}${itemNotesHtml(item)}${parkingHtml(item)}${mapLink(item)}${route}<button class="text-button item-edit" type="button" data-edit-item="${escapeHtml(item.id)}" aria-label="編輯安排：${escapeHtml(item.title)}">編輯</button></div><span class="type-badge">${typeLabels[item.type]}</span></li>`;
+  }).join('');
   $('#timeline-empty').hidden = items.length > 0;
   $('#summary-days').textContent = dates.length;
   $('#summary-items').textContent = trip.items.length;
@@ -163,12 +224,15 @@ document.addEventListener('click', (event) => {
   const opener = event.target.closest('[data-open]');
   if (opener) {
     if (opener.dataset.open === 'settings-dialog') setSetupStep(state.mode === 'cloud' ? 4 : 0);
-    openDialog(opener.dataset.open);
+    if (opener.dataset.open === 'item-dialog') openItemDialog(); else openDialog(opener.dataset.open);
   }
+  const editButton = event.target.closest('[data-edit-item]');
+  if (editButton) { const item = currentTrip()?.items.find(item=>item.id === editButton.dataset.editItem); if (item) openItemDialog(item); }
   const setupJump = event.target.closest('[data-setup-jump]');
   if (setupJump && !setupJump.disabled) setSetupStep(Number(setupJump.dataset.setupJump));
   const day = event.target.closest('[data-date]');
   if (day) { state.selectedDate = day.dataset.date; render(); }
+  if (event.target.closest('[data-import]')) $('#import-file').click();
   if (event.target.closest('[data-close]')) event.target.closest('dialog')?.close();
 });
 
@@ -184,10 +248,31 @@ $('#trip-form').addEventListener('submit', async (event) => {
   try { const trip = createTrip(formData(form)); await store.saveTrip(trip); state.trips.push(trip); state.currentTripId = trip.id; state.selectedDate = trip.startDate; form.reset(); form.elements.timeZone.value = 'Asia/Taipei'; form.elements.currency.value = 'TWD'; form.closest('dialog').close(); render(); showToast(state.mode === 'cloud' ? '旅程已建立並同步到自己的 Firebase。' : '旅程已建立並儲存在本機。'); } catch (error) { setError(form, error); }
 });
 
-$('#item-form select[name="type"]').addEventListener('change', (event) => { $('#flight-fields').hidden = event.target.value !== 'flight'; });
+$('#item-form select[name="type"]').addEventListener('change', (event) => { $('#flight-fields').hidden = event.target.value !== 'flight'; $('#end-fields').hidden = event.target.value === 'flight'; });
+$('#item-dialog').addEventListener('cancel', event => { if (itemSaving) event.preventDefault(); });
+$('#item-dialog').addEventListener('close', () => {
+  const id = itemEditor?.id; itemEditor = null;
+  const target = Array.from($('#timeline').querySelectorAll('[data-edit-item]')).find(button=>button.dataset.editItem === id);
+  (target || document.querySelector('[data-open="item-dialog"]'))?.focus();
+});
 $('#item-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; setError(form, '');
-  try { const trip = currentTrip(); const item = createItem({ ...formData(form), date: state.selectedDate }, trip); await saveTrip({ ...trip, items:[...trip.items,item] }); form.reset(); $('#flight-fields').hidden = true; form.closest('dialog').close(); showToast('安排已加入行程。'); } catch (error) { setError(form, error); }
+  if (itemSaving) return;
+  try {
+    const trip = editingTrip(); const input = formData(form); const editing = Boolean(itemEditor.id);
+    const updated = editing ? editItem(trip,itemEditor.id,input) : { ...trip, items:[...trip.items,createItem(input,trip)] };
+    setItemSaving(true); await saveTrip(updated); state.selectedDate = input.date; render();
+    form.closest('dialog').close(); showToast(editing ? '安排已更新。' : '安排已加入行程。');
+  } catch (error) { setError(form, error); } finally { setItemSaving(false); }
+});
+$('#item-delete-button').addEventListener('click', async () => {
+  if (itemSaving) return;
+  if ($('#item-delete-warning').hidden) { $('#item-delete-warning').hidden = false; $('#item-delete-button').textContent = '確定刪除此安排'; return; }
+  try {
+    const trip = editingTrip(); setItemSaving(true);
+    await saveTrip({ ...trip, items:trip.items.filter(item=>item.id !== itemEditor.id) });
+    $('#item-dialog').close(); showToast('安排已刪除。');
+  } catch (error) { setError($('#item-form'),error); } finally { setItemSaving(false); }
 });
 
 $('#group-form').addEventListener('submit', async (event) => {
@@ -240,10 +325,11 @@ $('#connection-form').addEventListener('submit', async (event) => {
     progress.innerHTML += '<span>3／3　Firebase 診斷讀寫已完成，正在載入旅程…</span>';
     const warnings = await activateStore(cloudStore, 'cloud', connection);
     localStorage.setItem(STORAGE_KEYS.onboardingMode, 'cloud');
+    const mapsStatus = '免 Key 外部導航與路線；不載入 Google 付費 API';
     if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config }));
     else localStorage.removeItem(STORAGE_KEYS.connection);
     form.elements.password.value = '';
-    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：外部導航可直接使用，無需 API Key</span>`;
+    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：${escapeHtml(mapsStatus)}</span><span>不需要 Billing、Blaze 或 Functions</span>`;
     setSetupStep(5);
     showToast(warnings.length ? `已連接 ${connection.projectId}；另略過 ${warnings.length} 筆失效或損壞的雲端資料。` : `已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
   } catch (error) {
@@ -298,7 +384,6 @@ function downloadBackup(mode) {
 }
 $('#export-button').addEventListener('click', () => downloadBackup('private'));
 $('#share-export-button').addEventListener('click', () => downloadBackup('share'));
-$('#import-button').addEventListener('click', () => $('#import-file').click());
 $('#import-file').addEventListener('change', async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
   if (file.size > 5_000_000) { showToast('備份檔案不可超過 5 MB。'); return; }

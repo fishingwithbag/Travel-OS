@@ -29,6 +29,7 @@
         <div class="welcome-actions">
           <button id="cloud-setup-button" class="primary" data-open="settings-dialog" type="button">設定雲端同步</button>
           <button id="local-start-button" class="secondary" data-open="trip-dialog" type="button">先用本機模式</button>
+          <button class="secondary" data-import type="button">匯入備份</button>
         </div>
       </section>
 
@@ -58,6 +59,11 @@
               <h3 id="next-stop-heading"></h3>
               <div id="next-stop-details"></div>
             </section>
+            <details class="day-routes-panel">
+              <summary>各群組今日路線</summary>
+              <p class="field-help">包含共同安排與該群組的地點，依時間排序。長路線分段開啟，前段終點會接續下一段起點。</p>
+              <div id="day-routes"></div>
+            </details>
             <ol id="timeline" class="timeline"></ol>
             <div id="timeline-empty" class="empty-state">
               <span aria-hidden="true">＋</span><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p>
@@ -83,7 +89,7 @@
               <div class="panel-heading"><div><p class="eyebrow">TOOLS</p><h2 id="tools-heading">資料工具</h2></div></div>
               <button id="export-button" class="wide secondary" type="button">匯出完整備份</button>
               <button id="share-export-button" class="wide secondary" type="button">匯出分享副本</button>
-              <button id="import-button" class="wide secondary" type="button">匯入備份</button>
+              <button id="import-button" class="wide secondary" data-import type="button">匯入備份</button>
               <input id="import-file" type="file" accept="application/json" hidden />
             </section>
           </aside>
@@ -105,8 +111,12 @@
 
     <dialog id="item-dialog">
       <form id="item-form" method="dialog" class="dialog-form">
-        <header><p class="eyebrow">ADD TO DAY</p><h2>新增安排</h2></header>
+        <header><p class="eyebrow">ITINERARY</p><h2 id="item-dialog-title">新增安排</h2></header>
+        <label>行程日期<input name="date" type="date" required /></label>
         <div class="field-pair"><label>類型<select name="type"><option value="place">景點</option><option value="meal">餐飲</option><option value="stay">住宿</option><option value="flight">航班</option><option value="transport">交通</option><option value="other">其他</option></select></label><label>開始時間<input name="startTime" type="time" /></label></div>
+        <div id="end-fields" class="field-pair"><label>結束日期（跨日時填寫）<input name="endDate" type="date" /></label><label>結束時間<input name="endTime" type="time" /></label></div>
+        <div class="field-pair"><label>前往下一站交通方式<select name="transitMode"><option value="">未設定</option><option value="driving">開車</option><option value="walking">步行</option><option value="transit">大眾交通</option><option value="other">其他</option></select></label><label>交通分鐘（手動）<input name="transitMinutes" type="number" min="0" max="1440" step="1" /></label></div>
+        <p class="field-help">交通時間為手動估計。一般安排依旅程時區檢查重疊；航班依起降時區顯示，不納入這項衝突檢查。</p>
         <label>名稱<input name="title" maxlength="100" required placeholder="要去哪裡或做什麼？" /></label>
         <label>地址／位置<input name="location" maxlength="200" placeholder="可直接手動輸入" /></label>
         <label>目的地 Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" placeholder="https://maps.app.goo.gl/..." /></label>
@@ -128,7 +138,8 @@
           <label>停車備註<textarea name="parkingNotes" maxlength="300" rows="2" placeholder="例：入口在後方、限高資訊"></textarea></label>
         </fieldset>
         <p class="form-error" role="alert"></p>
-        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">加入行程</button></footer>
+        <p id="item-delete-warning" class="warning-card" hidden>刪除後無法從此畫面復原；請確認刪除的是這筆安排。</p>
+        <footer><button id="item-delete-button" class="secondary" type="button" hidden>刪除安排</button><button class="secondary" data-close type="button">取消</button><button id="item-save-button" class="primary" value="default">加入行程</button></footer>
       </form>
     </dialog>
 
@@ -160,7 +171,7 @@
           <nav class="setup-stepper" aria-label="設定步驟">
             <button type="button" data-setup-jump="0"><span>1</span><strong>網站</strong></button>
             <button type="button" data-setup-jump="1"><span>2</span><strong>Firebase</strong></button>
-            <button type="button" data-setup-jump="2"><span>3</span><strong>地圖導航</strong></button>
+            <button type="button" data-setup-jump="2"><span>3</span><strong>Google 地圖</strong></button>
             <button type="button" data-setup-jump="3"><span>4</span><strong>登入</strong></button>
             <button type="button" data-setup-jump="4"><span>5</span><strong>驗證</strong></button>
             <button type="button" data-setup-jump="5"><span>6</span><strong>完成</strong></button>
@@ -187,10 +198,10 @@
             <section class="setup-panel" data-setup-step="1" hidden>
               <p class="eyebrow">STEP 2 · FIREBASE</p>
               <h3>建立免費的 Firebase 雲端同步</h3>
-              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。這個 Firebase 專案請維持 <strong>Spark 免費方案</strong>，不要替它連結 Cloud Billing（雲端帳單）；下一步的 Google Maps 外部導航不需要 API Key。</p>
-              <div class="warning-card"><strong>看到「帳單 / Blaze」時先停下來</strong><span>此設定流程不需要啟用付費 Google Maps API。Firebase 專案若連結 Cloud Billing（雲端帳單），會升級成 Blaze；請確認仍使用 Spark。</span></div>
+              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。請維持 <strong>Spark 免費方案</strong>，不需要付款資料、Google Cloud 計費帳戶或部署 Functions。</p>
+              <div class="warning-card"><strong>保持 Spark，不連結計費帳戶</strong><span>連結 Cloud Billing 會使 Firebase 專案成為 Blaze。Travel OS 不需要這個步驟；Spark 額度不足時請備份並使用本機模式，不需升級付費。</span></div>
               <ol class="setup-steps detailed">
-                <li><strong>建立 Firebase 專案：</strong>先用自己的 Google 帳戶登入 Firebase 控制台；沒有 Google 帳戶就先依官方說明建立。按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。Google Analytics 可略過，並維持 Spark 免費方案。這個 Firebase 專案本身也會是 Google Cloud 專案，不必再建一個給目前的 Maps 導航。</li>
+                <li><strong>建立 Firebase 專案：</strong>先用自己的 Google 帳戶登入 Firebase 控制台；沒有 Google 帳戶就先依官方說明建立。按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。如果 Gemini in Firebase 或 Google Analytics 預設開啟，可在建立流程中關閉；Travel OS 不需要這兩項。維持 Spark 免費方案。這個 Firebase 專案本身也會是 Google Cloud 專案，不必再建一個給目前的 Maps 導航。</li>
                 <li><strong>註冊網頁應用程式：</strong>進入 <strong>專案總覽</strong> → 點 <strong>&lt;/&gt; 網頁</strong>（若已有應用程式，點「新增應用程式」→「網頁」）→「應用程式暱稱」填 <code>Travel OS</code> → <strong>不要勾選 Firebase Hosting</strong> → 按「註冊應用程式」。</li>
                 <li><strong>啟用電子郵件／密碼登入：</strong>左側進入 <strong>Authentication（驗證）</strong> →「開始使用」→「登入方式」→「電子郵件地址/密碼」→ 啟用 →「儲存」。不要啟用「電子郵件連結」。</li>
                 <li><strong>建立你的登入帳號：</strong>Authentication →「使用者」→「新增使用者」→ 輸入你自己的電子郵件與密碼。這組帳密稍後會填回 Travel OS。</li>
@@ -215,16 +226,17 @@
             </section>
 
             <section class="setup-panel" data-setup-step="2" hidden>
-              <p class="eyebrow">STEP 3 · MAPS NAVIGATION</p>
-              <h3>Google Maps 導航已可直接使用</h3>
-              <p>Travel OS 目前只會開啟 Google Maps 網站，讓你搜尋景點、餐廳或停車場。這使用 Maps URL，不需要 Google Cloud 專案、Billing 或 API Key。</p>
+              <p class="eyebrow">STEP 3 · GOOGLE MAPS</p>
+              <h3>使用免 Key 的 Google 地圖</h3>
+              <p><strong>基本導航：</strong>景點、停車場及開車／步行路線透過 Google Maps 外部連結開啟。不需建立 API 金鑰、不需 Google Cloud、不需連結計費帳戶，直接下一步即可。</p>
               <ol class="setup-steps detailed">
-                <li>建立行程時可填地點名稱、地址，或貼上 Google Maps 分享連結。</li>
-                <li>在「下一個安排」或每日時間軸按 Google Maps，即可開啟目的地或停車場導航。</li>
-                <li>確認後按「下一步」，前往 Firebase 帳號登入。</li>
+                <li>在新增安排中手動輸入地點名稱或地址。</li>
+                <li>若要精確定位，從 Google Maps 複製分享連結，貼到安排的「Google Maps 連結」欄位。</li>
+                <li>主要與備用停車場可各自填入名稱及地圖分享連結；每日行程與下一個安排會分開顯示。</li>
+                <li>相鄰安排可開啟 Google Maps 開車或步行路線，路程與時間在 Google Maps 查看。</li>
               </ol>
-              <div class="security-note"><strong>目前不會向你索取 Google API Key</strong><span>若未來加入站內地圖或 Places 搜尋，才需要另一個受 Website/API restrictions 保護的 Browser Key 與獨立 Google Cloud 專案；Server Key 一律不能貼進瀏覽器。</span></div>
-              <div class="setup-links"><a href="https://developers.google.com/maps/documentation/urls/get-started" target="_blank" rel="noopener noreferrer">Google 官方 Maps URL 說明</a></div>
+              <div class="security-note"><strong>Google 增強功能仍在恢復中</strong><span>目前可用免 Key 外部導航。站內 Places 搜尋與自動路程計算尚未完成恢復及驗收；完成後會在這裡提供設定與驗證。請勿貼上 Server Key。</span></div>
+              <div class="setup-links"><a href="https://developers.google.com/maps/documentation/urls/get-started" target="_blank" rel="noopener noreferrer">Google 官方免 Key Maps URL 說明</a></div>
             </section>
 
             <section class="setup-panel" data-setup-step="3" hidden>
@@ -233,13 +245,13 @@
               <p>這不是 Google Cloud IAM。Authentication 只負責回答「現在登入 Travel OS 的人是誰」；Travel OS 的 owner／editor／viewer 是另一層旅程權限。</p>
               <div class="field-pair"><label>Firebase 使用者 Email<input name="email" type="email" autocomplete="username" placeholder="you@example.com" /></label><label>Firebase 使用者密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
               <p class="field-help">帳號來源：Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」。Travel OS 不會保存你的密碼。</p>
-              <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開 Firebase config（不保存密碼）</label>
+              <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的 Firebase Web config（不保存密碼）</label>
             </section>
 
             <section class="setup-panel" data-setup-step="4" hidden>
               <p class="eyebrow">STEP 5 · VERIFY</p>
               <h3>最後由 Travel OS 自動檢查</h3>
-              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除。Google Maps 外部導航不需要驗證 API Key。</p>
+              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除。此流程不載入 Google 付費 API，也不部署 Functions；連線測試無法查證計費方案，請在 Firebase 控制台確認 Spark。</p>
               <div id="verification-summary" class="setup-check-result"></div>
               <div id="connection-progress" class="checklist" aria-live="polite"></div>
               <div class="warning-card"><strong>「登入成功」不代表 Rules 一定安全</strong><span>Travel OS repository 另外用 Firebase Emulator 測試 owner/editor/viewer 與跨旅程拒絕。這裡只確認你的 self-host 設定可以正常連線與合法讀寫。</span></div>

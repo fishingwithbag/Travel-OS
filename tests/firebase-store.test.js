@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { createItem, createTrip, touchTrip } from '../src/domain/trip.js';
 import { commitIfRevisionMatches, FirebaseTripStore, normalizeFirebaseTrip, parseFirebaseTrip, serializeFirebaseTrip } from '../src/storage/firebase-store.js';
 
+
 function snapshot(value) {
   return {
     val:() => value,
@@ -89,8 +90,12 @@ describe('Firebase trip normalization', () => {
   it('creates trips and membership index in one root update', async () => {
     const { store, databaseModule } = await connectedStore();
     const trip = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-new');
-    databaseModule.get.mockResolvedValueOnce(snapshot(null)).mockResolvedValueOnce(snapshot({}));
+    databaseModule.get.mockImplementationOnce(async (target) => {
+      expect(target.path).toBe('userTrips/owner');
+      return snapshot(null);
+    });
     await store.saveTrip(trip);
+    expect(databaseModule.get).toHaveBeenCalledOnce();
     expect(databaseModule.update).toHaveBeenCalledOnce();
     expect(databaseModule.update.mock.calls[0][1]).toEqual({
       'trips/trip-new':{ ownerId:'owner', members:{ owner:'owner' }, data:{ ...trip, groups:{}, items:{} } },
@@ -102,7 +107,7 @@ describe('Firebase trip normalization', () => {
     const { store, databaseModule } = await connectedStore();
     const trip = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-101');
     const fullIndex = Object.fromEntries(Array.from({ length:100 }, (_, index) => [`trip-${index}`, true]));
-    databaseModule.get.mockResolvedValueOnce(snapshot(null)).mockResolvedValueOnce(snapshot(fullIndex));
+    databaseModule.get.mockResolvedValueOnce(snapshot(fullIndex));
     await expect(store.saveTrip(trip)).rejects.toThrow(/100 趟/);
     expect(databaseModule.update).not.toHaveBeenCalled();
   });
@@ -111,9 +116,23 @@ describe('Firebase trip normalization', () => {
     const { store, databaseModule } = await connectedStore();
     const current = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-a');
     const next = touchTrip(current);
-    databaseModule.get.mockResolvedValueOnce(snapshot({ data:current }));
+    databaseModule.get.mockResolvedValueOnce(snapshot({ 'trip-a':true }));
     databaseModule.runTransaction.mockImplementationOnce(async (target, updater) => ({ committed:updater({ ...current, revision:2 }) !== undefined }));
     await expect(store.saveTrip(next)).rejects.toThrow(/其他裝置更新/);
+  });
+
+  it('lets an uncached transaction retry with server data before checking revision', async () => {
+    const { store, databaseModule } = await connectedStore();
+    const current = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-a');
+    const next = touchTrip(current);
+    databaseModule.get.mockResolvedValueOnce(snapshot({ 'trip-a':true }));
+    databaseModule.runTransaction.mockImplementationOnce(async (_target, updater) => {
+      expect(updater(null)).toEqual(serializeFirebaseTrip(next));
+      expect(updater(current)).toEqual(serializeFirebaseTrip(next));
+      expect(updater({ ...current, revision:2 })).toBeUndefined();
+      return { committed:true };
+    });
+    await expect(store.saveTrip(next)).resolves.toEqual(next);
   });
 
   it('writes member/index changes atomically and removes every index on trip deletion', async () => {

@@ -90,7 +90,7 @@
           "items": {
             ".validate": "newData.hasChildren()",
             "$itemKey": {
-              ".validate": "newData.hasChildren(['id','date','type','title','currency'])",
+              ".validate": "newData.hasChildren(['id','date','type','title','currency']) && ((!newData.child('endTime').exists() && !newData.child('endDate').exists()) || (newData.hasChildren(['startTime','endTime','endDate']) && newData.child('type').val() !== 'flight' && newData.child('startTime').val() !== '' && (newData.child('endDate').val() > newData.child('date').val() || newData.child('endTime').val() >= newData.child('startTime').val()))) && (!newData.child('transitMinutes').exists() || newData.child('transitMode').exists())",
               "id": {
                 ".validate": "newData.isString() && newData.val() === $itemKey && newData.val().length > 0 && newData.val().length <= 100"
               },
@@ -105,6 +105,18 @@
               },
               "startTime": {
                 ".validate": "newData.isString() && (newData.val() === '' || newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/))"
+              },
+              "endDate": {
+                ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/) && newData.val() >= newData.parent().child('date').val() && newData.val() <= newData.parent().parent().parent().child('endDate').val()"
+              },
+              "endTime": {
+                ".validate": "newData.isString() && newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)"
+              },
+              "transitMode": {
+                ".validate": "newData.val() === 'driving' || newData.val() === 'walking' || newData.val() === 'transit' || newData.val() === 'other'"
+              },
+              "transitMinutes": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440 && newData.val() % 1 === 0"
               },
               "location": {
                 ".validate": "newData.isString() && newData.val().length <= 200"

@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFile } from 'node:fs/promises';
-import { get, ref, set, update } from 'firebase/database';
+import { get, ref, runTransaction, set, update } from 'firebase/database';
 
 let environment;
 
@@ -31,6 +31,16 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('allows editor schedule updates and removal but rejects invalid intervals and viewer changes', async () => {
+    const editorData=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    const item={id:'item-a',date:'2027-01-01',type:'place',title:'Evening',currency:'USD',startTime:'23:00',endDate:'2027-01-02',endTime:'01:00',transitMode:'walking',transitMinutes:15};
+    await assertSucceeds(update(editorData,{items:{'item-a':item},revision:2}));
+    for (const change of [{endDate:'2027-01-01'}, {endDate:'2027-01-03'}, {endTime:'26:00'}, {endTime:null}, {startTime:''}, {transitMinutes:-1}, {transitMinutes:1.5}, {transitMode:'fly'}, {transitMode:null}]) {
+      await assertFails(update(editorData,{items:{'item-a':{...item,...change}},revision:3}));
+    }
+    await assertFails(update(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),{items:null,revision:3}));
+    await assertSucceeds(update(editorData,{items:null,revision:3}));
+  });
   it('denies unauthenticated and outsider trip reads', async () => {
     await assertFails(get(ref(environment.unauthenticatedContext().database(), 'trips/trip-a')));
     await assertFails(get(ref(environment.authenticatedContext('outsider').database(), 'trips/trip-a')));
@@ -45,6 +55,19 @@ describe('Realtime Database tenant isolation', () => {
   it('allows owner and editor to update trip data', async () => {
     await assertSucceeds(update(ref(environment.authenticatedContext('owner').database(), 'trips/trip-a/data'), { title:'Owner edit', revision:2 }));
     await assertSucceeds(update(ref(environment.authenticatedContext('editor').database(), 'trips/trip-a/data'), { title:'Editor edit', revision:3 }));
+  });
+
+  it('commits an owner transaction when the trip is not locally cached', async () => {
+    const ownerData = ref(environment.authenticatedContext('owner').database(), 'trips/trip-a/data');
+    const next = { ...trip.data, title:'Transaction edit', revision:2, updatedAt:'2027-01-01T00:01:00.000Z' };
+    const seen = [];
+    const result = await runTransaction(ownerData, (current) => {
+      seen.push(current?.revision ?? null);
+      if (current == null) return next;
+      if (current.revision !== 1) return;
+      return next;
+    }, { applyLocally:false });
+    expect(result.committed, `transaction revisions: ${JSON.stringify(seen)}`).toBe(true);
   });
 
   it('prevents viewer writes and editor privilege escalation', async () => {
