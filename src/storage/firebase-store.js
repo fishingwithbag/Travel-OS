@@ -6,7 +6,7 @@ export function normalizeFirebaseTrip(value) {
   const items=toList(value.items).map(item=>Array.isArray(item.parking?.byGroup)
     ? {...item,parking:{...item.parking,byGroup:Object.fromEntries(Object.entries(item.parking.byGroup).filter(([,set])=>set != null))}}
     : item);
-  return { ...value, groups:toList(value.groups), places:toList(value.places), items };
+  return { ...value, groups:toList(value.groups), places:toList(value.places), rentals:toList(value.rentals), items };
 }
 
 export function parseFirebaseTrip(value) {
@@ -17,12 +17,13 @@ export function parseFirebaseTrip(value) {
 export function serializeFirebaseTrip(value) {
   const trip = validateTrip(value);
   const validKey = (id) => typeof id === 'string' && id.length > 0 && !/[.#$\[\]\/]/.test(id);
-  if (!validKey(trip.id) || [...trip.groups,...trip.items,...trip.places].some(entry=>!validKey(entry.id))) throw new ValidationError('雲端資料 ID 包含 Firebase 不支援的字元。');
+  if (!validKey(trip.id) || [...trip.groups,...trip.items,...trip.places,...trip.rentals].some(entry=>!validKey(entry.id))) throw new ValidationError('雲端資料 ID 包含 Firebase 不支援的字元。');
   return {
     ...trip,
     groups:Object.fromEntries(trip.groups.map((group) => [group.id, group])),
     items:Object.fromEntries(trip.items.map((item) => [item.id, item])),
     places:Object.fromEntries(trip.places.map(place=>[place.id,place])),
+    rentals:Object.fromEntries(trip.rentals.map(rental=>[rental.id,rental])),
   };
 }
 

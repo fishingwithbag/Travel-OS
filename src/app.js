@@ -11,6 +11,7 @@ import { itemMapUrl, parkingMapUrl, routeMapUrl, dayRouteSections } from './prov
 import { nextStop } from './domain/next-stop.js';
 import { formatFlightSchedule } from './domain/flight-schedule.js';
 import { durationMinutes, scheduleWarnings } from './domain/schedule.js';
+import { setupRentalUi } from './ui/rentals.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
@@ -30,6 +31,7 @@ const STORAGE_KEYS = Object.freeze({
   onboardingMode:localStorageKey('onboarding-mode'),
   connection:localStorageKey('connection'),
 });
+const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
@@ -256,6 +258,7 @@ function render() {
   groupSelect.replaceChildren(new Option('所有人', ''), ...trip.groups.map((group) => new Option(group.name, group.id)));
   $('#item-form input[name="currency"]').value = trip.currency;
   renderPlaces();
+  rentalUi.render();
 }
 
 function renderPlaces() {
@@ -317,7 +320,7 @@ $('#place-form').addEventListener('submit',async event=>{
     if (placeEditor.id && !places.some(entry=>entry.id === placeEditor.id)) throw new ValidationError('此景點已不存在，請重新載入。');
     setPlaceSaving(true);
     await saveTrip({...trip,places:placeEditor.id ? places.map(entry=>entry.id === place.id ? place : entry) : [...places,place]});
-    $('#place-dialog').close(); showToast('景點已儲存。');
+    setPlaceSaving(false); $('#place-dialog').close(); showToast('景點已儲存。');
   } catch (error) { setError(form,error); } finally { setPlaceSaving(false); }
 });
 $('#place-delete-button').addEventListener('click',async()=>{
@@ -326,10 +329,10 @@ $('#place-delete-button').addEventListener('click',async()=>{
   try {
     const trip = editingPlaceTrip(); setPlaceSaving(true);
     await saveTrip({...trip,places:(trip.places || []).filter(place=>place.id !== placeEditor.id)});
-    $('#place-dialog').close(); showToast('景點已刪除；每日安排仍保留。');
+    setPlaceSaving(false); $('#place-dialog').close(); showToast('景點已刪除；每日安排仍保留。');
   } catch (error) { setError($('#place-form'),error); } finally { setPlaceSaving(false); }
 });
-$('.places-panel').addEventListener('click',async event=>{
+$('#place-library').addEventListener('click',async event=>{
   if (placeSaving) return;
   if (event.target.closest('[data-new-place]')) { openPlaceDialog(); return; }
   const button = event.target.closest('[data-edit-place],[data-favorite-place],[data-schedule-place]'); if (!button) return;
@@ -344,7 +347,7 @@ $('.places-panel').addEventListener('click',async event=>{
     setPlaceSaving(false);
     const target = Array.from($('#place-list').querySelectorAll('[data-favorite-place]')).find(control=>control.dataset.favoritePlace === id);
     (target || $('#place-filters').elements.favorites).focus();
-  } catch (error) { setError($('.places-panel'),error); } finally { setPlaceSaving(false); }
+  } catch (error) { setError($('#place-library'),error); } finally { setPlaceSaving(false); }
 });
 
 function escapeHtml(value) { const element = document.createElement('span'); element.textContent = value ?? ''; return element.innerHTML; }
@@ -543,7 +546,7 @@ $('#import-form').addEventListener('submit', async (event) => {
   } finally { button.disabled = false; }
 });
 
-for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !itemSaving && !placeSaving && !rentalUi.isSaving()) dialog.close(); });
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem(STORAGE_KEYS.theme) || 'light';

@@ -94,7 +94,12 @@
             </section>
           </aside>
         </div>
-        <section class="panel places-panel" aria-labelledby="places-heading">
+        <section class="panel places-panel rental-panel" aria-labelledby="rentals-heading">
+          <div class="panel-heading"><div><p class="eyebrow">RENTAL CARS</p><h2 id="rentals-heading">租車與取還車</h2></div><button class="primary small" data-new-rental type="button">新增租車</button></div>
+          <p class="muted compact">可為任意群組建立多筆租車。日期與時間使用旅程時區；預訂費用僅供參考，加入取還車安排時不會重複計費。</p>
+          <p class="form-error" role="alert"></p><ul id="rental-list" class="place-list"></ul><p id="rental-empty" class="muted">尚無租車資料；可先建立同行群組，也可以選擇所有人共用。</p>
+        </section>
+        <section id="place-library" class="panel places-panel" aria-labelledby="places-heading">
           <div class="panel-heading"><div><p class="eyebrow">PLACES & SAVED</p><h2 id="places-heading">景點庫與收藏</h2></div><button class="primary small" data-new-place type="button">新增景點</button></div>
           <p class="muted compact">先收藏候選地點，再加入每日安排。景點庫只屬於目前旅程；修改或刪除景點不會更動已加入的安排。</p>
           <form id="place-filters" class="place-filters" role="search" aria-label="搜尋景點庫">
@@ -113,6 +118,26 @@
       </section>
     </main>
 
+    <dialog id="rental-dialog">
+      <form id="rental-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">RENTAL CAR</p><h2 id="rental-dialog-title">新增租車</h2></header>
+        <label>租車群組<select name="groupId"><option value="">所有人共用</option></select></label>
+        <label>租車公司<input name="company" maxlength="100" required /></label>
+        <label>租車地點／分店<input name="branch" maxlength="200" /></label>
+        <label>車型<input name="car" maxlength="100" /></label>
+        <div class="field-pair"><label>取車日期<input name="pickupDate" type="date" required /></label><label>取車時間<input name="pickupTime" type="time" required /></label></div>
+        <label>取車地點<input name="pickupLocation" maxlength="200" required /></label>
+        <label>取車 Google Maps 連結<input name="pickupMapsUrl" type="url" maxlength="600" /></label>
+        <div class="field-pair"><label>還車日期<input name="returnDate" type="date" required /></label><label>還車時間<input name="returnTime" type="time" required /></label></div>
+        <label>還車地點<input name="returnLocation" maxlength="200" required /></label>
+        <label>還車 Google Maps 連結<input name="returnMapsUrl" type="url" maxlength="600" /></label>
+        <div class="field-pair"><label>租車預訂費用<input name="amount" type="number" min="0" max="1000000000" step="0.01" /></label><label>租車費用幣別<input name="currency" maxlength="3" required /></label></div>
+        <label>預訂編號<input name="booking" maxlength="100" /></label>
+        <label>租車備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <p class="form-error" role="alert"></p><p id="rental-delete-warning" class="warning-card" hidden>確定刪除此租車預訂？已加入的取還車安排會保留，請另外確認是否需要修改。</p>
+        <footer><button id="rental-delete-button" class="secondary" type="button" hidden>刪除租車</button><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">儲存租車</button></footer>
+      </form>
+    </dialog>
     <dialog id="place-dialog">
       <form id="place-form" method="dialog" class="dialog-form">
         <header><p class="eyebrow">PLACE LIBRARY</p><h2 id="place-dialog-title">新增景點</h2></header>

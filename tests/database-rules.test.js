@@ -31,6 +31,16 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('allows grouped rental bookings while rejecting invalid groups, dates and viewer writes', async () => {
+    const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    const rental={id:'rental-a',groupId:'a',company:'Sample rental',pickupDate:'2027-01-01',pickupTime:'10:00',pickupLocation:'Station',returnDate:'2027-01-02',returnTime:'18:00',returnLocation:'Airport',amountMinor:12000,currency:'USD',booking:'DEMO-ONLY'};
+    await assertSucceeds(update(target,{groups:{a:{id:'a',name:'A'}},rentals:{'rental-a':rental},revision:2}));
+    for(const change of [{id:'wrong'},{groupId:'missing'},{returnDate:'2027-01-01',returnTime:'09:00'},{pickupDate:'2026-12-31'},{pickupTime:'25:00'},{amountMinor:-1},{currency:'x'},{returnMapsUrl:'javascript:alert(1)'}]) {
+      await assertFails(update(target,{rentals:{'rental-a':{...rental,...change}},revision:3}));
+    }
+    await assertFails(update(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),{rentals:null,revision:3}));
+    await assertSucceeds(update(target,{rentals:null,revision:3}));
+  });
   it('isolates saved places and favorites and validates every editable field', async () => {
     const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
     const place={id:'saved-a',title:'Sample café',region:'North',category:'餐廳',subcategory:'Coffee',hours:'09:00–17:00',location:'Market street',mapsUrl:'https://maps.app.goo.gl/sample',notes:'Reservation reminder',favorite:true};

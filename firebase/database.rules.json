@@ -322,6 +322,66 @@
                 ".validate": false
               }
             }
+          },
+          "rentals": {
+            ".validate": "newData.hasChildren()",
+            "$rentalKey": {
+              ".validate": "newData.hasChildren(['id','company','pickupDate','pickupTime','pickupLocation','returnDate','returnTime','returnLocation','currency']) && (newData.child('returnDate').val() > newData.child('pickupDate').val() || (newData.child('returnDate').val() === newData.child('pickupDate').val() && newData.child('returnTime').val() >= newData.child('pickupTime').val()))",
+              "id": {
+                ".validate": "newData.isString() && newData.val() === $rentalKey && newData.val().length > 0 && newData.val().length <= 100"
+              },
+              "company": {
+                ".validate": "newData.isString() && newData.val().length <= 100 && newData.val().length > 0 && newData.val().matches(/.*[^ ].*/)"
+              },
+              "car": {
+                ".validate": "newData.isString() && newData.val().length <= 100"
+              },
+              "branch": {
+                ".validate": "newData.isString() && newData.val().length <= 200"
+              },
+              "booking": {
+                ".validate": "newData.isString() && newData.val().length <= 100"
+              },
+              "notes": {
+                ".validate": "newData.isString() && newData.val().length <= 1000"
+              },
+              "pickupLocation": {
+                ".validate": "newData.isString() && newData.val().length <= 200 && newData.val().length > 0 && newData.val().matches(/.*[^ ].*/)"
+              },
+              "returnLocation": {
+                ".validate": "newData.isString() && newData.val().length <= 200 && newData.val().length > 0 && newData.val().matches(/.*[^ ].*/)"
+              },
+              "groupId": {
+                ".validate": "newData.isString() && newData.val().length <= 100 && (newData.val() === '' || newData.parent().parent().parent().child('groups').child(newData.val()).exists())"
+              },
+              "currency": {
+                ".validate": "newData.isString() && newData.val().matches(/^[A-Z]{3}$/)"
+              },
+              "amountMinor": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000000 && newData.val() % 1 === 0"
+              },
+              "pickupMapsUrl": {
+                ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))"
+              },
+              "pickupTime": {
+                ".validate": "newData.isString() && newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)"
+              },
+              "pickupDate": {
+                ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.val() >= newData.parent().parent().parent().child('startDate').val() && newData.val() <= newData.parent().parent().parent().child('endDate').val()"
+              },
+              "returnMapsUrl": {
+                ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))"
+              },
+              "returnTime": {
+                ".validate": "newData.isString() && newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)"
+              },
+              "returnDate": {
+                ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.val() >= newData.parent().parent().parent().child('startDate').val() && newData.val() <= newData.parent().parent().parent().child('endDate').val()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
           }
         }
       }

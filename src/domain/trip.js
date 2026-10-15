@@ -141,7 +141,32 @@ export function createTrip(input, id = crypto.randomUUID()) {
   if (!/^[A-Z]{3}$/.test(currency)) throw new ValidationError('幣別請使用三碼代號。', 'currency');
   const timeZone = validTimeZone(input.timeZone || 'UTC', '時區');
   const now = new Date().toISOString();
-  return { schemaVersion: SCHEMA_VERSION, id, title, destination, startDate: dates[0], endDate: dates.at(-1), timeZone, currency, groups: [], items: [], places: [], createdAt: now, updatedAt: now, revision: 1 };
+  return { schemaVersion: SCHEMA_VERSION, id, title, destination, startDate: dates[0], endDate: dates.at(-1), timeZone, currency, groups: [], items: [], places: [], rentals: [], createdAt: now, updatedAt: now, revision: 1 };
+}
+
+export function createRental(input, trip, id = crypto.randomUUID()) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new ValidationError('租車資料格式不正確。');
+  const groupId=cleanOptional(input.groupId,100,'群組 ID');
+  if (groupId && !trip.groups.some(group=>group.id === groupId)) throw new ValidationError('租車資料包含不存在的群組。');
+  const rental={id:clean(id,100,'租車 ID'),groupId,company:clean(input.company,100,'租車公司'),car:cleanOptional(input.car,100,'車型'),branch:cleanOptional(input.branch,200,'租車分店'),booking:cleanOptional(input.booking,100,'預訂編號'),notes:cleanOptional(input.notes,1000,'租車備註')};
+  for (const event of ['pickup','return']) {
+    const date=input[`${event}Date`], time=input[`${event}Time`];
+    if (!isRealDate(date) || date < trip.startDate || date > trip.endDate || !clockTime.test(time)) throw new ValidationError('請填寫旅程範圍內的取還車日期及有效時間。');
+    rental[`${event}Date`]=date; rental[`${event}Time`]=time;
+    rental[`${event}Location`]=clean(input[`${event}Location`],200,event === 'pickup' ? '取車地點' : '還車地點');
+    rental[`${event}MapsUrl`]=cleanMapsUrl(input[`${event}MapsUrl`],event === 'pickup' ? '取車地圖' : '還車地圖');
+  }
+  if (`${rental.returnDate}T${rental.returnTime}` < `${rental.pickupDate}T${rental.pickupTime}`) throw new ValidationError('還車時間不可早於取車時間（依旅程當地時間）。');
+  const currency=String(input.currency || trip.currency).trim().toUpperCase();
+  const amount=input.amount === '' || input.amount == null ? null : Number(input.amount);
+  if (!/^[A-Z]{3}$/.test(currency) || (amount != null && (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000_000))) throw new ValidationError('請填寫有效租車費用及三碼幣別。');
+  return {...rental,currency,amountMinor:amount == null ? null : Math.round(amount*100)};
+}
+
+export function rentalItemInput(rental,event) {
+  if (!['pickup','return'].includes(event)) throw new ValidationError('不支援的租車行程。');
+  return {type:'transport',title:`${event === 'pickup' ? '取車' : '還車'} · ${rental.company}`,date:rental[`${event}Date`],startTime:rental[`${event}Time`],location:rental[`${event}Location`],mapsUrl:rental[`${event}MapsUrl`],groupId:rental.groupId,
+    notes:[rental.branch,rental.car,rental.booking ? `預訂編號：${rental.booking}` : '',rental.notes].filter(Boolean).join('\n')};
 }
 
 export function createPlace(input, id = crypto.randomUUID()) {
@@ -262,6 +287,12 @@ export function validateTrip(value) {
   const groups = value.groups.map((group) => ({ id:clean(group?.id,100,'群組 ID'), name:clean(group?.name,50,'群組名稱') }));
   uniqueIds(groups, '群組');
   const base = { ...normalized, groups };
+  if (value.rentals != null && (!Array.isArray(value.rentals) || value.rentals.length > 1000)) throw new ValidationError('租車資料格式或數量不正確。');
+  const rentals=(value.rentals ?? []).map(rental=> {
+    if (rental?.amountMinor != null && (!Number.isSafeInteger(rental.amountMinor) || rental.amountMinor < 0 || rental.amountMinor > 100_000_000_000)) throw new ValidationError('租車費用不正確。');
+    return createRental({...rental,amount:rental.amountMinor == null ? '' : rental.amountMinor/100},base,clean(rental?.id,100,'租車 ID'));
+  });
+  uniqueIds(rentals,'租車');
   const items = value.items.map((item) => {
     const amountMinor = item?.amountMinor;
     if (amountMinor != null && (!Number.isSafeInteger(Number(amountMinor)) || Number(amountMinor) < 0 || Number(amountMinor) > 100_000_000_000)) throw new ValidationError('費用金額不正確。', 'amountMinor');
@@ -281,7 +312,7 @@ export function validateTrip(value) {
   const createdAt = String(value.createdAt || '');
   const updatedAt = String(value.updatedAt || '');
   if (!isoDateTime.test(createdAt) || !isoDateTime.test(updatedAt) || !Number.isFinite(Date.parse(createdAt)) || !Number.isFinite(Date.parse(updatedAt)) || Date.parse(updatedAt) < Date.parse(createdAt)) throw new ValidationError('旅程時間戳記格式不正確。');
-  return { ...base, items, places, createdAt, updatedAt, revision };
+  return { ...base, items, places, rentals, createdAt, updatedAt, revision };
 }
 
 export function validateBackup(value) {
@@ -298,6 +329,7 @@ export function createBackup(trips, mode = 'private') {
     ...trip,
     groups:[],
     places:[],
+    rentals:[],
     items:trip.items.map(({ notes, parking, mapsUrl, groupId, amountMinor, currency, ...item }) => ({ ...item, notes:'', parking:null, mapsUrl:'', groupId:'', amountMinor:null, currency:trip.currency })),
   })) : privateCopy;
   return { schemaVersion:SCHEMA_VERSION, exportedAt:new Date().toISOString(), mode:mode === 'share' ? 'share' : 'private', trips:exportTrips };
