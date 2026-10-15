@@ -94,8 +94,42 @@
             </section>
           </aside>
         </div>
+        <section class="panel places-panel" aria-labelledby="places-heading">
+          <div class="panel-heading"><div><p class="eyebrow">PLACES & SAVED</p><h2 id="places-heading">景點庫與收藏</h2></div><button class="primary small" data-new-place type="button">新增景點</button></div>
+          <p class="muted compact">先收藏候選地點，再加入每日安排。景點庫只屬於目前旅程；修改或刪除景點不會更動已加入的安排。</p>
+          <form id="place-filters" class="place-filters" role="search" aria-label="搜尋景點庫">
+            <label>搜尋<input name="query" type="search" placeholder="名稱、地址、地區或備註" /></label>
+            <label>地區<select name="region"><option value="">全部地區</option></select></label>
+            <label>類別<select name="category"><option value="">全部類別</option></select></label>
+            <label>子類別<select name="subcategory"><option value="">全部子類別</option></select></label>
+            <label>排序<select name="sort"><option value="default">新增順序</option><option value="region">依地區</option><option value="category">依類別</option><option value="favorite">收藏優先</option></select></label>
+            <label class="check-row"><input name="favorites" type="checkbox" />只看收藏</label>
+          </form>
+          <p id="places-count" class="muted" role="status"></p>
+          <p id="places-error" class="form-error" role="alert"></p>
+          <ul id="place-list" class="place-list"></ul>
+          <p id="places-empty" class="empty-state">尚無景點。新增想去的地點，就能保存備註並加入每日行程。</p>
+        </section>
       </section>
     </main>
+
+    <dialog id="place-dialog">
+      <form id="place-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">PLACE LIBRARY</p><h2 id="place-dialog-title">新增景點</h2></header>
+        <label>景點名稱<input name="title" maxlength="100" required /></label>
+        <label>地區<input name="region" maxlength="100" /></label>
+        <div class="field-pair"><label>類別<input name="category" list="place-categories" maxlength="50" required value="景點" /></label><label>子類別<input name="subcategory" maxlength="50" /></label></div>
+        <datalist id="place-categories"><option value="景點"></option><option value="餐廳"></option><option value="住宿"></option><option value="購物"></option><option value="其他"></option></datalist>
+        <label>營業時間<input name="hours" maxlength="200" placeholder="可填營業時段、公休日或預約提醒" /></label>
+        <label>地址／位置<input name="location" maxlength="200" /></label>
+        <label>Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" /></label>
+        <label>備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <label class="check-row"><input name="favorite" type="checkbox" />加入收藏</label>
+        <p class="form-error" role="alert"></p>
+        <p id="place-delete-warning" class="warning-card" hidden>確定刪除此景點？已加入每日行程的安排會保留。</p>
+        <footer><button id="place-delete-button" class="secondary" type="button" hidden>刪除景點</button><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">儲存景點</button></footer>
+      </form>
+    </dialog>
 
     <dialog id="trip-dialog">
       <form id="trip-form" method="dialog" class="dialog-form">

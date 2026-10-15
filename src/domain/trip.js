@@ -42,7 +42,7 @@ function clean(value, max, field) {
 
 function cleanOptional(value, max, field) {
   const text = String(value ?? '').trim();
-  if (text.length > max) throw new ValidationError(`${field}格式不正確。`, field);
+  if (text.length > max) throw new ValidationError(`${field}最多 ${max} 字，請縮短後再儲存。`, field);
   return text;
 }
 
@@ -141,7 +141,35 @@ export function createTrip(input, id = crypto.randomUUID()) {
   if (!/^[A-Z]{3}$/.test(currency)) throw new ValidationError('幣別請使用三碼代號。', 'currency');
   const timeZone = validTimeZone(input.timeZone || 'UTC', '時區');
   const now = new Date().toISOString();
-  return { schemaVersion: SCHEMA_VERSION, id, title, destination, startDate: dates[0], endDate: dates.at(-1), timeZone, currency, groups: [], items: [], createdAt: now, updatedAt: now, revision: 1 };
+  return { schemaVersion: SCHEMA_VERSION, id, title, destination, startDate: dates[0], endDate: dates.at(-1), timeZone, currency, groups: [], items: [], places: [], createdAt: now, updatedAt: now, revision: 1 };
+}
+
+export function createPlace(input, id = crypto.randomUUID()) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new ValidationError('景點資料格式不正確。');
+  if (input.favorite != null && typeof input.favorite !== 'boolean') throw new ValidationError('收藏狀態格式不正確。');
+  return {
+    id:clean(id,100,'景點 ID'), title:clean(input.title,100,'景點名稱'),
+    region:cleanOptional(input.region,100,'地區'), category:clean(input.category || '景點',50,'類別'),
+    subcategory:cleanOptional(input.subcategory,50,'子類別'), hours:cleanOptional(input.hours,200,'營業時間'),
+    location:cleanOptional(input.location,200,'地址／位置'), mapsUrl:cleanMapsUrl(input.mapsUrl,'景點地圖'),
+    notes:cleanOptional(input.notes,1000,'景點備註'), favorite:input.favorite ?? false,
+  };
+}
+
+export function filterPlaces(places, {query='',region='',category='',subcategory='',favorites=false,sort='default'} = {}) {
+  const needle = query.trim().toLocaleLowerCase();
+  const filtered = places.filter(place => (!region || place.region === region)
+    && (!category || place.category === category) && (!subcategory || place.subcategory === subcategory)
+    && (!favorites || place.favorite)
+    && (!needle || [place.title,place.region,place.category,place.subcategory,place.location,place.notes,place.hours].some(value=>value.toLocaleLowerCase().includes(needle))));
+  if (sort === 'favorite') filtered.sort((a,b)=>Number(b.favorite)-Number(a.favorite));
+  if (['region','category'].includes(sort)) filtered.sort((a,b)=>a[sort].localeCompare(b[sort],'zh-Hant'));
+  return filtered;
+}
+
+export function placeItemInput(place, date) {
+  return {title:place.title,location:place.location,mapsUrl:place.mapsUrl,notes:[place.notes,place.hours ? `營業時間：${place.hours}` : ''].filter(Boolean).join('\n'),date,
+    type:['餐廳','餐飲'].includes(place.category) ? 'meal' : place.category === '住宿' ? 'stay' : place.category === '其他' ? 'other' : 'place'};
 }
 
 export function createItem(input, trip, id = crypto.randomUUID(), options = {}) {
@@ -226,6 +254,9 @@ export function validateTrip(value) {
   if (!Array.isArray(value.items) || !Array.isArray(value.groups)) throw new ValidationError('旅程資料結構不完整。');
   if (value.items.length > 10_000) throw new ValidationError('單一旅程的項目數量超過上限。');
   if (value.groups.length > 1_000) throw new ValidationError('單一旅程的群組數量超過上限。');
+  if (value.places != null && (!Array.isArray(value.places) || value.places.length > 10_000)) throw new ValidationError('景點庫資料格式或數量不正確。');
+  const places = (value.places ?? []).map(place=>createPlace(place,clean(place?.id,100,'景點 ID')));
+  uniqueIds(places,'景點');
   const id = clean(value.id, 100, '旅程 ID');
   const normalized = createTrip(value, id);
   const groups = value.groups.map((group) => ({ id:clean(group?.id,100,'群組 ID'), name:clean(group?.name,50,'群組名稱') }));
@@ -250,7 +281,7 @@ export function validateTrip(value) {
   const createdAt = String(value.createdAt || '');
   const updatedAt = String(value.updatedAt || '');
   if (!isoDateTime.test(createdAt) || !isoDateTime.test(updatedAt) || !Number.isFinite(Date.parse(createdAt)) || !Number.isFinite(Date.parse(updatedAt)) || Date.parse(updatedAt) < Date.parse(createdAt)) throw new ValidationError('旅程時間戳記格式不正確。');
-  return { ...base, items, createdAt, updatedAt, revision };
+  return { ...base, items, places, createdAt, updatedAt, revision };
 }
 
 export function validateBackup(value) {
@@ -266,6 +297,7 @@ export function createBackup(trips, mode = 'private') {
   const exportTrips = mode === 'share' ? privateCopy.map((trip) => ({
     ...trip,
     groups:[],
+    places:[],
     items:trip.items.map(({ notes, parking, mapsUrl, groupId, amountMinor, currency, ...item }) => ({ ...item, notes:'', parking:null, mapsUrl:'', groupId:'', amountMinor:null, currency:trip.currency })),
   })) : privateCopy;
   return { schemaVersion:SCHEMA_VERSION, exportedAt:new Date().toISOString(), mode:mode === 'share' ? 'share' : 'private', trips:exportTrips };

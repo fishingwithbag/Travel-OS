@@ -1,6 +1,6 @@
 import './styles.css';
 import travelOsDatabaseRules from '../firebase/database.rules.json?raw';
-import { addGroup, createBackup, createItem, createTrip, editItem, expenseTotals, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
+import { addGroup, createBackup, createItem, createPlace, createTrip, editItem, expenseTotals, filterPlaces, placeItemInput, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfigInput, parseRememberedConnection } from './config/firebase-config.js';
 import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployment.js';
@@ -17,6 +17,9 @@ const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', co
 let pendingBackup = null;
 let itemEditor = null;
 let itemSaving = false;
+let placeEditor = null;
+let placeSaving = false;
+let placeFilterTripId = '';
 let setupStep = 0;
 let highestSetupStep = 0;
 const $ = (selector) => document.querySelector(selector);
@@ -109,7 +112,7 @@ function itemTimingHtml(item) {
   return `${duration == null ? '' : `<p class="timeline-meta">至 ${escapeHtml(item.endDate !== item.date ? item.endDate + ' ' : '')}${escapeHtml(item.endTime)} · ${duration} 分鐘（旅程當地時間）</p>`}${mode ? `<p class="timeline-meta">前往下一站：${mode}${item.transitMinutes == null ? ' · 時間未設定' : ` · ${item.transitMinutes} 分鐘（手動）`}</p>` : ''}`;
 }
 
-function openItemDialog(item = null) {
+function openItemDialog(item = null, seed = {}) {
   const trip = currentTrip();
   if (!trip) return;
   const form = $('#item-form');
@@ -118,7 +121,7 @@ function openItemDialog(item = null) {
   const values = item ? { ...item, ...item.flight, amount:item.amountMinor == null ? '' : item.amountMinor / 100,
     parkingPrimaryName:item.parking?.primary?.name || '', parkingPrimaryMapsUrl:item.parking?.primary?.mapsUrl || '',
     parkingBackupName:item.parking?.backup?.name || '', parkingBackupMapsUrl:item.parking?.backup?.mapsUrl || '', parkingNotes:item.parking?.notes || '' }
-    : { date:state.selectedDate, currency:trip.currency };
+    : { date:state.selectedDate, currency:trip.currency, ...seed };
   for (const [name,value] of Object.entries(values)) {
     const control = form.elements.namedItem(name);
     if (control && typeof value !== 'object') control.value = value ?? '';
@@ -126,8 +129,8 @@ function openItemDialog(item = null) {
   form.elements.date.min = trip.startDate; form.elements.date.max = trip.endDate;
   form.elements.endDate.min = trip.startDate; form.elements.endDate.max = trip.endDate;
   buildParkingEditor(item?.parking,trip);
-  $('#flight-fields').hidden = item?.type !== 'flight';
-  $('#end-fields').hidden = item?.type === 'flight';
+  $('#flight-fields').hidden = values.type !== 'flight';
+  $('#end-fields').hidden = values.type === 'flight';
   $('#item-dialog-title').textContent = item ? '編輯安排' : '新增安排';
   $('#item-save-button').textContent = item ? '儲存變更' : '加入行程';
   $('#item-delete-button').hidden = !item;
@@ -252,7 +255,97 @@ function render() {
   const groupSelect = $('#item-form select[name="groupId"]');
   groupSelect.replaceChildren(new Option('所有人', ''), ...trip.groups.map((group) => new Option(group.name, group.id)));
   $('#item-form input[name="currency"]').value = trip.currency;
+  renderPlaces();
 }
+
+function renderPlaces() {
+  const trip = currentTrip();
+  const filters = $('#place-filters');
+  if (placeFilterTripId !== trip.id) { filters.reset(); placeFilterTripId = trip.id; }
+  const places = trip.places || [];
+  for (const [name,label] of [['region','地區'],['category','類別'],['subcategory','子類別']]) {
+    const control = filters.elements.namedItem(name); const selected = control.value;
+    const choices = [...new Set(places.filter(place=>name !== 'subcategory' || !filters.elements.category.value || place.category === filters.elements.category.value).map(place=>place[name]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+    control.replaceChildren(new Option(`全部${label}`,''),...choices.map(value=>new Option(value,value)));
+    control.value = choices.includes(selected) ? selected : '';
+  }
+  const shown = filterPlaces(places,{...formData(filters),favorites:filters.elements.favorites.checked});
+  $('#places-count').textContent = `${shown.length} / ${places.length} 個景點 · ${places.filter(place=>place.favorite).length} 個收藏`;
+  $('#places-empty').hidden = shown.length > 0;
+  $('#places-empty').textContent = places.length ? '沒有符合篩選的景點，請調整搜尋條件。' : '尚無景點。新增想去的地點，就能保存備註並加入每日行程。';
+  $('#place-list').innerHTML = shown.map(place=>`<li class="place-card"><div class="panel-heading"><div><p class="eyebrow">${escapeHtml([place.region,place.category,place.subcategory].filter(Boolean).join(' · '))}</p><h3>${escapeHtml(place.title)}</h3></div><button class="secondary" type="button" data-favorite-place="${escapeHtml(place.id)}" aria-pressed="${place.favorite}" aria-label="${place.favorite ? '取消收藏' : '收藏'}：${escapeHtml(place.title)}">${place.favorite ? '♥ 已收藏' : '♡ 收藏'}</button></div>
+    ${place.location ? `<p class="muted compact">${escapeHtml(place.location)}</p>` : ''}${place.hours ? `<p class="compact">營業時間：${escapeHtml(place.hours)}</p>` : ''}${itemNotesHtml(place)}
+    <div class="next-stop-actions">${mapLink({...place,type:'place'},'Google Maps')}<button class="secondary" type="button" data-edit-place="${escapeHtml(place.id)}">編輯景點</button><button class="primary" type="button" data-schedule-place="${escapeHtml(place.id)}">加入每日行程</button></div></li>`).join('');
+  setPlaceSaving(placeSaving);
+}
+
+function openPlaceDialog(place = null) {
+  const trip = currentTrip(); if (!trip) return;
+  const form = $('#place-form'); form.reset();
+  placeEditor = {tripId:trip.id,revision:trip.revision,id:place?.id || ''};
+  if (place) for (const [name,value] of Object.entries(place)) {
+    const control = form.elements.namedItem(name);
+    if (control) { if (control.type === 'checkbox') control.checked = value; else control.value = value; }
+  }
+  $('#place-dialog-title').textContent = place ? '編輯景點' : '新增景點';
+  $('#place-delete-button').hidden = !place;
+  $('#place-delete-button').textContent = '刪除景點'; $('#place-delete-warning').hidden = true;
+  openDialog('place-dialog');
+}
+
+function editingPlaceTrip() {
+  const trip = currentTrip();
+  if (!placeEditor || trip?.id !== placeEditor.tripId || trip.revision !== placeEditor.revision) throw new ValidationError('旅程已變更，請保留輸入內容並重新開啟景點。');
+  return trip;
+}
+
+function setPlaceSaving(busy) {
+  placeSaving = busy;
+  for (const control of document.querySelectorAll('#place-form input,#place-form textarea,#place-form button,#place-list button,[data-new-place]')) control.disabled = busy;
+}
+
+$('#place-filters').addEventListener('submit',event=>event.preventDefault());
+$('#place-filters').addEventListener('input',renderPlaces);
+$('#place-dialog').addEventListener('cancel',event=>{ if (placeSaving) event.preventDefault(); });
+$('#place-dialog').addEventListener('close',()=>{ placeEditor = null; $('[data-new-place]')?.focus(); });
+$('#place-form').addEventListener('submit',async event=>{
+  event.preventDefault(); const form = event.currentTarget; setError(form,''); if (placeSaving) return;
+  try {
+    const trip = editingPlaceTrip(); const places = trip.places || [];
+    if (!placeEditor.id && places.length >= 10_000) throw new ValidationError('單一旅程最多支援 10000 個景點。');
+    const place = createPlace({...formData(form),favorite:form.elements.favorite.checked},placeEditor.id || undefined);
+    if (placeEditor.id && !places.some(entry=>entry.id === placeEditor.id)) throw new ValidationError('此景點已不存在，請重新載入。');
+    setPlaceSaving(true);
+    await saveTrip({...trip,places:placeEditor.id ? places.map(entry=>entry.id === place.id ? place : entry) : [...places,place]});
+    $('#place-dialog').close(); showToast('景點已儲存。');
+  } catch (error) { setError(form,error); } finally { setPlaceSaving(false); }
+});
+$('#place-delete-button').addEventListener('click',async()=>{
+  if (placeSaving) return;
+  if ($('#place-delete-warning').hidden) { $('#place-delete-warning').hidden = false; $('#place-delete-button').textContent = '確定刪除景點'; return; }
+  try {
+    const trip = editingPlaceTrip(); setPlaceSaving(true);
+    await saveTrip({...trip,places:(trip.places || []).filter(place=>place.id !== placeEditor.id)});
+    $('#place-dialog').close(); showToast('景點已刪除；每日安排仍保留。');
+  } catch (error) { setError($('#place-form'),error); } finally { setPlaceSaving(false); }
+});
+$('.places-panel').addEventListener('click',async event=>{
+  if (placeSaving) return;
+  if (event.target.closest('[data-new-place]')) { openPlaceDialog(); return; }
+  const button = event.target.closest('[data-edit-place],[data-favorite-place],[data-schedule-place]'); if (!button) return;
+  const trip = currentTrip(); const id = button.dataset.editPlace || button.dataset.favoritePlace || button.dataset.schedulePlace;
+  const place = trip?.places?.find(entry=>entry.id === id); if (!place) return;
+  $('#places-error').textContent = '';
+  if (button.hasAttribute('data-edit-place')) { openPlaceDialog(place); return; }
+  if (button.hasAttribute('data-schedule-place')) { openItemDialog(null,placeItemInput(place,state.selectedDate)); return; }
+  try {
+    setPlaceSaving(true);
+    await saveTrip({...trip,places:trip.places.map(entry=>entry.id === id ? {...entry,favorite:!entry.favorite} : entry)});
+    setPlaceSaving(false);
+    const target = Array.from($('#place-list').querySelectorAll('[data-favorite-place]')).find(control=>control.dataset.favoritePlace === id);
+    (target || $('#place-filters').elements.favorites).focus();
+  } catch (error) { setError($('.places-panel'),error); } finally { setPlaceSaving(false); }
+});
 
 function escapeHtml(value) { const element = document.createElement('span'); element.textContent = value ?? ''; return element.innerHTML; }
 
@@ -428,7 +521,8 @@ $('#import-file').addEventListener('change', async (event) => {
     if (state.mode !== 'local') throw new ValidationError('請先切換至本機模式，再預覽及匯入備份。');
     pendingBackup = validateBackup(JSON.parse(await file.text()));
     const itemCount = pendingBackup.trips.reduce((sum, trip) => sum + trip.items.length, 0);
-    $('#import-summary').innerHTML = `<strong>${pendingBackup.trips.length} 趟旅程</strong><span>${itemCount} 筆安排 · ${pendingBackup.mode === 'share' ? '分享副本' : '完整備份'}</span>`;
+    const placeCount = pendingBackup.trips.reduce((sum, trip) => sum + trip.places.length, 0);
+    $('#import-summary').innerHTML = `<strong>${pendingBackup.trips.length} 趟旅程</strong><span>${itemCount} 筆安排 · ${placeCount} 個景點 · ${pendingBackup.mode === 'share' ? '分享副本' : '完整備份'}</span>`;
     openDialog('import-dialog');
   } catch (error) { showToast(error instanceof ValidationError ? error.message : '備份檔案無法解析。'); }
   event.target.value = '';
@@ -436,13 +530,17 @@ $('#import-file').addEventListener('change', async (event) => {
 $('#import-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!pendingBackup || state.mode !== 'local') return;
+  const form = event.currentTarget;
+  const button = form.querySelector('[type="submit"]');
+  if (button.disabled) return;
+  button.disabled = true;
   try {
     await store.replaceAll(pendingBackup.trips);
     state.trips = pendingBackup.trips; state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
-    const count = pendingBackup.trips.length; pendingBackup = null; event.currentTarget.closest('dialog').close(); render(); showToast(`已還原 ${count} 趟旅程。`);
+    const count = pendingBackup.trips.length; pendingBackup = null; form.closest('dialog').close(); render(); showToast(`已還原 ${count} 趟旅程。`);
   } catch {
     showToast('備份還原失敗；請確認瀏覽器儲存空間後重試。');
-  }
+  } finally { button.disabled = false; }
 });
 
 for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });

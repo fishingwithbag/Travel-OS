@@ -31,6 +31,18 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('isolates saved places and favorites and validates every editable field', async () => {
+    const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    const place={id:'saved-a',title:'Sample café',region:'North',category:'餐廳',subcategory:'Coffee',hours:'09:00–17:00',location:'Market street',mapsUrl:'https://maps.app.goo.gl/sample',notes:'Reservation reminder',favorite:true};
+    await assertSucceeds(update(target,{places:{'saved-a':place},revision:2}));
+    for (const change of [{id:'wrong'},{title:''},{title:'x'.repeat(101)},{category:''},{favorite:'true'},{mapsUrl:'javascript:alert(1)'},{serverSecret:'no'}]) {
+      await assertFails(update(target,{places:{'saved-a':{...place,...change}},revision:3}));
+    }
+    await assertFails(get(ref(environment.authenticatedContext('outsider').database(),'trips/trip-a/data/places')));
+    await assertFails(update(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),{places:null,revision:3}));
+    await assertSucceeds(update(target,{places:{'saved-a':{...place,favorite:false}},revision:3}));
+    await assertSucceeds(update(target,{places:null,revision:4}));
+  });
   it('accepts group parking while rejecting unknown groups, invalid metadata and viewer writes', async () => {
     const editor=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
     const spot={name:'Garage',mapsUrl:'',walkMinutes:5,feeMinor:1500,currency:'USD',note:'North entrance'};

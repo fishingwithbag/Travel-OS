@@ -283,6 +283,45 @@
           },
           "$other": {
             ".validate": false
+          },
+          "places": {
+            ".validate": "newData.hasChildren()",
+            "$placeKey": {
+              ".validate": "newData.hasChildren(['id','title','category','favorite'])",
+              "id": {
+                ".validate": "newData.isString() && newData.val() === $placeKey && newData.val().length > 0 && newData.val().length <= 100"
+              },
+              "title": {
+                ".validate": "newData.isString() && newData.val().length <= 100 && newData.val().length > 0 && newData.val().matches(/.*[^ ].*/)"
+              },
+              "region": {
+                ".validate": "newData.isString() && newData.val().length <= 100"
+              },
+              "category": {
+                ".validate": "newData.isString() && newData.val().length <= 50 && newData.val().length > 0 && newData.val().matches(/.*[^ ].*/)"
+              },
+              "subcategory": {
+                ".validate": "newData.isString() && newData.val().length <= 50"
+              },
+              "hours": {
+                ".validate": "newData.isString() && newData.val().length <= 200"
+              },
+              "location": {
+                ".validate": "newData.isString() && newData.val().length <= 200"
+              },
+              "mapsUrl": {
+                ".validate": "newData.isString() && newData.val().length <= 600 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/(www\\.google\\.com\\/maps|google\\.com\\/maps|maps\\.google\\.com\\/|maps\\.app\\.goo\\.gl\\/|goo\\.gl\\/maps\\/).*/))"
+              },
+              "notes": {
+                ".validate": "newData.isString() && newData.val().length <= 1000"
+              },
+              "favorite": {
+                ".validate": "newData.isBoolean()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
           }
         }
       }
