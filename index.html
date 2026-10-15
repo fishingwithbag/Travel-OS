@@ -94,6 +94,11 @@
             </section>
           </aside>
         </div>
+        <section id="expenses-panel" class="panel places-panel" aria-labelledby="expenses-heading">
+          <div class="panel-heading"><div><p class="eyebrow">EXPENSES</p><h2 id="expenses-heading">費用與分攤</h2></div><button class="primary small" data-new-expense type="button">新增費用</button></div>
+          <p class="muted compact">不同幣別分開計算。旅程摘要包含每日安排費用與以下獨立支出；租車／住宿的預訂金額僅供參考，請勿將同一筆支出重複記帳。</p>
+          <p id="expense-totals" class="muted"></p><ul id="expense-list" class="place-list"></ul><p id="expense-empty" class="muted">尚無獨立支出。</p>
+        </section>
         <section id="stays-panel" class="panel places-panel" aria-labelledby="stays-heading">
           <div class="panel-heading"><div><p class="eyebrow">STAYS</p><h2 id="stays-heading">住宿預訂</h2></div><button class="primary small" data-new-stay type="button">新增住宿</button></div>
           <p class="muted compact">保存預訂、房型、人數及入住／退房時間（旅程時區）。預訂費用供參考，實際支出請另外記帳。</p>
@@ -123,6 +128,20 @@
       </section>
     </main>
 
+    <dialog id="expense-dialog">
+      <form id="expense-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">EXPENSE</p><h2 id="expense-dialog-title">新增費用</h2></header>
+        <label>費用名稱<input name="title" maxlength="100" required /></label>
+        <div class="field-pair"><label>費用日期<input name="date" type="date" required /></label><label>費用分類<input name="category" maxlength="50" placeholder="住宿、交通、餐飲或自訂" /></label></div>
+        <label>費用群組<select name="groupId"><option value="">所有人</option></select></label>
+        <div class="field-pair"><label>支出金額<input name="amount" type="number" min="0" max="1000000000" step="0.01" required /></label><label>支出幣別<input name="currency" maxlength="3" required /></label></div>
+        <div class="field-pair"><label>分攤人數<input name="splitCount" type="number" min="1" max="1000" step="1" required /></label><label>付款人（選填）<input name="payer" maxlength="100" /></label></div>
+        <p class="field-help">均分到小數點後兩位；除不盡的餘額會列出需多分攤 0.01 的人數，確保總額一致。</p>
+        <label>費用備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <p class="form-error" role="alert"></p><p id="expense-delete-warning" class="warning-card" hidden>確定刪除此筆獨立支出？每日安排的費用不受影響。</p>
+        <footer><button id="expense-delete-button" class="secondary" type="button" hidden>刪除費用</button><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">儲存費用</button></footer>
+      </form>
+    </dialog>
     <dialog id="stay-dialog">
       <form id="stay-form" method="dialog" class="dialog-form">
         <header><p class="eyebrow">STAY RESERVATION</p><h2 id="stay-dialog-title">新增住宿</h2></header>

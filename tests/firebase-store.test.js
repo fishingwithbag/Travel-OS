@@ -98,7 +98,7 @@ describe('Firebase trip normalization', () => {
     expect(databaseModule.get).toHaveBeenCalledOnce();
     expect(databaseModule.update).toHaveBeenCalledOnce();
     expect(databaseModule.update.mock.calls[0][1]).toEqual({
-      'trips/trip-new':{ ownerId:'owner', members:{ owner:'owner' }, data:{ ...trip, groups:{}, items:{}, places:{}, rentals:{}, stays:{} } },
+      'trips/trip-new':{ ownerId:'owner', members:{ owner:'owner' }, data:{ ...trip, groups:{}, items:{}, places:{}, rentals:{}, stays:{}, expenses:{} } },
       'userTrips/owner/trip-new':true,
     });
   });

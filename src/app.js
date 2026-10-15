@@ -13,6 +13,7 @@ import { formatFlightSchedule } from './domain/flight-schedule.js';
 import { durationMinutes, scheduleWarnings } from './domain/schedule.js';
 import { setupRentalUi } from './ui/rentals.js';
 import { setupStayUi } from './ui/stays.js';
+import { setupExpenseUi } from './ui/expenses.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
@@ -34,6 +35,7 @@ const STORAGE_KEYS = Object.freeze({
 });
 const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast});
 const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast});
+const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
@@ -252,7 +254,7 @@ function render() {
   $('#summary-days').textContent = dates.length;
   $('#summary-items').textContent = trip.items.length;
   $('#summary-groups').textContent = trip.groups.length;
-  const totals = expenseTotals(trip.items);
+  const totals = expenseTotals([...trip.items,...(trip.expenses || [])]);
   $('#summary-cost').textContent = Object.keys(totals).length ? Object.entries(totals).map(([currency, minor]) => `${currency} ${(minor / 100).toLocaleString('zh-TW')}`).join(' / ') : '—';
   $('#group-list').innerHTML = trip.groups.map((group) => `<li>${escapeHtml(group.name)}</li>`).join('');
   $('#group-empty').hidden = trip.groups.length > 0;
@@ -262,6 +264,7 @@ function render() {
   renderPlaces();
   rentalUi.render();
   stayUi.render();
+  expenseUi.render();
 }
 
 function renderPlaces() {
@@ -549,7 +552,7 @@ $('#import-form').addEventListener('submit', async (event) => {
   } finally { button.disabled = false; }
 });
 
-for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving()) dialog.close(); });
+for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving()) dialog.close(); });
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem(STORAGE_KEYS.theme) || 'light';

@@ -141,7 +141,24 @@ export function createTrip(input, id = crypto.randomUUID()) {
   if (!/^[A-Z]{3}$/.test(currency)) throw new ValidationError('幣別請使用三碼代號。', 'currency');
   const timeZone = validTimeZone(input.timeZone || 'UTC', '時區');
   const now = new Date().toISOString();
-  return { schemaVersion: SCHEMA_VERSION, id, title, destination, startDate: dates[0], endDate: dates.at(-1), timeZone, currency, groups: [], items: [], places: [], rentals: [], stays: [], createdAt: now, updatedAt: now, revision: 1 };
+  return { schemaVersion: SCHEMA_VERSION, id, title, destination, startDate: dates[0], endDate: dates.at(-1), timeZone, currency, groups: [], items: [], places: [], rentals: [], stays: [], expenses: [], createdAt: now, updatedAt: now, revision: 1 };
+}
+
+export function createExpense(input,trip,id=crypto.randomUUID()) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new ValidationError('費用資料格式不正確。');
+  if (!isRealDate(input.date) || input.date < trip.startDate || input.date > trip.endDate) throw new ValidationError('費用日期須在旅程範圍內。');
+  const amount=input.amount === '' || input.amount == null ? NaN : Number(input.amount);
+  const currency=String(input.currency || trip.currency).trim().toUpperCase();
+  if (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000_000 || !/^[A-Z]{3}$/.test(currency)) throw new ValidationError('請填寫有效費用及三碼幣別。');
+  const splitCount=Number(input.splitCount);
+  if (!Number.isInteger(splitCount) || splitCount < 1 || splitCount > 1000) throw new ValidationError('分攤人數須為 1–1000 的整數。');
+  const groupId=cleanOptional(input.groupId,100,'群組 ID');
+  if (groupId && !trip.groups.some(group=>group.id === groupId)) throw new ValidationError('費用包含不存在的群組。');
+  return {id:clean(id,100,'費用 ID'),title:clean(input.title,100,'費用名稱'),date:input.date,category:cleanOptional(input.category,50,'費用分類'),groupId,amountMinor:Math.round(amount*100),currency,splitCount,payer:cleanOptional(input.payer,100,'付款人'),notes:cleanOptional(input.notes,1000,'費用備註')};
+}
+
+export function expenseSplit(expense) {
+  return {baseMinor:Math.floor(expense.amountMinor/expense.splitCount),extraCount:expense.amountMinor%expense.splitCount};
 }
 
 export function createStay(input, trip, id = crypto.randomUUID()) {
@@ -322,6 +339,12 @@ export function validateTrip(value) {
     return createStay({...stay,amount:stay.amountMinor == null ? '' : stay.amountMinor/100},base,clean(stay?.id,100,'住宿 ID'));
   });
   uniqueIds(stays,'住宿');
+  if (value.expenses != null && (!Array.isArray(value.expenses) || value.expenses.length > 10_000)) throw new ValidationError('費用資料格式或數量不正確。');
+  const expenses=(value.expenses ?? []).map(expense=> {
+    if (!Number.isSafeInteger(expense?.amountMinor) || expense.amountMinor < 0 || expense.amountMinor > 100_000_000_000) throw new ValidationError('費用金額不正確。');
+    return createExpense({...expense,amount:expense.amountMinor/100},base,clean(expense.id,100,'費用 ID'));
+  });
+  uniqueIds(expenses,'費用');
   const items = value.items.map((item) => {
     const amountMinor = item?.amountMinor;
     if (amountMinor != null && (!Number.isSafeInteger(Number(amountMinor)) || Number(amountMinor) < 0 || Number(amountMinor) > 100_000_000_000)) throw new ValidationError('費用金額不正確。', 'amountMinor');
@@ -341,7 +364,7 @@ export function validateTrip(value) {
   const createdAt = String(value.createdAt || '');
   const updatedAt = String(value.updatedAt || '');
   if (!isoDateTime.test(createdAt) || !isoDateTime.test(updatedAt) || !Number.isFinite(Date.parse(createdAt)) || !Number.isFinite(Date.parse(updatedAt)) || Date.parse(updatedAt) < Date.parse(createdAt)) throw new ValidationError('旅程時間戳記格式不正確。');
-  return { ...base, items, places, rentals, stays, createdAt, updatedAt, revision };
+  return { ...base, items, places, rentals, stays, expenses, createdAt, updatedAt, revision };
 }
 
 export function validateBackup(value) {
@@ -360,6 +383,7 @@ export function createBackup(trips, mode = 'private') {
     places:[],
     rentals:[],
     stays:[],
+    expenses:[],
     items:trip.items.map(({ notes, parking, mapsUrl, groupId, amountMinor, currency, ...item }) => ({ ...item, notes:'', parking:null, mapsUrl:'', groupId:'', amountMinor:null, currency:trip.currency })),
   })) : privateCopy;
   return { schemaVersion:SCHEMA_VERSION, exportedAt:new Date().toISOString(), mode:mode === 'share' ? 'share' : 'private', trips:exportTrips };

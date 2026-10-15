@@ -31,6 +31,14 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('validates independent expenses and refuses viewer edits and invalid splits',async()=>{
+    const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    const expense={id:'expense-a',title:'Sample dinner',date:'2027-01-01',amountMinor:1000,currency:'USD',splitCount:3,payer:'Sample payer'};
+    await assertSucceeds(update(target,{expenses:{'expense-a':expense},revision:2}));
+    for(const change of [{amountMinor:null},{amountMinor:1.5},{amountMinor:-1},{splitCount:0},{splitCount:1.5},{date:'2027-01-03'},{groupId:'missing'},{currency:'x'},{ownerId:'editor'}]) await assertFails(update(target,{expenses:{'expense-a':{...expense,...change}},revision:3}));
+    await assertFails(update(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),{expenses:null,revision:3}));
+    await assertSucceeds(update(target,{expenses:null,revision:3}));
+  });
   it('validates stay reservations, chronological check-out and guest counts',async()=>{
     const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
     const stay={id:'stay-a',title:'Sample hotel',location:'Sample street',checkInDate:'2027-01-01',checkInTime:'15:00',checkOutDate:'2027-01-02',checkOutTime:'11:00',guests:2,currency:'EUR',booking:'DEMO-ONLY'};
