@@ -172,3 +172,12 @@
 - 保存期間停用控制項並防止 Esc／背景關閉或重複提交；失敗留在預覽內顯示錯誤，可修正連線或 Rules 後再試。
 - 102 項單元及 build 通過，adapter 測試確認只寫新的 trips／userTrips 路徑並建立目前帳號的 owner membership，不觸碰原 ID。新增 Emulator 案例覆蓋景點、租車、住宿、費用一起還原以及未受邀者不能讀取；本批 CI 待確認。
 - 本機匯入流程回歸：實際瀏覽器匯入完整備份後視窗關閉並顯示成功，無 console error。真實雲端逐趟還原尚未操作，不以 mock 或 Emulator 替代真實 Spark 驗收。
+
+### 本輪 CI 與上傳紀錄（2026-10-16）
+
+- 住宿版本 `6016776`：[CI #38825450206](https://github.com/fishingwithbag/Travel-OS/actions/runs/38825450206) 通過。
+- 費用版本 `f008e1d`：[CI #38825776481](https://github.com/fishingwithbag/Travel-OS/actions/runs/38825776481) 通過。
+- 最新程式版本 `532dffa`：[CI #38826104337](https://github.com/fishingwithbag/Travel-OS/actions/runs/38826104337) 通過，包含 102 項單元、22 項 Rules Emulator、production build 與依賴稽核。這取代前述這幾批的「等待 CI」狀態。
+- 逐批審查 staged 檔案與 diff，掃描本批變更的服務憑證、測試專案識別與私人本機路徑後提交；沒有新增外部套件。這是本批掃描，不代替發布前完整 Git 歷史與建置物掃描。
+- 全部推送至 `feature/release-readiness`，更新 [PR #3](https://github.com/fishingwithbag/Travel-OS/pull/3) 的繁體中文／英文標題與說明。main、正式 Pages、真實 Firebase Rules 與計費未變更。
+- 發布阻擋項仍包括 Google Places／自動交通、成員邀請與即時同步、後續精靈、群組移除一致性、真實 Spark／多人／正式站全流程，以及最終私人資訊與授權檢查。
