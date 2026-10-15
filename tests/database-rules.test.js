@@ -43,7 +43,9 @@ describe('Realtime Database tenant isolation', () => {
       await assertFails(update(editor,{items:{'item-a':{...item,parking:changed}},revision:3}));
     }
     await assertFails(update(editor,{items:{'item-a':{...item,parking:{...parking,byGroup:{outsider:parking.byGroup.a}}}},revision:3}));
-    await assertFails(update(editor,{groups:null,revision:3}));
+    // The adapter replaces the complete data snapshot; validate the same write boundary.
+    // Partial writes to unchanged siblings do not re-run their child .validate rules.
+    await assertFails(set(editor,{...trip.data,groups:null,items:{'item-a':item},revision:3}));
     await assertFails(update(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),{items:null,revision:3}));
     await assertSucceeds(update(editor,{items:{'item-a':{...item,parking:{...parking,mode:'shared'}}},revision:3}));
   });
