@@ -191,3 +191,20 @@
 - 108 項單元與 build 通過，包括索引變更、撤權、壞資料隔離、unsubscribe／晚到回呼、斷線寫入拒絕、成員路徑／owner 保護與切換期間寫入。
 - 新增實際 Firebase SDK 的多身分 Emulator 流程：editor 修改即時送到 viewer，viewer 拒寫、owner 調權、受邀者索引自動出現、撤權後拒讀、登出後不再接收事件。等待 CI 執行；這不是已完成真實帳密或瀏覽器雲端驗收。
 - 正式 Pages、真實 Firebase Rules 與計費未變更。Google 功能／精靈、群組移除一致性與完整真實 Spark 發布驗收仍未完成。
+
+### 即時同步 CI 結果（2026-10-17）
+
+第一輪 CI 的 22 項既有 Rules 案例通過，新 SDK 流程在第一次修改時因測試資料的 createdAt 設為未來而被時間戳記驗證拒絕。已將該流程的建立時間改為測試實際時間；旅遊日期仍可在未來。
+
+程式／測試版本 `47a73a7` 的 [CI #38999559912](https://github.com/fishingwithbag/Travel-OS/actions/runs/38999559912) 成功：108 項單元、23 項 Rules／SDK Emulator 案例、production build 與依賴稽核全部通過。多 SDK 測試的 Auth 身分由 Emulator context 提供，沒有操作真實帳號登入。
+
+實際本機瀏覽器回歸：新建旅程與示例安排、保存備註、重整讀回，雲端帳號區在本機模式隱藏，沒有 console error。新增[共用旅程指南](COLLABORATION.zh-TW.md)，說明既有 Firebase 專案、各自帳號、UID 直接授權與角色。仍未宣告真實 Spark 或雲端瀏覽器已通過。
+
+### Google 恢復工作的官方依據（2026-10-17）
+
+- [Place Autocomplete Widget](https://developers.google.com/maps/documentation/javascript/place-autocomplete-new)：現行介面為 `PlaceAutocompleteElement`、`gmp-select` 與 `place.fetchFields()`。搜尋、地址與座標仍要恢復，不能以外部 Maps URL 代替。
+- [Maps JavaScript Routes](https://developers.google.com/maps/documentation/javascript/routes/get-a-route) 及 [Route reference](https://developers.google.com/maps/documentation/javascript/reference/route)：有可於瀏覽器使用的 `Route.computeRoutes()`，可請求 `distanceMeters`／`durationMillis`。恢復自動交通時應先評估這個官方瀏覽器介面，不直接假設必須新增 Firebase Functions 或改 Blaze。
+- [Places 資料政策](https://developers.google.com/maps/documentation/places/web-service/policies)：place ID 可長期保存，其餘 Google 回應內容有快取與署名限制。實作需區別使用者手動資料與 API 回應，不能照搬原站的永久快取方式。
+- [Google 價格總覽](https://developers.google.com/maps/billing-and-pricing/overview) 與 [額度變更 FAQ](https://developers.google.com/maps/billing-and-pricing/faq)：免費額度依 SKU；設定指南應逐項核實所用 API／欄位與 quota。Firebase Spark 與 Google Maps 計費條件分別說明，不擅自更改使用者方案、不宣稱所有用量永遠免費，也不因計費前提刪除所需功能。
+
+上述是下一批實作依據，A13／A14 仍未完成；本批沒有啟用 Google API、輸入 Key 或送出計費操作。天氣維持移除。
