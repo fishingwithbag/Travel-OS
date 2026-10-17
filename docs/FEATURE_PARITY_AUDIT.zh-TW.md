@@ -216,3 +216,5 @@
 - 本機 `npm run check`：114 項單元測試通過，Vite 建置成功。新增測試涵蓋五類關聯、最後群組、停車衝突、不可變輸入及備份往返。
 - 實際瀏覽器：建立合成旅程及群組、更名、建立群組費用、查看影響預覽、確認刪除最後群組；費用移至所有人，100 TWD／3 人分攤結果保留。重新整理後仍保留，console error 為空。
 - 尚未完成：本批沒有修改 Rules，沒有宣稱修復直接局部寫入造成的失效參照；舊異常資料修復、多帳號雲端操作及手機回歸仍待驗證。完整 WBS 見 DEVELOPMENT_WBS.zh-TW.md。
+- 後續 CI 證據：程式版本 fe851c6 的 [GitHub Actions](https://github.com/fishingwithbag/Travel-OS/actions/runs/39028666658) 通過 check、依賴稽核及 Rules Emulator；本批新增完整快照群組更名／移轉、viewer 拒寫及最後群組移除測試。
+- 手機 390×844：頁面 clientWidth／scrollWidth 同為 375；群組視窗同為 335，無水平溢出。更名可用 Enter 提交並成功顯示新名稱。此結果不等同真實雲端手機全流程驗收。
