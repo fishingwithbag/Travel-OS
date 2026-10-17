@@ -1,4 +1,5 @@
 import { indexedDbNameForDeployment } from './browser-scope.js';
+import { ValidationError } from '../domain/trip.js';
 
 const DB_VERSION = 1;
 const STORE = 'trips';
@@ -35,7 +36,25 @@ export class IndexedDbTripStore {
 
   async listTrips() { return requestResult(this.#store().getAll()); }
   async getTrip(id) { return requestResult(this.#store().get(id)); }
-  async saveTrip(trip) { await requestResult(this.#store('readwrite').put(structuredClone(trip))); return trip; }
+  async saveTrip(trip) {
+    const target = this.#store('readwrite');
+    const transaction = target.transaction;
+    return new Promise((resolve,reject) => {
+      let failure;
+      transaction.oncomplete = () => resolve(trip);
+      transaction.onabort = () => reject(failure || transaction.error || new Error('IndexedDB transaction aborted.'));
+      const request = target.get(trip.id);
+      request.onsuccess = () => {
+        const expected = request.result ? request.result.revision + 1 : 1;
+        if (trip.revision !== expected) {
+          failure = new ValidationError('本機旅程已被其他分頁更新，請先保留未儲存內容，再重新載入後編輯。');
+          transaction.abort(); return;
+        }
+        try { target.put(structuredClone(trip)); }
+        catch (error) { failure = error; transaction.abort(); }
+      };
+    });
+  }
   async deleteTrip(id) { await requestResult(this.#store('readwrite').delete(id)); }
   async replaceAll(trips) {
     const transaction = this.#database.transaction(STORE, 'readwrite');

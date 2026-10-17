@@ -17,6 +17,9 @@
   "dependencies": {
     "firebase": "^12.3.0"
   },
+  "overrides": {
+    "@grpc/grpc-js": "1.13.6"
+  },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",
     "@vitest/coverage-v8": "^5.0.1",

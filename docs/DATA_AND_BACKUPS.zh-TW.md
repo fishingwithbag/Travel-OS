@@ -1,10 +1,18 @@
 # 資料與備份
 
+## 編輯與時間欄位（2026-10-13）
+
+安排可由時間線或下一站卡片開啟編輯，保留原 ID，亦可更換旅程範圍內的日期。刪除需再次點擊確認，取消則保留資料。儲存失敗時保留表單；本機多分頁與雲端寫入均檢查旅程 revision，拒絕過期資料覆蓋。
+
+結束日期／時間與手動交通方式／分鐘是 schemaVersion 1 的選填擴充；舊備份仍可讀，新版完整備份會保留這些欄位。不要用更早的程式還原新備份，舊版正規化可能捨棄它不認識的欄位。跨午夜需指定結束日期；一般時長按旅程的當地日曆時間顯示，不宣稱夏令時間切換時的實際經過分鐘。航班使用各自起降時區，不參與一般安排的重疊提示。
+
+**雲端使用前必須發布本版本的 `firebase/database.rules.json`**，再使用新時間欄位。舊規則會拒絕未知欄位；不要放寬成公開讀寫。此次程式修改不會替使用者部署規則或變更雲端方案。
+
 ## 儲存模式
 
 本機模式將旅程放在目前瀏覽器的 IndexedDB。清除瀏覽器網站資料可能一併刪除旅程，請定期匯出完整備份。
 
-每個部署路徑都有自己的瀏覽器儲存 namespace。例如同一個 GitHub 帳號下的 `https://user.github.io/Travel-OS/` 與 `https://user.github.io/Travel-OS-Test/`，不會共用旅程、Firebase/Maps 設定或 onboarding 狀態。這可避免從 Template 建立另一個 repository 時誤讀同一個 `github.io` origin 上其他 Travel OS 的資料。
+每個部署路徑都有自己的瀏覽器儲存 namespace。例如同一個 GitHub 帳號下的 `https://user.github.io/Travel-OS/` 與 `https://user.github.io/Travel-OS-Test/`，不會共用旅程、Firebase 設定或 onboarding 狀態。這可避免從 Template 建立另一個 repository 時誤讀同一個 `github.io` origin 上其他 Travel OS 的資料。
 
 早期 beta 曾使用未分 deployment path 的共用 `travel-os` IndexedDB。因為舊資料本身沒有記錄它原本屬於哪一個 repository，更新後不會自動把這批舊資料搬進新的 namespace，以免再次造成跨 repository 資料混用。
 
@@ -12,13 +20,26 @@ Firebase 模式只在自行部署的版本開放，並是 self-host 第一次使
 
 ## 記住這台裝置
 
-啟用後只在 localStorage 保存 Firebase 公開 Web config 與受限制的 Google Maps Browser Key。密碼不保存，也不會放入網址、repository 或作者的服務。Browser Key 並非真正秘密，所以安全依賴 Google Cloud 的 Website restrictions、API restrictions 與 quota；公用裝置不應啟用「記住這台裝置」。
+啟用後只在 localStorage 保存 Firebase 公開 Web config。密碼與登入狀態不保存，也不會放入網址、repository 或作者的服務；Firebase 登入僅存在於目前頁面。舊版曾保存的 Google Maps Browser Key 會在讀取設定時移除。公用裝置不應啟用「記住這台裝置」。
 
 ## 兩種匯出
 
-- **完整備份**：包含旅程、備註、停車資訊、群組與金額，應視為私人資料保存。
-- **分享副本**：移除備註、停車資訊、目的地的自訂 Google Maps 連結、群組關聯與金額，仍可能包含地點、日期、航班或住宿名稱；分享前仍應自行檢查。
+- **完整備份**：包含旅程、備註、停車資訊、群組、景點庫／收藏、租車、住宿預訂與獨立費用，應視為私人資料保存。
+- **分享副本**：移除候選景點庫、收藏、租車預訂、住宿預訂、獨立費用，以及安排的備註、停車、自訂 Google Maps 連結、群組關聯與金額；仍可能包含已排入行程的地點、日期、航班或住宿名稱，分享前仍應自行檢查。
 
-備份包含 `schemaVersion`。匯入時會限制檔案大小、驗證結構、重新正規化欄位並先顯示旅程與項目數量。確認後會取代目前本機模式的全部旅程；雲端模式不允許批次覆蓋。
+備份包含 `schemaVersion`。匯入時會限制檔案大小、驗證結構、重新正規化欄位並先顯示旅程、安排與景點數量。
+
+- 本機模式：確認後取代目前本機模式的全部旅程，請先匯出現有資料。
+- 雲端模式：從預覽選一趟，按「匯入為新的雲端旅程」。保留內容並產生新旅程 ID／revision，擁有者為目前登入帳號；不覆蓋既有旅程，不複製來源 Firebase 設定或成員權限。大量備份須逐趟匯入，受帳號旅程上限約束。
+
+雲端還原目前已有 adapter／Rules 測試，仍需在獨立 Spark 專案完成真實登入與還原驗收；本機還原已實際瀏覽器驗證。
 
 目前 beta 不提供跨 schemaVersion 自動遷移，也不會自動去除分享副本中的地點與日期。
+
+## 分組停車（2026-10-15）
+
+每筆安排可選共用或分組停車；每組各有主備停車場、Google Maps 連結、步行分鐘、預估費用幣別及備註。切換模式保留另一模式的內容。群組專屬安排只顯示該組停車；共同行程顯示全部群組，未填寫則明示未設定。
+
+這是 schemaVersion 1 的選填擴充：既有共用停車資料不必改寫。完整備份與 Firebase 序列化保留 mode、byGroup 及停車場新欄位；分享副本移除整份停車資訊。舊版程式可能捨棄新欄位，請使用同版或更新版還原。停車費是獨立的預估資訊，不會自動加入行程費用，不跨幣別加總。
+
+雲端使用此功能前須發布本版本 Rules。此分支尚未替真實專案部署規則，Emulator／本機成功也不代表實際雲端驗收完成。

@@ -6,19 +6,28 @@
 
 ### Added
 
+- UID 成員管理、editor／viewer 角色、旅程即時訂閱、撤權清除與離線狀態；登入同一 Firebase 專案的個別帳號可共用旅程，真實 Spark 瀏覽器驗收仍待完成。
+- 旅程專屬景點庫、地區／類別／子類別搜尋、收藏／取消收藏及加入每日行程。
+- 任意群組的租車預訂與獨立取還車安排；住宿預訂、房型／人數、入住／退房安排。
+- 獨立費用 CRUD、付款人、分類與人數分攤，餘額按整數最小單位列出，不混加幣別。
+- 雲端備份可逐趟還原為新 ID，由目前帳號擁有；不覆蓋既有旅程或匯入來源 membership。真實 Spark 驗收仍待完成。
 - 每日行程加入「下一個安排」摘要，直接顯示備註、主要／備用停車場及各自的 Google Maps 導航；完整時間軸也顯示這些資訊。
 - 行程可選填目的地 Google Maps 連結與停車資訊。沒有連結時以地址或名稱搜尋；地圖外部導航不需 API Key。
 
 ### Changed
 
+- 成員管理只允許原 ownerId；禁止第二個 owner、原擁有者降權或移除。遠端更新保留草稿，切換專案停止訂閱並隔離晚到寫入結果。
+- 完整備份保留景點／收藏、租車、住宿與獨立費用；分享副本移除這些私人資料。
+- 修正本機還原在寫入完成後讀取失效事件參照，導致錯報失敗且視窗未關閉的問題。
+- Google Places／自動交通功能與後續設定精靈列為恢復工作；天氣依產品決定移除。
 - Firebase 設定精靈不再假設 `firebaseConfig` 一定包含 `databaseURL`。使用者可從 Realtime Database「資料」頁籤另外複製資料庫網址，Travel OS 會自動合併並驗證；Firebase 操作路徑同步改為繁體中文介面名稱。
-- 瀏覽器本機資料改依部署路徑隔離。同一個 `username.github.io` 底下的不同 Travel OS repository，不再共用 IndexedDB 旅程、Firebase/Maps 設定、onboarding 狀態或主題。舊版未分路徑的共用資料不自動搬移，避免再次跨 repository 混用。
-- 設定精靈重做為六段式流程：網站 → Firebase → Google Maps → 登入 → 驗證 → 完成；每一步都提供零基礎操作路徑與完成條件。
+- 瀏覽器本機資料改依部署路徑隔離。同一個 `username.github.io` 底下的不同 Travel OS repository，不再共用 IndexedDB 旅程、Firebase 設定、onboarding 狀態或主題。舊版未分路徑的共用資料不自動搬移，避免再次跨 repository 混用。
+- 設定精靈六段式流程：網站 → Firebase → 免 Key 地圖導航 → 登入 → 驗證 → 完成；前兩步沿用現有流程，Step 3 不再要求無用的付費 Maps Browser Key。
 - Firebase 精靈明確要求 Spark、Email/Password、Realtime Database Locked mode 與 Travel OS Rules，並提供 Rules 一鍵複製與 `firebaseConfig` 解析預覽。
-- Google Maps 設定改為獨立 Billing project，避免為 Maps 啟用 Billing 時把 Firebase Spark project 升級為 Blaze。
+- Google Maps 目前只使用免 Key 的外部 URL；不需建立 Billing project 或啟用 Maps/Places API。
 - Self-host 第一次使用改以 Firebase 雲端同步為 onboarding 主流程，本機 IndexedDB 保留為 Demo／離線／fallback。
-- Google Maps Browser Key 回到設定精靈，實際驗證 Maps JavaScript 與 Places；UI 遮罩 Key，並引導設定 Website/API restrictions、quota 與 billing alerts。
-- Browser Key 可隨 Firebase 公開 config 選擇性記住在目前裝置；密碼與 Server Key 永不保存。Routes／Geocoding／Weather Server Key 仍只允許存在使用者自己的後端。
+- Step 5 在使用者自己的 UID 範圍測試 Firebase 寫入、讀取與刪除；成功後才記住公開 Web config。Firebase Auth 改為僅記憶體登入，舊版保存的 Maps Key 會從設定中移除。
+- 密碼與 Server Key 永不保存。Routes／Geocoding／Weather Server Key 仍只允許存在使用者自己的後端。
 - Firebase Rules deploy 新增本機明確 target 與 predeploy boundary guard；OpenSource 不再允許從登入帳號或其他 repository 的 Firebase project 推測 production 部署目標。
 
 ## 0.1.0-beta.2 - 2026-09-21

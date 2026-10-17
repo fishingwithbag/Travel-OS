@@ -68,14 +68,14 @@ describe('Firebase runtime config', () => {
       firebase_projectId:'sample', firebase_appId:'1:123:web:abc',
     })).toThrow(/Realtime Database/);
   });
-  it('restores a restricted Google Browser Key with remembered Firebase settings', () => {
+  it('drops obsolete Google keys from remembered Firebase settings', () => {
     const firebase = parseFirebaseConfig(raw);
     const googleMapsKey = 'AIza123456789012345678901234567890';
-    expect(parseRememberedConnection(JSON.stringify({ firebase, googleMapsKey }))).toEqual({ firebase, googleMapsKey });
+    expect(parseRememberedConnection(JSON.stringify({ firebase, googleMapsKey }))).toEqual({ firebase });
   });
   it('keeps older Firebase-only remembered settings compatible', () => {
     const firebase = parseFirebaseConfig(raw);
-    expect(parseRememberedConnection(JSON.stringify({ firebase }))).toEqual({ firebase, googleMapsKey:'' });
+    expect(parseRememberedConnection(JSON.stringify({ firebase }))).toEqual({ firebase });
   });
   it('rejects a remembered entry that contains no Firebase config', () => {
     expect(() => parseRememberedConnection(JSON.stringify({ googleMapsKey:'AIza123456789012345678901234567890' }))).toThrow(/不完整/);
