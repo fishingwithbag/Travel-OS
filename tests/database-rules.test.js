@@ -36,6 +36,11 @@ afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
   it('syncs real SDK clients, applies role changes and clears revoked memberships',async()=>{
+    // Trip dates can be in the future; creation timestamps must reflect when the fixture was created.
+    const createdAt=new Date().toISOString();
+    await environment.withSecurityRulesDisabled(async context=>{
+      await update(ref(context.database(),'trips/trip-a/data'),{createdAt,updatedAt:createdAt});
+    });
     const stores=[];
     const connect=async uid=>{
       const store=new FirebaseTripStore(async()=>[
