@@ -34,6 +34,11 @@ export function commitIfRevisionMatches(current, next) {
   return next;
 }
 
+function pathKey(value) {
+  if (typeof value !== 'string' || !value || value.length > 128 || /[.#$\[\]\/\u0000-\u001f\u007f]/.test(value)) throw new ValidationError('請使用完整且有效的 Firebase UID／旅程 ID，不可使用 Email 或路徑。');
+  return value;
+}
+
 export class FirebaseTripStore {
   #app;
   #auth;
@@ -42,6 +47,8 @@ export class FirebaseTripStore {
   #modules;
   #moduleLoader;
   #warnings = [];
+  #stopWatching;
+  #connected;
 
   constructor(moduleLoader = () => Promise.all([
     import('firebase/app'), import('firebase/auth'), import('firebase/database'),
@@ -125,7 +132,48 @@ export class FirebaseTripStore {
 
   async getTrip(id) { return parseFirebaseTrip((await this.#modules.get(this.#modules.ref(this.#database, `trips/${id}/data`))).val()); }
 
+  subscribe({onTrip,onRemove,onError,onConnection=()=>{}}) {
+    this.#stopWatching?.();
+    const {ref,onValue}=this.#modules;
+    const uid=this.#uid;
+    if (!uid) throw new ValidationError('請先登入 Firebase。');
+    let active=true;
+    const listeners=new Map();
+    const stopTrip=id=>{const listener=listeners.get(id);if(listener){listener.active=false;listener.stop?.();listeners.delete(id);}};
+    const stopIndex=onValue(ref(this.#database,`userTrips/${uid}`),snapshot=>{
+      if(!active) return;
+      const ids=Object.keys(snapshot.val() || {});
+      if(ids.length>100) {onError(new ValidationError('帳號旅程索引超過 100 趟，請先整理索引再重新連線。'));return;}
+      for(const id of listeners.keys()) if(!ids.includes(id)) {stopTrip(id);onRemove(id);}
+      for(const id of ids) if(!listeners.has(id)) {
+        try {pathKey(id);} catch(error) {onError(error);continue;}
+        const listener={active:true,stop:null};listeners.set(id,listener);
+        listener.stop=onValue(ref(this.#database,`trips/${id}`),snapshot=>{
+          if(!active || !listener.active) return;
+          const value=snapshot.val();
+          if(!value || !['owner','editor','viewer'].includes(value.members?.[uid])) {onRemove(id);return;}
+          try {
+            const trip=parseFirebaseTrip(value.data);
+            if(!trip || trip.id!==id) throw new ValidationError('雲端旅程 ID 與索引不一致，請聯絡專案擁有者。');
+            onTrip(trip,{ownerId:value.ownerId,members:{...value.members},role:value.members[uid]});
+          } catch(error) {onRemove(id);onError(error);}
+        },error=>{if(active && listener.active){stopTrip(id);onRemove(id);onError(error);}});
+      }
+    },error=>{if(active){for(const id of [...listeners.keys()]) {stopTrip(id);onRemove(id);}onError(error);}});
+    const stopConnection=onValue(ref(this.#database,'.info/connected'),snapshot=>{
+      if(active){this.#connected=snapshot.val()===true;onConnection(this.#connected);}
+    },error=>{if(active) onError(error);});
+    const stop=()=>{
+      active=false;stopIndex();stopConnection();
+      for(const id of [...listeners.keys()]) stopTrip(id);
+      if(this.#stopWatching===stop) this.#stopWatching=undefined;
+    };
+    this.#stopWatching=stop;
+    return stop;
+  }
+
   async saveTrip(trip) {
+    if(this.#connected===false) throw new ValidationError('Firebase 連線已中斷，請恢復連線後再儲存；表單內容仍保留。');
     const { ref, get, update, runTransaction } = this.#modules;
     const firebaseTrip = serializeFirebaseTrip(trip);
     // A new trip is unreadable until its membership exists; inspect the caller's readable index instead.
@@ -160,7 +208,9 @@ export class FirebaseTripStore {
   }
 
   async setMember(tripId, uid, role) {
-    if (!['owner','editor','viewer'].includes(role)) throw new ValidationError('不支援的成員角色。');
+    pathKey(tripId);pathKey(uid);
+    if (!['editor','viewer'].includes(role)) throw new ValidationError('只能邀請編輯者或檢視者；原擁有者不可在此變更。');
+    await this.#checkMemberChange(tripId,uid);
     const { ref, update } = this.#modules;
     await update(ref(this.#database), {
       [`trips/${tripId}/members/${uid}`]:role,
@@ -169,6 +219,8 @@ export class FirebaseTripStore {
   }
 
   async removeMember(tripId, uid) {
+    pathKey(tripId);pathKey(uid);
+    await this.#checkMemberChange(tripId,uid);
     const { ref, update } = this.#modules;
     await update(ref(this.#database), {
       [`trips/${tripId}/members/${uid}`]:null,
@@ -176,12 +228,21 @@ export class FirebaseTripStore {
     });
   }
 
+  async #checkMemberChange(tripId,uid) {
+    if(this.#connected===false) throw new ValidationError('Firebase 連線已中斷，請恢復連線後再管理成員。');
+    const value=(await this.#modules.get(this.#modules.ref(this.#database,`trips/${tripId}`))).val();
+    if(!value || value.ownerId!==this.#uid) throw new ValidationError('只有旅程擁有者可以管理成員。');
+    if(uid===value.ownerId) throw new ValidationError('不可移除或修改原旅程擁有者。');
+  }
+
   async replaceAll() { throw new ValidationError('為避免覆蓋雲端資料，請逐趟匯入備份。'); }
 
   async disconnect() {
+    this.#stopWatching?.();
     if (this.#auth) await this.#modules.signOut(this.#auth).catch(() => {});
     if (this.#app) await this.#modules.deleteApp(this.#app).catch(() => {});
     this.#app = this.#auth = this.#database = this.#uid = undefined;
+    this.#connected=undefined;
   }
   close() { return this.disconnect(); }
 }

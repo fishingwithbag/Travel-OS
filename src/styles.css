@@ -64,6 +64,12 @@ dialog { width:min(620px,calc(100% - 2rem)); max-height:calc(100vh - 2rem); over
 .parking-set details label { margin-top:.5rem; }
 .dialog-form footer { flex-wrap:wrap; }
 .places-panel { margin-top:1rem; }
+.member-form { display:grid; gap:.65rem; margin-top:1rem; font-size:.82rem; }
+.member-form label { display:grid; gap:.35rem; }
+.member-form input,.member-form select { width:100%; min-height:44px; min-width:0; border:1px solid var(--line); border-radius:9px; padding:.65rem; background:var(--bg); color:var(--ink); }
+#member-list li { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+#member-list span,#cloud-uid { overflow-wrap:anywhere; }
+#cloud-session { margin-bottom:1rem; }
 .place-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin:1rem 0; }
 .place-filters label { display:grid; gap:.35rem; color:var(--muted); font-size:.82rem; font-weight:700; }
 .place-filters input:not([type="checkbox"]),.place-filters select { width:100%; min-width:0; min-height:44px; border:1px solid var(--line); border-radius:9px; padding:.65rem .75rem; background:var(--bg); color:var(--ink); }

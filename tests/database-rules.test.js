@@ -1,9 +1,11 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFile } from 'node:fs/promises';
 import { get, ref, runTransaction, set, update } from 'firebase/database';
+import * as databaseSdk from 'firebase/database';
 import {createExpense,createPlace,createRental,createStay,createTrip,restoredTripCopy} from '../src/domain/trip.js';
-import {serializeFirebaseTrip} from '../src/storage/firebase-store.js';
+import {FirebaseTripStore,serializeFirebaseTrip} from '../src/storage/firebase-store.js';
+import {touchTrip} from '../src/domain/trip.js';
 
 let environment;
 
@@ -33,6 +35,42 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('syncs real SDK clients, applies role changes and clears revoked memberships',async()=>{
+    const stores=[];
+    const connect=async uid=>{
+      const store=new FirebaseTripStore(async()=>[
+        {initializeApp:()=>({}),deleteApp:async()=>{}},
+        {getAuth:()=>({}),setPersistence:async()=>{},inMemoryPersistence:{},signInWithEmailAndPassword:async()=>({user:{uid}}),signOut:async()=>{}},
+        {...databaseSdk,getDatabase:()=>environment.authenticatedContext(uid).database()},
+      ]);
+      await store.connect({projectId:'demo-travel-os'},{email:'emulator@example.com',password:'emulator-only'});stores.push(store);return store;
+    };
+    try {
+      const owner=await connect('owner'),editor=await connect('editor'),viewer=await connect('viewer'),guest=await connect('new-guest');
+      const events=()=>({onTrip:vi.fn(),onRemove:vi.fn(),onError:vi.fn(),onConnection:vi.fn()});
+      const ownerEvents=events(),editorEvents=events(),viewerEvents=events(),guestEvents=events();
+      owner.subscribe(ownerEvents);editor.subscribe(editorEvents);viewer.subscribe(viewerEvents);guest.subscribe(guestEvents);
+      await vi.waitFor(()=>{expect(editorEvents.onTrip).toHaveBeenCalled();expect(viewerEvents.onTrip).toHaveBeenCalled();expect(editorEvents.onConnection).toHaveBeenLastCalledWith(true);},{timeout:5000});
+      const first=editorEvents.onTrip.mock.calls.at(-1)[0];
+      await editor.saveTrip(touchTrip({...first,title:'Live editor change'}));
+      await vi.waitFor(()=>expect(viewerEvents.onTrip.mock.calls.at(-1)[0].title).toBe('Live editor change'),{timeout:5000});
+      await expect(viewer.saveTrip(touchTrip({...viewerEvents.onTrip.mock.calls.at(-1)[0],title:'Forbidden'}))).rejects.toThrow();
+      await owner.setMember('trip-a','viewer','editor');
+      await vi.waitFor(()=>expect(viewerEvents.onTrip.mock.calls.at(-1)[1].role).toBe('editor'),{timeout:5000});
+      await viewer.saveTrip(touchTrip({...viewerEvents.onTrip.mock.calls.at(-1)[0],title:'Promoted editor change'}));
+      await owner.setMember('trip-a','new-guest','viewer');
+      await vi.waitFor(()=>expect(guestEvents.onTrip.mock.calls.at(-1)?.[1].role).toBe('viewer'),{timeout:5000});
+      await owner.removeMember('trip-a','viewer');
+      await vi.waitFor(()=>expect(viewerEvents.onRemove).toHaveBeenCalledWith('trip-a'),{timeout:5000});
+      await expect(viewer.getTrip('trip-a')).rejects.toThrow();
+      await expect(editor.setMember('trip-a','new-guest','editor')).rejects.toThrow(/只有旅程擁有者/);
+      await owner.disconnect();const count=ownerEvents.onTrip.mock.calls.length;
+      await vi.waitFor(()=>expect(editorEvents.onTrip.mock.calls.at(-1)[0].title).toBe('Promoted editor change'),{timeout:5000});
+      await editor.saveTrip(touchTrip({...editorEvents.onTrip.mock.calls.at(-1)[0],title:'After disconnect'}));
+      await vi.waitFor(()=>expect(guestEvents.onTrip.mock.calls.at(-1)[0].title).toBe('After disconnect'),{timeout:5000});
+      expect(ownerEvents.onTrip).toHaveBeenCalledTimes(count);
+    } finally {await Promise.all(stores.map(store=>store.disconnect()));}
+  },20000);
   it('creates a restored cloud copy with every restored collection and fresh owner membership',async()=>{
     const source={...createTrip({title:'Restore sample',destination:'Sample',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'source'),groups:[{id:'a',name:'A'}]};
     source.places=[createPlace({title:'Sample café',favorite:true},'p')];
@@ -155,6 +193,8 @@ describe('Realtime Database tenant isolation', () => {
     await assertFails(set(ref(environment.authenticatedContext('owner').database(), 'trips/trip-a/members/guest'), 'admin'));
     await assertFails(set(ref(environment.authenticatedContext('editor').database(), 'userTrips/outsider/trip-a'), true));
     await assertFails(set(ref(environment.authenticatedContext('owner').database(), 'trips/trip-a/members/owner'), 'viewer'));
+    await assertFails(set(ref(ownerDb,'trips/trip-a/members/guest'),'owner'));
+    await assertFails(set(ref(ownerDb,'trips/trip-a/members/owner'),null));
   });
 
   it('prevents arbitrary self-indexing and supports atomic owner index add/remove', async () => {

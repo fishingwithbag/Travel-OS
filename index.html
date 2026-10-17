@@ -22,6 +22,11 @@
     </header>
 
     <main id="main" class="shell">
+      <section id="cloud-session" class="panel" aria-label="雲端帳號與同步狀態" hidden>
+        <p class="eyebrow">YOUR CLOUD ACCOUNT</p>
+        <p id="cloud-account"></p><p>我的 UID：<code id="cloud-uid"></code> <button id="copy-uid-button" class="secondary small" type="button">複製我的 UID</button></p>
+        <p id="cloud-sync-status" class="muted" role="status">正在接收旅程更新。</p>
+      </section>
       <section id="welcome" class="welcome" aria-labelledby="welcome-title">
         <p class="eyebrow">CLOUD-SYNC TRAVEL PLANNER</p>
         <h1 id="welcome-title">把旅程整理成一張清楚的路線圖。</h1>
@@ -91,6 +96,18 @@
               <button id="share-export-button" class="wide secondary" type="button">匯出分享副本</button>
               <button id="import-button" class="wide secondary" data-import type="button">匯入備份</button>
               <input id="import-file" type="file" accept="application/json" hidden />
+            </section>
+            <section id="members-panel" class="panel" aria-labelledby="members-heading" hidden>
+              <p class="eyebrow">COLLABORATION</p><h2 id="members-heading">旅程成員</h2>
+              <p id="member-role" class="muted" role="status"></p>
+              <ul id="member-list" class="plain-list"></ul>
+              <form id="member-form" class="member-form">
+                <p>由旅程擁有者新增或修改成員。對方須先有同一 Firebase 專案的 Email／Password 帳號，登入同一網站後按「複製我的 UID」，再私下提供給你。只提供本旅程的權限，不會寄出邀請信。</p>
+                <label>成員 UID<input name="uid" maxlength="128" required autocomplete="off" /></label>
+                <label>成員權限<select name="role"><option value="viewer">檢視者：只能閱讀</option><option value="editor">編輯者：可修改旅程</option></select></label>
+                <button class="secondary" type="submit">新增或修改成員</button>
+                <p class="form-error" role="alert"></p>
+              </form>
             </section>
           </aside>
         </div>

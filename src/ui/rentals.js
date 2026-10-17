@@ -1,14 +1,14 @@
 import { createRental, rentalItemInput, ValidationError } from '../domain/trip.js';
 import { mapSearchUrl } from '../providers/maps.js';
 
-export function setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast}) {
+export function setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit=()=>true}) {
   const panel=document.querySelector('.rental-panel');
   const dialog=document.querySelector('#rental-dialog');
   const form=document.querySelector('#rental-form');
   let editor=null, saving=false;
   const setSaving=busy=>{
     saving=busy;
-    for (const control of [...form.elements,...panel.querySelectorAll('button')]) control.disabled=busy;
+    for (const control of [...form.elements,...panel.querySelectorAll('button')]) control.disabled=busy || (control.tagName==='BUTTON' && !canEdit() && !control.hasAttribute('data-close'));
   };
   function render() {
     const trip=currentTrip(); const rentals=trip.rentals || [];

@@ -5,7 +5,7 @@ import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfigInput, parseRememberedConnection } from './config/firebase-config.js';
 import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployment.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
-import { prepareStoreSwitch } from './storage/store-switch.js';
+import { prepareStoreSwitch,saveToActiveStore } from './storage/store-switch.js';
 import { localStorageKey } from './storage/browser-scope.js';
 import { itemMapUrl, parkingMapUrl, routeMapUrl, dayRouteSections } from './providers/maps.js';
 import { nextStop } from './domain/next-stop.js';
@@ -16,7 +16,9 @@ import { setupStayUi } from './ui/stays.js';
 import { setupExpenseUi } from './ui/expenses.js';
 
 let store = new IndexedDbTripStore();
-const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null };
+const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, access:Object.create(null) };
+let deferredLiveRender=false;
+let memberSaving=false;
 let pendingBackup = null;
 let importSaving = false;
 let itemEditor = null;
@@ -34,12 +36,18 @@ const STORAGE_KEYS = Object.freeze({
   onboardingMode:localStorageKey('onboarding-mode'),
   connection:localStorageKey('connection'),
 });
-const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast});
-const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast});
-const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast});
+const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
+const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
+const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
+function canEditTrip() {return state.mode==='local' || ['owner','editor'].includes(state.access[state.currentTripId]?.role);}
+function upsertTrip(trip) {
+  const existing=state.trips.find(entry=>entry.id===trip.id);
+  if(existing && existing.revision>trip.revision) return;
+  state.trips=existing ? state.trips.map(entry=>entry.id===trip.id ? trip : entry) : [...state.trips,trip];
+}
 function showToast(message) { const toast = $('#toast'); toast.textContent = message; toast.hidden = false; clearTimeout(showToast.timer); showToast.timer = setTimeout(() => { toast.hidden = true; }, 3000); }
 function setError(form, error) {
   const target = form.querySelector('.form-error');
@@ -54,6 +62,54 @@ function openDialog(id) {
   dialog.querySelector('input,select,textarea,button')?.focus();
 }
 function formData(form) { return Object.fromEntries(new FormData(form).entries()); }
+
+function warnOpenDraft(message) {
+  const form=document.querySelector('#item-dialog[open] form,#place-dialog[open] form,#rental-dialog[open] form,#stay-dialog[open] form,#expense-dialog[open] form');
+  if(form && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving()) setError(form,new ValidationError(message));
+}
+
+function renderLive() {
+  // Keep draft fields intact; revision guards reject stale saves until the user reopens the editor.
+  if(document.querySelector('dialog[open]')) {deferredLiveRender=true;renderMembers();return;}
+  render();
+}
+
+function renderMembers() {
+  const cloud=state.mode==='cloud',trip=currentTrip(),access=state.access[trip?.id];
+  $('#cloud-session').hidden=!cloud;
+  $('#cloud-account').textContent=cloud ? `${state.connection.projectId} · ${state.connection.email || ''}` : '';
+  $('#cloud-uid').textContent=cloud ? state.connection.uid : '';
+  $('#members-panel').hidden=!cloud || !trip;
+  const labels={owner:'擁有者',editor:'編輯者',viewer:'檢視者'};
+  $('#member-role').textContent=access ? `你的權限：${labels[access.role]}${access.role==='viewer' ? '（唯讀）' : ''}` : '正在確認成員權限…';
+  $('#member-list').innerHTML=Object.entries(access?.members || {}).map(([uid,role])=>`<li><span>${escapeHtml(uid)}</span><strong>${escapeHtml(labels[role] || '未知角色')}</strong>${access?.ownerId===state.connection?.uid && uid!==access.ownerId ? `<button class="text-button" type="button" data-edit-member="${escapeHtml(uid)}">修改權限</button><button class="text-button" type="button" data-remove-member="${escapeHtml(uid)}">移除成員</button>` : ''}</li>`).join('');
+  const owner=cloud && access?.ownerId===state.connection?.uid;
+  for(const control of $('#member-form').elements) control.disabled=memberSaving || !owner;
+  for(const control of $('#member-list').querySelectorAll('button')) control.disabled=memberSaving;
+}
+
+$('#copy-uid-button').addEventListener('click',async()=>{
+  try{await copyText(state.connection?.uid || '');showToast('已複製目前專案帳號的 UID。');}catch(error){showToast(error.message);}
+});
+$('#member-form').addEventListener('submit',async event=>{
+  event.preventDefault();const form=event.currentTarget;if(memberSaving) return;setError(form,'');
+  const trip=currentTrip();
+  try {
+    if(state.mode!=='cloud' || state.access[trip?.id]?.ownerId!==state.connection?.uid) throw new ValidationError('只有旅程擁有者可以管理成員。');
+    const input=formData(form);memberSaving=true;renderMembers();
+    await store.setMember(trip.id,input.uid.trim(),input.role);
+    form.reset();showToast('成員權限已儲存。請對方登入相同專案確認旅程。');
+  }catch(error){setError(form,error);}finally{memberSaving=false;renderMembers();}
+});
+$('#member-list').addEventListener('click',async event=>{
+  if(memberSaving) return;
+  const edit=event.target.closest('[data-edit-member]');
+  if(edit){$('#member-form').elements.uid.value=edit.dataset.editMember;$('#member-form').elements.role.value=state.access[state.currentTripId].members[edit.dataset.editMember];$('#member-form').elements.role.focus();return;}
+  const button=event.target.closest('[data-remove-member]');if(!button) return;
+  if(!button.dataset.confirm){button.dataset.confirm='true';button.textContent='再次點擊確認移除此成員';return;}
+  try{memberSaving=true;renderMembers();await store.removeMember(state.currentTripId,button.dataset.removeMember);showToast('成員已移除，其旅程存取權限已撤銷。');}
+  catch(error){setError($('#member-form'),error);}finally{memberSaving=false;renderMembers();}
+});
 
 function mapLink(item, label = '在 Google Maps 開啟') {
   if (!item.location && !item.mapsUrl && !['place', 'meal', 'stay'].includes(item.type)) return '';
@@ -122,6 +178,7 @@ function itemTimingHtml(item) {
 function openItemDialog(item = null, seed = {}) {
   const trip = currentTrip();
   if (!trip) return;
+  if(!canEditTrip()){showToast('目前旅程為唯讀，請向擁有者申請編輯權限。');return;}
   const form = $('#item-form');
   form.reset();
   itemEditor = { tripId:trip.id, id:item?.id || '', revision:trip.revision };
@@ -154,7 +211,7 @@ function editingTrip() {
 
 function setItemSaving(busy) {
   itemSaving = busy;
-  for (const control of $('#item-form').querySelectorAll('input,select,textarea,button')) control.disabled = busy;
+  for (const control of $('#item-form').querySelectorAll('input,select,textarea,button')) control.disabled = busy || (control.tagName==='BUTTON' && !canEditTrip() && !control.hasAttribute('data-close'));
   updateParkingMode();
 }
 
@@ -213,9 +270,10 @@ async function copyText(value) {
 }
 
 async function saveTrip(trip) {
+  if(!canEditTrip()) throw new ValidationError('目前帳號無編輯權限；請保留表單內容並聯絡旅程擁有者。');
   const updated = touchTrip(trip);
-  await store.saveTrip(updated);
-  state.trips = state.trips.map((entry) => entry.id === updated.id ? updated : entry);
+  await saveToActiveStore(()=>store,updated);
+  upsertTrip(updated);
   $('#save-status').textContent = '已儲存在本機';
   if (state.mode === 'cloud') $('#save-status').textContent = '已同步至自己的 Firebase';
   render();
@@ -223,9 +281,14 @@ async function saveTrip(trip) {
 
 function render() {
   const trip = currentTrip();
+  renderMembers();
   $('#welcome').hidden = Boolean(trip);
   $('#workspace').hidden = !trip;
-  if (!trip) return;
+  if (!trip) {
+    for(const id of ['timeline','place-list','rental-list','stay-list','expense-list','next-stop-details','group-list','day-routes','trip-title','trip-destination','trip-dates']) document.getElementById(id).replaceChildren();
+    $('#trip-select').replaceChildren();
+    return;
+  }
   const dates = tripDates(trip.startDate, trip.endDate);
   if (!dates.includes(state.selectedDate)) state.selectedDate = dates[0];
   $('#trip-title').textContent = trip.title;
@@ -259,13 +322,16 @@ function render() {
   $('#summary-cost').textContent = Object.keys(totals).length ? Object.entries(totals).map(([currency, minor]) => `${currency} ${(minor / 100).toLocaleString('zh-TW')}`).join(' / ') : '—';
   $('#group-list').innerHTML = trip.groups.map((group) => `<li>${escapeHtml(group.name)}</li>`).join('');
   $('#group-empty').hidden = trip.groups.length > 0;
-  const groupSelect = $('#item-form select[name="groupId"]');
-  groupSelect.replaceChildren(new Option('所有人', ''), ...trip.groups.map((group) => new Option(group.name, group.id)));
-  $('#item-form input[name="currency"]').value = trip.currency;
+  if(!$('#item-dialog').open) {
+    const groupSelect = $('#item-form select[name="groupId"]');
+    groupSelect.replaceChildren(new Option('所有人', ''), ...trip.groups.map((group) => new Option(group.name, group.id)));
+    $('#item-form input[name="currency"]').value = trip.currency;
+  }
   renderPlaces();
   rentalUi.render();
   stayUi.render();
   expenseUi.render();
+  for(const control of document.querySelectorAll('[data-open="item-dialog"],[data-open="group-dialog"],[data-edit-item]')) control.disabled=!canEditTrip();
 }
 
 function renderPlaces() {
@@ -311,7 +377,7 @@ function editingPlaceTrip() {
 
 function setPlaceSaving(busy) {
   placeSaving = busy;
-  for (const control of document.querySelectorAll('#place-form input,#place-form textarea,#place-form button,#place-list button,[data-new-place]')) control.disabled = busy;
+  for (const control of document.querySelectorAll('#place-form input,#place-form textarea,#place-form button,#place-list button,[data-new-place]')) control.disabled = busy || (control.tagName==='BUTTON' && !canEditTrip() && !control.hasAttribute('data-close'));
 }
 
 $('#place-filters').addEventListener('submit',event=>event.preventDefault());
@@ -384,7 +450,7 @@ $('#theme-button').addEventListener('click', () => { const next = document.docum
 
 $('#trip-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; setError(form, '');
-  try { const trip = createTrip(formData(form)); await store.saveTrip(trip); state.trips.push(trip); state.currentTripId = trip.id; state.selectedDate = trip.startDate; form.reset(); form.elements.timeZone.value = 'Asia/Taipei'; form.elements.currency.value = 'TWD'; form.closest('dialog').close(); render(); showToast(state.mode === 'cloud' ? '旅程已建立並同步到自己的 Firebase。' : '旅程已建立並儲存在本機。'); } catch (error) { setError(form, error); }
+  try { const trip = createTrip(formData(form)); await saveToActiveStore(()=>store,trip); upsertTrip(trip); state.currentTripId = trip.id; state.selectedDate = trip.startDate; form.reset(); form.elements.timeZone.value = 'Asia/Taipei'; form.elements.currency.value = 'TWD'; form.closest('dialog').close(); render(); showToast(state.mode === 'cloud' ? '旅程已建立並同步到自己的 Firebase。' : '旅程已建立並儲存在本機。'); } catch (error) { setError(form, error); }
 });
 
 $('#item-form select[name="type"]').addEventListener('change', (event) => { $('#flight-fields').hidden = event.target.value !== 'flight'; $('#end-fields').hidden = event.target.value === 'flight'; });
@@ -439,9 +505,30 @@ async function activateStore(nextStore, mode, connection = null) {
   const warnings = nextStore.consumeWarnings?.() || [];
   store = nextStore;
   state.mode = mode; state.connection = connection;
+  state.access=Object.create(null);
+  for(const id of ['item-form','place-form','rental-form','stay-form','expense-form','group-form','member-form']) document.getElementById(id).reset();
+  itemEditor=placeEditor=null;pendingBackup=null;
   state.trips = nextTrips;
   state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
   updateConnectionSummary(); render();
+  if(mode==='cloud') nextStore.subscribe({
+    onTrip:(trip,access)=>{
+      if(store!==nextStore) return;
+      const previous=state.trips.find(entry=>entry.id===trip.id);
+      upsertTrip(trip);state.access[trip.id]=access;
+      if(!state.currentTripId) state.currentTripId=trip.id;
+      if(previous && previous.revision!==trip.revision) warnOpenDraft('旅程已由其他裝置更新，未儲存內容仍保留。請先複製內容，再重新開啟表單後編輯。');
+      renderLive();
+    },
+    onRemove:id=>{
+      if(store!==nextStore) return;
+      state.trips=state.trips.filter(trip=>trip.id!==id);delete state.access[id];
+      if(state.currentTripId===id){state.currentTripId=state.trips[0]?.id || '';state.selectedDate='';warnOpenDraft('此旅程已刪除或權限已移除；草稿仍保留，請先複製需要的內容。');}
+      render();
+    },
+    onError:error=>{if(store===nextStore){$('#cloud-sync-status').textContent=error instanceof ValidationError ? error.message : '即時更新失敗，請確認連線與成員權限，再重新登入。';}},
+    onConnection:connected=>{if(store===nextStore) $('#cloud-sync-status').textContent=connected ? '已連線，正在接收旅程更新。' : '雲端連線中斷；請保留草稿，恢復連線後再儲存。';},
+  });
   return warnings;
 }
 
@@ -554,8 +641,8 @@ $('#import-form').addEventListener('submit', async (event) => {
       const source=pendingBackup.trips[Number($('#import-trip-select').value)];
       if (!source) throw new ValidationError('請選擇一趟旅程。');
       const copy=restoredTripCopy(source);
-      await store.saveTrip(copy);
-      state.trips.push(copy);state.currentTripId=copy.id;state.selectedDate=copy.startDate;
+      await saveToActiveStore(()=>store,copy);
+      upsertTrip(copy);state.currentTripId=copy.id;state.selectedDate=copy.startDate;
       pendingBackup=null;form.closest('dialog').close();render();showToast('已還原為新的雲端旅程；原旅程保留。');
       return;
     }
@@ -569,6 +656,7 @@ $('#import-form').addEventListener('submit', async (event) => {
 $('#import-dialog').addEventListener('cancel',event=>{if(importSaving) event.preventDefault();});
 
 for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !importSaving && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving()) dialog.close(); });
+for(const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('close',()=>{if(deferredLiveRender && !document.querySelector('dialog[open]')){deferredLiveRender=false;render();}});
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem(STORAGE_KEYS.theme) || 'light';

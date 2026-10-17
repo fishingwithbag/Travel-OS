@@ -29,15 +29,15 @@
     "trips": {
       "$tripId": {
         ".read": "auth != null && data.child('members').child(auth.uid).exists()",
-        ".write": "auth != null && ((!data.exists() && newData.child('ownerId').val() === auth.uid && newData.child('members').child(auth.uid).val() === 'owner') || data.child('members').child(auth.uid).val() === 'owner')",
+        ".write": "auth != null && ((!data.exists() && newData.child('ownerId').val() === auth.uid && newData.child('members').child(auth.uid).val() === 'owner') || data.child('ownerId').val() === auth.uid)",
         ".validate": "newData.hasChildren(['ownerId','members','data']) && newData.child('ownerId').isString() && (!data.exists() || newData.child('ownerId').val() === data.child('ownerId').val()) && newData.child('members').child(newData.child('ownerId').val()).val() === 'owner'",
         "members": {
           "$uid": {
-            ".validate": "newData.val() === 'owner' || newData.val() === 'editor' || newData.val() === 'viewer'"
+            ".validate": "($uid === newData.parent().parent().child('ownerId').val() && newData.val() === 'owner') || ($uid !== newData.parent().parent().child('ownerId').val() && (newData.val() === 'editor' || newData.val() === 'viewer'))"
           }
         },
         "data": {
-          ".write": "auth != null && (data.parent().child('members').child(auth.uid).val() === 'owner' || data.parent().child('members').child(auth.uid).val() === 'editor')",
+          ".write": "auth != null && (root.child('trips').child($tripId).child('ownerId').val() === auth.uid || root.child('trips').child($tripId).child('members').child(auth.uid).val() === 'editor')",
           ".validate": "newData.hasChildren(['schemaVersion','id','title','destination','startDate','endDate','timeZone','currency','createdAt','updatedAt','revision']) && newData.child('id').val() === $tripId && newData.child('startDate').val() <= newData.child('endDate').val() && newData.child('createdAt').val() <= newData.child('updatedAt').val() && ((!data.exists() && newData.child('revision').val() === 1) || (data.exists() && data.child('revision').isNumber() && newData.child('revision').val() === data.child('revision').val() + 1 && newData.child('createdAt').val() === data.child('createdAt').val()))",
           "schemaVersion": {
             ".validate": "newData.isNumber() && newData.val() === 1"

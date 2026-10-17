@@ -13,6 +13,7 @@ function snapshot(value) {
 }
 
 async function connectedStore() {
+  const listeners=new Map();
   const appModule = { initializeApp:vi.fn(() => ({ name:'app' })), deleteApp:vi.fn(async () => {}) };
   const authModule = {
     getAuth:vi.fn(() => ({ name:'auth' })),
@@ -29,6 +30,11 @@ async function connectedStore() {
     get:vi.fn(async () => snapshot({ createdAt:databaseModule.set.mock.calls.at(-1)?.[1]?.createdAt })),
     update:vi.fn(async () => {}),
     runTransaction:vi.fn(),
+    onValue:vi.fn((target,callback,cancel)=>{
+      const entries=listeners.get(target.path) || new Set();listeners.set(target.path,entries);
+      const entry={callback,cancel};entries.add(entry);
+      return vi.fn(()=>entries.delete(entry));
+    }),
   };
   const store = new FirebaseTripStore(async () => [appModule, authModule, databaseModule]);
   await store.connect({ projectId:'test-project' }, { email:'owner@example.com', password:'secret' });
@@ -37,7 +43,9 @@ async function connectedStore() {
   databaseModule.set.mockClear();
   databaseModule.remove.mockClear();
   databaseModule.get.mockClear();
-  return { store, appModule, authModule, databaseModule };
+  const emit=(path,value)=>{for(const listener of [...listeners.get(path) || []]) listener.callback(snapshot(value));};
+  const fail=(path,error)=>{for(const listener of [...listeners.get(path) || []]) listener.cancel(error);};
+  return { store, appModule, authModule, databaseModule, emit, fail, listeners };
 }
 
 describe('Firebase trip normalization', () => {
@@ -151,11 +159,13 @@ describe('Firebase trip normalization', () => {
 
   it('writes member/index changes atomically and removes every index on trip deletion', async () => {
     const { store, databaseModule } = await connectedStore();
+    databaseModule.get.mockResolvedValueOnce(snapshot({ownerId:'owner'}));
     await store.setMember('trip-a', 'guest', 'viewer');
     expect(databaseModule.update.mock.calls[0][1]).toEqual({
       'trips/trip-a/members/guest':'viewer',
       'userTrips/guest/trip-a':true,
     });
+    databaseModule.get.mockResolvedValueOnce(snapshot({ownerId:'owner'}));
     await store.removeMember('trip-a', 'guest');
     expect(databaseModule.update.mock.calls[1][1]).toEqual({
       'trips/trip-a/members/guest':null,
@@ -168,6 +178,61 @@ describe('Firebase trip normalization', () => {
       'userTrips/owner/trip-a':null,
       'userTrips/editor/trip-a':null,
     });
+  });
+
+  it('rejects invalid member paths, owner role grants and edits by non-owners before writing',async()=>{
+    const {store,databaseModule}=await connectedStore();
+    for(const uid of ['','other/path','bad.key','bad\nkey']) await expect(store.setMember('trip-a',uid,'viewer')).rejects.toThrow(/UID/);
+    await expect(store.setMember('trip-a','guest','owner')).rejects.toThrow(/原擁有者/);
+    databaseModule.get.mockResolvedValueOnce(snapshot({ownerId:'owner'}));
+    await expect(store.removeMember('trip-a','owner')).rejects.toThrow(/原旅程擁有者/);
+    databaseModule.get.mockResolvedValueOnce(snapshot({ownerId:'someone-else',members:{owner:'editor'}}));
+    await expect(store.setMember('trip-a','guest','editor')).rejects.toThrow(/只有旅程擁有者/);
+    expect(databaseModule.update).not.toHaveBeenCalled();
+  });
+
+  it('receives trip revisions and roles only from indexed memberships and unsubscribes removed trips',async()=>{
+    const {store,databaseModule,emit}=await connectedStore();
+    const events={onTrip:vi.fn(),onRemove:vi.fn(),onError:vi.fn()};
+    const stop=store.subscribe(events);
+    const trip=createTrip({title:'Live',destination:'Sample',startDate:'2027-01-01',endDate:'2027-01-01',timeZone:'UTC'},'trip-a');
+    emit('userTrips/owner',{'trip-a':true});
+    const root={ownerId:'owner',members:{owner:'owner',guest:'viewer'},data:serializeFirebaseTrip(trip)};
+    emit('trips/trip-a',root);
+    expect(events.onTrip).toHaveBeenLastCalledWith(trip,{ownerId:'owner',members:root.members,role:'owner'});
+    const updated=touchTrip({...trip,title:'Remote edit'});emit('trips/trip-a',{...root,data:serializeFirebaseTrip(updated)});
+    expect(events.onTrip.mock.calls.at(-1)[0].title).toBe('Remote edit');
+    const late=databaseModule.onValue.mock.calls.find(([target])=>target.path==='trips/trip-a')[1];
+    emit('userTrips/owner',null);late(snapshot(root));
+    expect(events.onRemove).toHaveBeenCalledWith('trip-a');expect(events.onTrip).toHaveBeenCalledTimes(2);
+    expect(databaseModule.onValue.mock.calls.map(([target])=>target.path)).not.toContain('trips');
+    stop();
+  });
+
+  it('clears revoked or malformed trips and ignores queued events after project disconnect',async()=>{
+    const {store,databaseModule,emit,fail,listeners}=await connectedStore();
+    const events={onTrip:vi.fn(),onRemove:vi.fn(),onError:vi.fn()};store.subscribe(events);
+    emit('userTrips/owner',{a:true,b:true});
+    emit('trips/a',{ownerId:'owner',members:{owner:'owner'},data:{schemaVersion:999}});
+    expect(events.onRemove).toHaveBeenCalledWith('a');expect(events.onError).toHaveBeenCalledOnce();
+    fail('trips/b',new Error('permission revoked'));expect(events.onRemove).toHaveBeenCalledWith('b');
+    const queuedIndex=databaseModule.onValue.mock.calls[0][1];
+    await store.disconnect();
+    const calls=databaseModule.onValue.mock.calls.length;queuedIndex(snapshot({late:true}));
+    expect(databaseModule.onValue).toHaveBeenCalledTimes(calls);
+    expect([...listeners.values()].every(entries=>entries.size===0)).toBe(true);
+  });
+
+  it('blocks new offline writes while retaining the draft and reports connection recovery',async()=>{
+    const {store,databaseModule,emit}=await connectedStore();
+    const onConnection=vi.fn();const stop=store.subscribe({onTrip:vi.fn(),onRemove:vi.fn(),onError:vi.fn(),onConnection});
+    const trip=createTrip({title:'Offline draft',destination:'Sample',startDate:'2027-01-01',endDate:'2027-01-01',timeZone:'UTC'},'trip-a');
+    emit('.info/connected',false);
+    await expect(store.saveTrip(trip)).rejects.toThrow(/連線已中斷/);
+    expect(databaseModule.update).not.toHaveBeenCalled();expect(trip.title).toBe('Offline draft');
+    emit('.info/connected',true);databaseModule.get.mockResolvedValueOnce(snapshot({}));
+    await expect(store.saveTrip(trip)).resolves.toEqual(trip);
+    expect(onConnection.mock.calls.map(([value])=>value)).toEqual([false,true]);stop();
   });
 
   it('isolates malformed indexed trips instead of failing the entire cloud list', async () => {

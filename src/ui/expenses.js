@@ -1,9 +1,9 @@
 import {createExpense,expenseSplit,expenseTotals,ValidationError} from '../domain/trip.js';
 
-export function setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast}) {
+export function setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit=()=>true}) {
   const panel=document.querySelector('#expenses-panel'),dialog=document.querySelector('#expense-dialog'),form=document.querySelector('#expense-form');
   let editor=null,saving=false;
-  const setSaving=busy=>{saving=busy;for(const control of [...form.elements,...panel.querySelectorAll('button')]) control.disabled=busy;};
+  const setSaving=busy=>{saving=busy;for(const control of [...form.elements,...panel.querySelectorAll('button')]) control.disabled=busy || (control.tagName==='BUTTON' && !canEdit() && !control.hasAttribute('data-close'));};
   function render() {
     const trip=currentTrip(),expenses=trip.expenses || [];
     document.querySelector('#expense-empty').hidden=expenses.length>0;

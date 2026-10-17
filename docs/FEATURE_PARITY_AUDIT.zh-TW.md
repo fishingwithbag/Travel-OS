@@ -181,3 +181,13 @@
 - 逐批審查 staged 檔案與 diff，掃描本批變更的服務憑證、測試專案識別與私人本機路徑後提交；沒有新增外部套件。這是本批掃描，不代替發布前完整 Git 歷史與建置物掃描。
 - 全部推送至 `feature/release-readiness`，更新 [PR #3](https://github.com/fishingwithbag/Travel-OS/pull/3) 的繁體中文／英文標題與說明。main、正式 Pages、真實 Firebase Rules 與計費未變更。
 - 發布阻擋項仍包括 Google Places／自動交通、成員邀請與即時同步、後續精靈、群組移除一致性、真實 Spark／多人／正式站全流程，以及最終私人資訊與授權檢查。
+
+## 成員與即時同步（2026-10-17）
+
+- 依 [Firebase 官方讀寫文件](https://firebase.google.com/docs/database/web/read-and-write) 使用 `onValue`：僅訂閱本人索引與索引內旅程，不訂閱整個資料庫。動態加入／移除旅程，斷線顯示具體狀態，登出／切換專案停止全部訂閱及排隊中的舊回呼。
+- 顯示目前專案帳號 UID；擁有者可貼上同一專案使用者 UID，新增／修改 editor 或 viewer，移除需第二次確認。這是直接授權，不寄邀請信，也不假裝能在瀏覽器驗證另一 UID 是否已在 Auth 註冊；受邀者須先有同專案帳號並登入取得 UID。
+- 原 owner 不可降權、移除或另授第二個 owner。Rules 以原 ownerId 管理成員；editor 不可升權、viewer 不可寫入。介面停用 viewer 的修改入口，真正權限仍由 Rules 執行。
+- 更新到來時保留開啟中的草稿，版本比對拒絕舊資料覆蓋；撤權後移除已載入旅程，草稿仍可複製。切換專案清除表單與 access 快取，舊連線的晚到寫入結果不載入新專案。
+- 108 項單元與 build 通過，包括索引變更、撤權、壞資料隔離、unsubscribe／晚到回呼、斷線寫入拒絕、成員路徑／owner 保護與切換期間寫入。
+- 新增實際 Firebase SDK 的多身分 Emulator 流程：editor 修改即時送到 viewer，viewer 拒寫、owner 調權、受邀者索引自動出現、撤權後拒讀、登出後不再接收事件。等待 CI 執行；這不是已完成真實帳密或瀏覽器雲端驗收。
+- 正式 Pages、真實 Firebase Rules 與計費未變更。Google 功能／精靈、群組移除一致性與完整真實 Spark 發布驗收仍未完成。

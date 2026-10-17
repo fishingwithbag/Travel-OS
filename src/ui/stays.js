@@ -1,10 +1,10 @@
 import {createStay,stayItemInput,ValidationError} from '../domain/trip.js';
 import {itemMapUrl} from '../providers/maps.js';
 
-export function setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast}) {
+export function setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit=()=>true}) {
   const panel=document.querySelector('#stays-panel'),dialog=document.querySelector('#stay-dialog'),form=document.querySelector('#stay-form');
   let editor=null,saving=false;
-  const setSaving=busy=>{saving=busy;for(const control of [...form.elements,...panel.querySelectorAll('button')]) control.disabled=busy;};
+  const setSaving=busy=>{saving=busy;for(const control of [...form.elements,...panel.querySelectorAll('button')]) control.disabled=busy || (control.tagName==='BUTTON' && !canEdit() && !control.hasAttribute('data-close'));};
   function render() {
     const trip=currentTrip(),stays=trip.stays || [];
     document.querySelector('#stay-empty').hidden=stays.length>0;
