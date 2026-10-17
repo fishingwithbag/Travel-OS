@@ -208,3 +208,11 @@
 - [Google 價格總覽](https://developers.google.com/maps/billing-and-pricing/overview) 與 [額度變更 FAQ](https://developers.google.com/maps/billing-and-pricing/faq)：免費額度依 SKU；設定指南應逐項核實所用 API／欄位與 quota。Firebase Spark 與 Google Maps 計費條件分別說明，不擅自更改使用者方案、不宣稱所有用量永遠免費，也不因計費前提刪除所需功能。
 
 上述是下一批實作依據，A13／A14 仍未完成；本批沒有啟用 Google API、輸入 Key 或送出計費操作。天氣維持移除。
+
+## 2026-10-17：WP4 群組管理第一批
+
+- 基線：重新 fetch origin，確認 feature/release-readiness 與遠端 c29437c 一致。
+- 新增更名（保留 ID）、刪除影響預覽、轉移到另一群組或共用，以及停車資料衝突阻擋。行程、租車、住宿與費用關聯在一次旅程保存內更新。
+- 本機 `npm run check`：114 項單元測試通過，Vite 建置成功。新增測試涵蓋五類關聯、最後群組、停車衝突、不可變輸入及備份往返。
+- 實際瀏覽器：建立合成旅程及群組、更名、建立群組費用、查看影響預覽、確認刪除最後群組；費用移至所有人，100 TWD／3 人分攤結果保留。重新整理後仍保留，console error 為空。
+- 尚未完成：本批沒有修改 Rules，沒有宣稱修復直接局部寫入造成的失效參照；舊異常資料修復、多帳號雲端操作及手機回歸仍待驗證。完整 WBS 見 DEVELOPMENT_WBS.zh-TW.md。

@@ -258,6 +258,19 @@
       </form>
     </dialog>
 
+    <dialog id="group-edit-dialog">
+      <form id="group-edit-form" class="dialog-form">
+        <header><p class="eyebrow">GROUP</p><h2>管理同行群組</h2></header>
+        <label>群組名稱<input name="name" maxlength="50" required /></label>
+        <p id="group-impact" class="muted"></p>
+        <label>刪除後將資料移轉至<select name="targetId"></select></label>
+        <p class="muted">若目標已有停車資訊，請先整理停車設定；系統不會覆蓋既有內容。</p>
+        <p id="group-remove-warning" role="status" hidden></p>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button id="group-remove" class="secondary" type="button">刪除並移轉資料</button><button class="primary" type="submit">儲存名稱</button></footer>
+      </form>
+    </dialog>
+
     <dialog id="group-dialog">
       <form id="group-form" method="dialog" class="dialog-form">
         <header><p class="eyebrow">NEW GROUP</p><h2>新增同行群組</h2></header>

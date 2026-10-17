@@ -3,7 +3,8 @@ import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebas
 import { readFile } from 'node:fs/promises';
 import { get, ref, runTransaction, set, update } from 'firebase/database';
 import * as databaseSdk from 'firebase/database';
-import {createExpense,createPlace,createRental,createStay,createTrip,restoredTripCopy} from '../src/domain/trip.js';
+import {createExpense,createItem,createPlace,createRental,createStay,createTrip,restoredTripCopy} from '../src/domain/trip.js';
+import {renameGroup,removeGroup} from '../src/domain/groups.js';
 import {FirebaseTripStore,serializeFirebaseTrip} from '../src/storage/firebase-store.js';
 import {touchTrip} from '../src/domain/trip.js';
 
@@ -35,6 +36,23 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('accepts complete group rename and removal transfers while rejecting viewer changes',async()=>{
+    let source={...createTrip({title:'Group sample',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC',currency:'USD'},'trip-a'),groups:[{id:'a',name:'A'},{id:'b',name:'B'}]};
+    source.items=[createItem({title:'Museum',type:'place',date:source.startDate,groupId:'a',parking:{mode:'split',byGroup:{a:{primary:{name:'Garage'},notes:'Entrance'}}}},source,'item')];
+    source.expenses=[createExpense({title:'Ticket',date:source.startDate,groupId:'a',amount:100,splitCount:3},source,'expense')];
+    await environment.withSecurityRulesDisabled(context=>set(ref(context.database(),'trips/trip-a/data'),serializeFirebaseTrip(source)));
+    const editor=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    source=touchTrip(renameGroup(source,'a','Renamed'));
+    await assertSucceeds(set(editor,serializeFirebaseTrip(source)));
+    source=touchTrip(removeGroup(source,'a','b'));
+    await assertFails(set(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),serializeFirebaseTrip(source)));
+    await assertSucceeds(set(editor,serializeFirebaseTrip(source)));
+    source=touchTrip(removeGroup(source,'b',''));
+    await assertSucceeds(set(editor,serializeFirebaseTrip(source)));
+    const stored=(await get(editor)).val();
+    expect(stored.groups).toBeUndefined();expect(stored.items.item.parking.primary.name).toBe('Garage');
+    expect(stored.expenses.expense.splitCount).toBe(3);expect(stored.expenses.expense.amountMinor).toBe(10000);
+  });
   it('syncs real SDK clients, applies role changes and clears revoked memberships',async()=>{
     // Trip dates can be in the future; creation timestamps must reflect when the fixture was created.
     const createdAt=new Date().toISOString();

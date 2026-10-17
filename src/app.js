@@ -14,6 +14,7 @@ import { durationMinutes, scheduleWarnings } from './domain/schedule.js';
 import { setupRentalUi } from './ui/rentals.js';
 import { setupStayUi } from './ui/stays.js';
 import { setupExpenseUi } from './ui/expenses.js';
+import { setupGroupUi } from './ui/groups.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, access:Object.create(null) };
@@ -39,6 +40,7 @@ const STORAGE_KEYS = Object.freeze({
 const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
+const groupUi = setupGroupUi({currentTrip,saveTrip,openDialog,setError,showToast,canEdit:canEditTrip});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
@@ -64,8 +66,8 @@ function openDialog(id) {
 function formData(form) { return Object.fromEntries(new FormData(form).entries()); }
 
 function warnOpenDraft(message) {
-  const form=document.querySelector('#item-dialog[open] form,#place-dialog[open] form,#rental-dialog[open] form,#stay-dialog[open] form,#expense-dialog[open] form');
-  if(form && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving()) setError(form,new ValidationError(message));
+  const form=document.querySelector('#item-dialog[open] form,#place-dialog[open] form,#rental-dialog[open] form,#stay-dialog[open] form,#expense-dialog[open] form,#group-edit-dialog[open] form');
+  if(form && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving() && !groupUi.isSaving()) setError(form,new ValidationError(message));
 }
 
 function renderLive() {
@@ -320,7 +322,7 @@ function render() {
   $('#summary-groups').textContent = trip.groups.length;
   const totals = expenseTotals([...trip.items,...(trip.expenses || [])]);
   $('#summary-cost').textContent = Object.keys(totals).length ? Object.entries(totals).map(([currency, minor]) => `${currency} ${(minor / 100).toLocaleString('zh-TW')}`).join(' / ') : '—';
-  $('#group-list').innerHTML = trip.groups.map((group) => `<li>${escapeHtml(group.name)}</li>`).join('');
+  $('#group-list').innerHTML = trip.groups.map((group) => `<li>${escapeHtml(group.name)} <button class="text-button" type="button" data-edit-group="${escapeHtml(group.id)}" ${canEditTrip() ? '' : 'disabled'} aria-label="管理群組：${escapeHtml(group.name)}">管理</button></li>`).join('');
   $('#group-empty').hidden = trip.groups.length > 0;
   if(!$('#item-dialog').open) {
     const groupSelect = $('#item-form select[name="groupId"]');
@@ -655,7 +657,7 @@ $('#import-form').addEventListener('submit', async (event) => {
 });
 $('#import-dialog').addEventListener('cancel',event=>{if(importSaving) event.preventDefault();});
 
-for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !importSaving && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving()) dialog.close(); });
+for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', (event) => { if (event.target === dialog && !importSaving && !itemSaving && !placeSaving && !rentalUi.isSaving() && !stayUi.isSaving() && !expenseUi.isSaving() && !groupUi.isSaving()) dialog.close(); });
 for(const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('close',()=>{if(deferredLiveRender && !document.querySelector('dialog[open]')){deferredLiveRender=false;render();}});
 
 async function start() {
