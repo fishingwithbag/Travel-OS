@@ -226,3 +226,4 @@
 - 備份匯入先告知修復數量，確認後才寫入。合成本機瀏覽器實測預覽、匯入及重整保存；下一站仍顯示備註、地圖入口與分組停車，console error 為空。
 - 本機 117 項單元測試及建置通過。新增 Emulator 案例會實際局部刪除群組、重現失效參照，再檢查修復快照可寫、viewer 拒寫及陌生人拒讀；CI 結果另記。
 - 後端任意局部寫入參照完整性仍未解決，沒有以復原功能宣稱防止非法局部刪除。真實 Spark 多人復原與完整發布驗收仍待測。細節見 GROUP_RECOVERY.zh-TW.md。
+- CI 證據：程式版本 e7fdbca 的 [GitHub Actions](https://github.com/fishingwithbag/Travel-OS/actions/runs/39137692489) 已通過 check、依賴稽核與全部 Rules／SDK Emulator 測試；局部刪除重現與修復案例通過。此證據未包含真實雲端瀏覽器登入。
