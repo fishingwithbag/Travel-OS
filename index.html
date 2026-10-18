@@ -206,6 +206,20 @@
     <dialog id="place-dialog">
       <form id="place-form" method="dialog" class="dialog-form">
         <header><p class="eyebrow">PLACE LIBRARY</p><h2 id="place-dialog-title">新增景點</h2></header>
+        <details id="google-place-search" class="google-place-search">
+          <summary>用 Google 搜尋地點（選用）</summary>
+          <fieldset class="connection-fields">
+          <p>在自己的 Google Cloud 專案啟用 Maps JavaScript API 與 Places API (New)，使用限制於自己網站的瀏覽器 Key。此功能有服務額度與計費條件，與 Firebase Spark 分開。</p>
+          <label>Google Maps 瀏覽器 API Key<input type="password" autocomplete="off" spellcheck="false" aria-label="Google Maps 瀏覽器 API Key" /></label>
+          <p>Key 僅用於本分頁，關閉視窗會清除輸入。搜尋內容會傳送給 Google。<a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noopener noreferrer">官方設定說明</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google 隱私權政策</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">Google Maps 使用條款</a></p>
+          <div class="setup-actions-inline"><button type="button" class="secondary" data-google-load>啟用地點搜尋</button><button type="button" class="text-button" data-google-clear>關閉搜尋並清除輸入</button></div>
+          <div data-google-widget></div><p role="status" aria-live="polite"></p>
+          <div data-google-preview class="google-place-preview"></div>
+          <button type="button" class="secondary" data-google-apply hidden>使用此地點連結</button>
+          <p>Google 資料只在這裡預覽；保存的是地點連結。下方景點名稱、地址與備註由你填寫。</p>
+          <a href="./service-notice.html" target="_blank" rel="noopener noreferrer">Travel OS 使用條款與隱私說明</a>
+          </fieldset>
+        </details>
         <label>景點名稱<input name="title" maxlength="100" required /></label>
         <label>地區<input name="region" maxlength="100" /></label>
         <div class="field-pair"><label>類別<input name="category" list="place-categories" maxlength="50" required value="景點" /></label><label>子類別<input name="subcategory" maxlength="50" /></label></div>

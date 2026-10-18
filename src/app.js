@@ -16,6 +16,7 @@ import { setupStayUi } from './ui/stays.js';
 import { setupExpenseUi } from './ui/expenses.js';
 import { setupGroupUi } from './ui/groups.js';
 import {recoverMissingGroups} from './domain/groups.js';
+import {setupPlaceSearch} from './ui/place-search.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, access:Object.create(null) };
@@ -43,6 +44,7 @@ const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,o
 const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const groupUi = setupGroupUi({currentTrip,saveTrip,openDialog,setError,showToast,canEdit:canEditTrip});
+setupPlaceSearch({sharedPublicDemo,canEdit:()=>canEditTrip() && !placeSaving});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }

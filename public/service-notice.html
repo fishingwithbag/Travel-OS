@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Travel OS 使用條款與隱私說明</title>
+<style>body{max-width:48rem;margin:2rem auto;padding:0 1rem;font:1rem/1.7 system-ui,sans-serif;color:#19372c;background:#fffef4}a{color:#20583f}h1{font-size:1.6rem}</style>
+<main>
+<h1>Travel OS 使用條款與隱私說明</h1>
+<p>本說明適用於未修改的 Travel OS 開源版本。自行部署者若增加分析、廣告、伺服器或其他資料處理，應公開自己的處理方式與聯絡資訊。</p>
+<h2>使用條件</h2>
+<p>程式依 repository 中的 MIT License 提供；第三方服務另適用各自條款。請使用自己有權使用的服務設定與資料，並確認服務額度及費用。旅遊資訊、地址與路線可能變動，出發前請確認。</p>
+<p>使用 Google Maps 功能時，適用 <a href="https://maps.google.com/help/terms_maps/">Google Maps／Google Earth 附加服務條款</a>。Google 搜尋結果的來源標示與第三方資料提供者資訊會隨結果顯示。</p>
+<h2>資料如何處理</h2>
+<ul>
+<li>本機模式將旅程保存在此網站來源的瀏覽器儲存空間。清除網站資料可能刪除旅程，請先匯出備份。</li>
+<li>雲端模式將登入請求及旅程資料送到你設定的 Firebase 專案，存取由該專案的 Authentication 與資料庫 Rules 控制。程式不把旅程送到作者的 Firebase 專案。</li>
+<li>選擇記住 Firebase 設定會將 Web config 保存在此裝置；程式不保存登入密碼。完整 JSON 備份可能包含私人旅遊資料，請自行保管。</li>
+<li>只有啟用 Google 搜尋後才載入 Google SDK。瀏覽器 Key、搜尋文字與選取地點會送到 Google，Google 也會收到連線所需的網路資訊。其處理方式見 <a href="https://policies.google.com/privacy">Google 隱私權政策</a>。</li>
+<li>Google Key 不寫入旅程或備份；搜尋預覽不保存到資料庫。按「使用此地點連結」只帶入含 Place ID 的地圖連結。關閉搜尋視窗清除輸入及預覽；已載入的 SDK 會留在本分頁直到重新載入或關閉分頁。</li>
+<li>點擊外部地圖連結會開啟 Google Maps 並傳送該連結內的地點資訊。網站託管者亦可能依其政策保留一般網路存取紀錄。</li>
+</ul>
+<p><a href="./">返回 Travel OS</a></p>
+</main>
+</html>

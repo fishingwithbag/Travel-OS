@@ -15,12 +15,22 @@ export function parkingMapUrl(spot) {
   return spot.mapsUrl || mapSearchUrl(spot.name);
 }
 
+function savedPlaceId(item) {
+  try {
+    const url=new URL(item.mapsUrl);
+    const id=url.searchParams.get('query_place_id');
+    return url.protocol==='https:' && ['www.google.com','google.com'].includes(url.hostname) && url.pathname.startsWith('/maps/') && /^[A-Za-z0-9_-]{1,256}$/.test(id || '') ? id : '';
+  } catch {return '';}
+}
+
 export function routeMapUrl(origin, destination, mode = 'driving') {
   if (!['driving', 'walking'].includes(mode)) throw new ValidationError('不支援的路線模式。');
   const from = String(origin.location || origin.title || '').trim();
   const to = String(destination.location || destination.title || '').trim();
   if (!from || !to) throw new ValidationError('路線需要起點與目的地。');
-  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&travelmode=${mode}`;
+  let url=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&travelmode=${mode}`;
+  for(const [name,item] of [['origin',origin],['destination',destination]]) {const id=savedPlaceId(item);if(id) url+=`&${name}_place_id=${encodeURIComponent(id)}`;}
+  return url;
 }
 
 // Maps URLs supports only three intermediate stops in mobile browsers.
@@ -44,6 +54,8 @@ export function dayRouteSections(items, groups = []) {
         url = routeMapUrl(stops[start], stops[end]);
         const middle = stops.slice(start + 1, end).map((item) => item.location || item.title);
         if (middle.length) url += `&waypoints=${encodeURIComponent(middle.join('|'))}`;
+        const ids=stops.slice(start+1,end).map(savedPlaceId);
+        if(ids.length && ids.every(Boolean)) url+=`&waypoint_place_ids=${encodeURIComponent(ids.join('|'))}`;
         if (url.length <= 2048 || end === start + 1) break;
         end--;
       } while (end > start);
