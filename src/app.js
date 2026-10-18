@@ -15,11 +15,13 @@ import { setupRentalUi } from './ui/rentals.js';
 import { setupStayUi } from './ui/stays.js';
 import { setupExpenseUi } from './ui/expenses.js';
 import { setupGroupUi } from './ui/groups.js';
+import {recoverMissingGroups} from './domain/groups.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, access:Object.create(null) };
 let deferredLiveRender=false;
 let memberSaving=false;
+let groupRecoverySaving=false;
 let pendingBackup = null;
 let importSaving = false;
 let itemEditor = null;
@@ -271,8 +273,9 @@ async function copyText(value) {
   await navigator.clipboard.writeText(value);
 }
 
-async function saveTrip(trip) {
+async function saveTrip(trip,confirmGroupRecovery=false) {
   if(!canEditTrip()) throw new ValidationError('目前帳號無編輯權限；請保留表單內容並聯絡旅程擁有者。');
+  if(!confirmGroupRecovery && store.groupRecovery?.(trip.id).length) throw new ValidationError('請先關閉表單並確認旅程上方的群組修復預覽，再重新開啟編輯。輸入內容仍保留。');
   const updated = touchTrip(trip);
   await saveToActiveStore(()=>store,updated);
   upsertTrip(updated);
@@ -283,6 +286,11 @@ async function saveTrip(trip) {
 
 function render() {
   const trip = currentTrip();
+  const recovered=trip ? store.groupRecovery?.(trip.id) || [] : [];
+  $('#group-recovery').hidden=!recovered.length;
+  $('#group-recovery-summary').textContent=recovered.map(group=>`${group.name}（${group.id}）`).join('、');
+  $('#group-recovery-save').disabled=groupRecoverySaving || !canEditTrip();
+  $('#group-recovery-status').textContent=recovered.length && !canEditTrip() ? '目前為唯讀權限，請聯絡旅程擁有者或編輯者確認修復。' : '';
   renderMembers();
   $('#welcome').hidden = Boolean(trip);
   $('#workspace').hidden = !trip;
@@ -613,17 +621,30 @@ function downloadBackup(mode) {
 }
 $('#export-button').addEventListener('click', () => downloadBackup('private'));
 $('#share-export-button').addEventListener('click', () => downloadBackup('share'));
+$('#group-recovery-save').addEventListener('click',async event=>{
+  if(groupRecoverySaving) return;groupRecoverySaving=true;
+  const button=event.currentTarget;button.disabled=true;
+  try {await saveTrip(currentTrip(),true);showToast('群組修復已保存；請確認群組名稱及內容。');}
+  catch(error) {$('#group-recovery-status').textContent=error instanceof ValidationError ? error.message : '修復保存失敗，請檢查連線與編輯權限後重試。';}
+  finally {groupRecoverySaving=false;button.disabled=!canEditTrip();}
+});
 $('#import-file').addEventListener('change', async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
   if (file.size > 5_000_000) { showToast('備份檔案不可超過 5 MB。'); return; }
   try {
-    pendingBackup = validateBackup(JSON.parse(await file.text()));
+    const raw=JSON.parse(await file.text());
+    let recoveryCount=0;
+    if(Array.isArray(raw?.trips) && raw.trips.length<=100) raw.trips=raw.trips.map(value=>{
+      const result=recoverMissingGroups(value);recoveryCount+=result.recovered.length;return result.trip;
+    });
+    pendingBackup = validateBackup(raw);
     const itemCount = pendingBackup.trips.reduce((sum, trip) => sum + trip.items.length, 0);
     const placeCount = pendingBackup.trips.reduce((sum, trip) => sum + trip.places.length, 0);
     $('#import-summary').innerHTML = `<strong>${pendingBackup.trips.length} 趟旅程</strong><span>${itemCount} 筆安排 · ${placeCount} 個景點 · ${pendingBackup.mode === 'share' ? '分享副本' : '完整備份'}</span>`;
     $('#import-cloud-choice').hidden = state.mode !== 'cloud';
     $('#import-trip-select').replaceChildren(...pendingBackup.trips.map((trip,index)=>new Option(`${trip.title} · ${trip.startDate} — ${trip.endDate}`,String(index))));
     $('#import-warning').textContent = state.mode === 'cloud' ? '只匯入所選的一趟，建立全新旅程並由目前登入帳號擁有；既有旅程不會被覆蓋。備份不包含原專案設定或成員權限。' : '匯入會取代目前本機模式的所有旅程；請先匯出現有資料的完整備份。';
+    if(recoveryCount) $('#import-warning').textContent+=` 備份另有 ${recoveryCount} 組遺失群組參照，確認匯入時將以「待確認群組」補回原 ID；保留原有行程、停車、預訂與費用。原名稱無法還原，匯入後可更名或移轉。`;
     $('#import-confirm').textContent = state.mode === 'cloud' ? '匯入為新的雲端旅程' : '確認取代本機資料';
     $('#import-confirm').disabled = !pendingBackup.trips.length && state.mode === 'cloud';
     openDialog('import-dialog');

@@ -4,7 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { get, ref, runTransaction, set, update } from 'firebase/database';
 import * as databaseSdk from 'firebase/database';
 import {createExpense,createItem,createPlace,createRental,createStay,createTrip,restoredTripCopy} from '../src/domain/trip.js';
-import {renameGroup,removeGroup} from '../src/domain/groups.js';
+import {renameGroup,removeGroup,recoverMissingGroups} from '../src/domain/groups.js';
+import {normalizeFirebaseTrip,parseFirebaseTrip} from '../src/storage/firebase-store.js';
 import {FirebaseTripStore,serializeFirebaseTrip} from '../src/storage/firebase-store.js';
 import {touchTrip} from '../src/domain/trip.js';
 
@@ -36,6 +37,22 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
+  it('reproduces partial group deletion and recovers original references with existing permissions',async()=>{
+    let source={...createTrip({title:'Recover partial write',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'trip-a'),groups:[{id:'a',name:'A'}]};
+    source.items=[createItem({title:'Museum',type:'place',date:source.startDate,groupId:'a',parking:{mode:'split',byGroup:{a:{primary:{name:'Garage'},notes:'Entrance'}}}},source,'item')];
+    await environment.withSecurityRulesDisabled(context=>set(ref(context.database(),'trips/trip-a/data'),serializeFirebaseTrip(source)));
+    const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
+    await assertSucceeds(update(target,{'groups/a':null,revision:2}));
+    const raw=(await get(target)).val();expect(()=>parseFirebaseTrip(raw)).toThrow();
+    const {trip:preview,recovered}=recoverMissingGroups(normalizeFirebaseTrip(raw));
+    expect(recovered).toEqual([{id:'a',name:'待確認群組 1'}]);expect(preview.items).toEqual(source.items);
+    expect((await get(target)).val().groups).toBeUndefined();
+    source=touchTrip(preview);
+    await assertFails(set(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),serializeFirebaseTrip(source)));
+    await assertFails(get(ref(environment.authenticatedContext('outsider').database(),'trips/trip-a/data')));
+    await assertSucceeds(set(target,serializeFirebaseTrip(source)));
+    expect(parseFirebaseTrip((await get(target)).val()).groups).toEqual(recovered);
+  });
   it('accepts complete group rename and removal transfers while rejecting viewer changes',async()=>{
     let source={...createTrip({title:'Group sample',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC',currency:'USD'},'trip-a'),groups:[{id:'a',name:'A'},{id:'b',name:'B'}]};
     source.items=[createItem({title:'Museum',type:'place',date:source.startDate,groupId:'a',parking:{mode:'split',byGroup:{a:{primary:{name:'Garage'},notes:'Entrance'}}}},source,'item')];

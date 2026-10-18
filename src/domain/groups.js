@@ -1,5 +1,28 @@
 import {addGroup,validateTrip,ValidationError} from './trip.js';
 
+export function recoverMissingGroups(value) {
+  if(!value || !Array.isArray(value.groups) || !Array.isArray(value.items)) return {trip:validateTrip(value),recovered:[]};
+  const known=new Set(value.groups.map(group=>group?.id)),missing=new Set();
+  const collect=id=>{
+    if(!id || known.has(id)) return;
+    if(typeof id!=='string' || id.length>100 || /[.#$\[\]\/\u0000-\u001f\u007f]/.test(id)) throw new ValidationError('遺失群組的 ID 無效，無法安全修復；原始資料未變更。');
+    missing.add(id);
+  };
+  for(const key of ['items','rentals','stays','expenses']) {
+    if(value[key]!=null && !Array.isArray(value[key])) return {trip:validateTrip(value),recovered:[]};
+    for(const entry of value[key] || []) collect(entry?.groupId);
+  }
+  for(const item of value.items) for(const id of Object.keys(item?.parking?.byGroup || {})) collect(id);
+  if(value.groups.length+missing.size>1000) throw new ValidationError('修復後群組超過 1000 組，請先整理備份；原始資料未變更。');
+  const names=new Set(value.groups.map(group=>String(group?.name).toLocaleLowerCase()));
+  let number=1;
+  const recovered=[...missing].sort().map(id=>{
+    let name;do {name=`待確認群組 ${number++}`;} while(names.has(name.toLocaleLowerCase()));
+    names.add(name.toLocaleLowerCase());return {id,name};
+  });
+  return {trip:validateTrip({...value,groups:[...value.groups,...recovered]}),recovered};
+}
+
 function requireGroup(trip,id) {
   if(!trip.groups.some(group=>group.id===id)) throw new ValidationError('群組已不存在，請重新開啟。');
 }

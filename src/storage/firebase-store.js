@@ -1,4 +1,5 @@
 import { validateTrip, ValidationError } from '../domain/trip.js';
+import {recoverMissingGroups} from '../domain/groups.js';
 
 export function normalizeFirebaseTrip(value) {
   if (!value) return value;
@@ -40,6 +41,17 @@ function pathKey(value) {
 }
 
 export class FirebaseTripStore {
+  #groupRecovery = new Map();
+
+  groupRecovery(id) {return structuredClone(this.#groupRecovery.get(id) || []);}
+
+  #parseTrip(value) {
+    if(!value) return value;
+    this.#groupRecovery.delete(value.id);
+    const {trip,recovered}=recoverMissingGroups(normalizeFirebaseTrip(value));
+    if(recovered.length) this.#groupRecovery.set(trip.id,recovered);else this.#groupRecovery.delete(trip.id);
+    return trip;
+  }
   #app;
   #auth;
   #database;
@@ -97,10 +109,11 @@ export class FirebaseTripStore {
   async listTrips() {
     const { ref, get, remove } = this.#modules;
     this.#warnings = [];
+    this.#groupRecovery.clear();
     const index = (await get(ref(this.#database, `userTrips/${this.#uid}`))).val() || {};
     const ids = Object.keys(index);
     const results = await Promise.all(ids.map(async (id) => {
-      try { return { id, trip:parseFirebaseTrip((await get(ref(this.#database, `trips/${id}/data`))).val()) }; }
+      try { return { id, trip:this.#parseTrip((await get(ref(this.#database, `trips/${id}/data`))).val()) }; }
       catch (error) { return { id, error }; }
     }));
     const trips = [];
@@ -130,7 +143,7 @@ export class FirebaseTripStore {
     return warnings;
   }
 
-  async getTrip(id) { return parseFirebaseTrip((await this.#modules.get(this.#modules.ref(this.#database, `trips/${id}/data`))).val()); }
+  async getTrip(id) { return this.#parseTrip((await this.#modules.get(this.#modules.ref(this.#database, `trips/${id}/data`))).val()); }
 
   subscribe({onTrip,onRemove,onError,onConnection=()=>{}}) {
     this.#stopWatching?.();
@@ -139,7 +152,7 @@ export class FirebaseTripStore {
     if (!uid) throw new ValidationError('請先登入 Firebase。');
     let active=true;
     const listeners=new Map();
-    const stopTrip=id=>{const listener=listeners.get(id);if(listener){listener.active=false;listener.stop?.();listeners.delete(id);}};
+    const stopTrip=id=>{this.#groupRecovery.delete(id);const listener=listeners.get(id);if(listener){listener.active=false;listener.stop?.();listeners.delete(id);}};
     const stopIndex=onValue(ref(this.#database,`userTrips/${uid}`),snapshot=>{
       if(!active) return;
       const ids=Object.keys(snapshot.val() || {});
@@ -151,9 +164,9 @@ export class FirebaseTripStore {
         listener.stop=onValue(ref(this.#database,`trips/${id}`),snapshot=>{
           if(!active || !listener.active) return;
           const value=snapshot.val();
-          if(!value || !['owner','editor','viewer'].includes(value.members?.[uid])) {onRemove(id);return;}
+          if(!value || !['owner','editor','viewer'].includes(value.members?.[uid])) {this.#groupRecovery.delete(id);onRemove(id);return;}
           try {
-            const trip=parseFirebaseTrip(value.data);
+            const trip=this.#parseTrip(value.data);
             if(!trip || trip.id!==id) throw new ValidationError('雲端旅程 ID 與索引不一致，請聯絡專案擁有者。');
             onTrip(trip,{ownerId:value.ownerId,members:{...value.members},role:value.members[uid]});
           } catch(error) {onRemove(id);onError(error);}
@@ -195,6 +208,7 @@ export class FirebaseTripStore {
       }, { applyLocally:false });
       if (!result.committed) throw new ValidationError('雲端旅程已被其他裝置更新，請重新載入後再編輯。');
     }
+    this.#groupRecovery.delete(trip.id);
     return trip;
   }
 
@@ -239,6 +253,7 @@ export class FirebaseTripStore {
 
   async disconnect() {
     this.#stopWatching?.();
+    this.#groupRecovery.clear();
     if (this.#auth) await this.#modules.signOut(this.#auth).catch(() => {});
     if (this.#app) await this.#modules.deleteApp(this.#app).catch(() => {});
     this.#app = this.#auth = this.#database = this.#uid = undefined;

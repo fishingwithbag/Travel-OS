@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {createTrip,createItem,createRental,createStay,createExpense,createBackup,validateBackup} from '../src/domain/trip.js';
-import {groupImpact,renameGroup,removeGroup} from '../src/domain/groups.js';
+import {groupImpact,renameGroup,removeGroup,recoverMissingGroups} from '../src/domain/groups.js';
 
 function fixture() {
   const trip=createTrip({title:'Group test',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC',currency:'USD'});
@@ -10,6 +10,26 @@ function fixture() {
 }
 
 describe('group lifecycle',()=>{
+  it('recovers missing references with original IDs without altering data or masking other errors',()=>{
+    const trip=fixture();trip.groups=[];trip.items[0].groupId='orphan';
+    const before=structuredClone(trip),result=recoverMissingGroups(trip);
+    expect(result.recovered.map(group=>group.id)).toEqual(['a','orphan']);
+    expect(result.trip.items).toEqual(trip.items);expect(trip).toEqual(before);
+    expect(recoverMissingGroups(result.trip).recovered).toEqual([]);
+    expect(validateBackup(createBackup([result.trip])).trips[0]).toEqual(result.trip);
+    expect(()=>recoverMissingGroups({...trip,currency:'bad currency'})).toThrow();
+    expect(()=>recoverMissingGroups({...trip,items:[{...trip.items[0],groupId:'bad/path'}]})).toThrow(/無效/);
+    expect(()=>recoverMissingGroups({...trip,groups:Array.from({length:1000},(_,index)=>({id:`g${index}`,name:`G${index}`}))})).toThrow(/1000/);
+  });
+  it('collects every collection and avoids duplicate recovered names',()=>{
+    const trip=fixture();trip.groups=[{id:'kept',name:'待確認群組 1'}];
+    trip.rentals=[createRental({company:'Rental',groupId:'a',pickupDate:trip.startDate,pickupTime:'09:00',pickupLocation:'A',returnDate:trip.endDate,returnTime:'09:00',returnLocation:'B'},fixture(),'rental')];
+    trip.stays=[createStay({title:'Stay',location:'Street',groupId:'b',checkInDate:trip.startDate,checkInTime:'15:00',checkOutDate:trip.endDate,checkOutTime:'10:00',guests:2},fixture(),'stay')];
+    trip.expenses=[createExpense({title:'Fee',date:trip.startDate,groupId:'b',amount:10,splitCount:3},fixture(),'expense')];
+    const result=recoverMissingGroups(trip);
+    expect(result.recovered).toEqual([{id:'a',name:'待確認群組 2'},{id:'b',name:'待確認群組 3'}]);
+    for(const key of ['items','rentals','stays','expenses']) expect(result.trip[key]).toEqual(trip[key]);
+  });
   it('renames without changing identity or parking and rejects duplicate names',()=>{
     const trip=fixture();const result=renameGroup(trip,'a','New A');
     expect(result.groups[0]).toEqual({id:'a',name:'New A'});expect(result.items).toEqual(trip.items);

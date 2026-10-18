@@ -49,6 +49,23 @@ async function connectedStore() {
 }
 
 describe('Firebase trip normalization', () => {
+  it('previews missing cloud groups without writing, then clears recovery after saving or revocation',async()=>{
+    const {store,databaseModule,emit}=await connectedStore();
+    const source=createTrip({title:'Recovery',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'trip-a');
+    source.groups=[{id:'a',name:'A'}];source.items=[createItem({title:'Museum',date:source.startDate,type:'place',groupId:'a'},source,'item')];
+    const raw=serializeFirebaseTrip(source);delete raw.groups;
+    databaseModule.get.mockResolvedValueOnce(snapshot(raw));
+    const preview=await store.getTrip(source.id);
+    expect(preview.items).toEqual(source.items);expect(store.groupRecovery(source.id)).toEqual([{id:'a',name:'待確認群組 1'}]);
+    expect(databaseModule.update).not.toHaveBeenCalled();expect(databaseModule.runTransaction).not.toHaveBeenCalled();
+    databaseModule.get.mockResolvedValueOnce(snapshot({'trip-a':true}));
+    databaseModule.runTransaction.mockImplementationOnce(async(target,mutate)=>({committed:Boolean(mutate(raw))}));
+    await store.saveTrip(touchTrip(preview));expect(store.groupRecovery(source.id)).toEqual([]);
+    store.subscribe({onTrip:vi.fn(),onRemove:vi.fn(),onError:vi.fn()});emit('userTrips/owner',{'trip-a':true});
+    emit('trips/trip-a',{ownerId:'owner',members:{owner:'owner'},data:raw});expect(store.groupRecovery(source.id)).toHaveLength(1);
+    emit('trips/trip-a',{ownerId:'someone',members:{},data:raw});expect(store.groupRecovery(source.id)).toEqual([]);
+    await store.disconnect();
+  });
   it('restores as a fresh trip owned by the current user without writing the source ID or importing members',async()=>{
     const {store,databaseModule}=await connectedStore();
     const source=createTrip({title:'Backup',destination:'Sample',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'source');
