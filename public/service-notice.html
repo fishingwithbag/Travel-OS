@@ -14,8 +14,8 @@
 <li>本機模式將旅程保存在此網站來源的瀏覽器儲存空間。清除網站資料可能刪除旅程，請先匯出備份。</li>
 <li>雲端模式將登入請求及旅程資料送到你設定的 Firebase 專案，存取由該專案的 Authentication 與資料庫 Rules 控制。程式不把旅程送到作者的 Firebase 專案。</li>
 <li>選擇記住 Firebase 設定會將 Web config 保存在此裝置；程式不保存登入密碼。完整 JSON 備份可能包含私人旅遊資料，請自行保管。</li>
-<li>只有啟用 Google 搜尋後才載入 Google SDK。瀏覽器 Key、搜尋文字與選取地點會送到 Google，Google 也會收到連線所需的網路資訊。其處理方式見 <a href="https://policies.google.com/privacy">Google 隱私權政策</a>。</li>
-<li>Google Key 不寫入旅程或備份；搜尋預覽不保存到資料庫。按「使用此地點連結」只帶入含 Place ID 的地圖連結。關閉搜尋視窗清除輸入及預覽；已載入的 SDK 會留在本分頁直到重新載入或關閉分頁。</li>
+<li>只有明確啟用搜尋、交通估算或 SDK 檢查才載入 Google SDK。瀏覽器 Key、搜尋文字、選取地點與估算起終點會送到 Google，Google 也會收到連線所需的網路資訊。其處理方式見 <a href="https://policies.google.com/privacy">Google 隱私權政策</a>。</li>
+<li>Google Key 預設只保留於本分頁；勾選「記住這台裝置」才保存在此網站的瀏覽器儲存空間，可從 Google 功能設定停用並清除。不寫入旅程、備份或 Firebase。搜尋預覽與估算結果不保存到資料庫。按「使用此地點連結」只帶入含 Place ID 的地圖連結。關閉搜尋視窗清除預覽，集中設定的 Key 仍保留；已載入 SDK 會留在本分頁直到重新載入或關閉分頁。</li>
 <li>點擊外部地圖連結會開啟 Google Maps 並傳送該連結內的地點資訊。網站託管者亦可能依其政策保留一般網路存取紀錄。</li>
 </ul>
 <p><a href="./">返回 Travel OS</a></p>

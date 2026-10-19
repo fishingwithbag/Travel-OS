@@ -1,39 +1,40 @@
-# Google 瀏覽器功能恢復紀錄
+# Google 瀏覽器功能整合與驗證
 
-## 狀態與邊界
+更新：2026-10-20。站內景點搜尋、交通估算與設定精靈已接入；真實 Google API 尚待測試專案驗收，不能以 SDK 載入或模擬測試代替。
 
-2026-10-18：SDK 載入模組已接入景點新增／編輯視窗的選用 Google 搜尋。可選取、預覽名稱／地址／座標與來源、確認帶入 Place ID 地圖連結；名稱與私人備註仍由使用者填寫。**尚未通過真實 Google 服務驗收，設定精靈及自動交通估算仍未完成。** 無新依賴、沒有更動 Firebase Rules、沒有使用真實 Key 發出請求，也沒有更動任何雲端計費設定。
+## 使用流程
 
-`src/providers/google-loader.js` 提供 `loadGoogleLibrary(key, 'places' | 'routes')`：
+1. Firebase 同步維持 Spark；免 Key 外部導航與手動行程可直接使用。
+2. 若使用 Google 站內功能，使用獨立 Google Cloud 專案，依官方條件啟用 Maps JavaScript API、Places API (New)、Routes API，設定網站與 API 限制。免費額度不是無上限免費；預算通知不會停止收費。
+3. 在精靈 Step 3、景點搜尋或每日估算開啟同一個「Google 功能設定」。貼上瀏覽器 Key 並套用；預設僅本分頁，明確勾選才記住於此網站的瀏覽器儲存空間。
+4. SDK 檢查僅確認 library 可載入。新增景點實際搜尋／選取，再建立兩站實際估算，兩項都成功才算服務通過。
+5. Step 5 僅驗證 Firebase 登入與本人範圍讀寫；完成頁不宣稱 Google 已驗證。
 
-- 僅明確呼叫時載入 Google 官方 SDK；匯入模組、缺 Key、格式錯誤及公開體驗站都不發出請求。
-- Key 只保留在本分頁記憶體，不寫入備份、Firebase、儲存空間或頁面網址。瀏覽器 SDK 必須把 Key 送至 Google 的載入網址，因此瀏覽器 Key 不是伺服器祕密；維護者必須設定網站與 API 限制。
-- 同時呼叫共用一次 SDK／相同 library 載入；不預載其他 library。SDK 初始化只代表可呼叫 API，不代表 Places、Routes、授權、額度或計費已驗證。
-- 下載／初始化／library 載入最多等待 20 秒。應用程式錯誤不包含 Key 或原始 SDK 錯誤；Google 自身的主控台訊息不由此模組控制。
-- 認證失敗會封鎖後續使用；library 載入失敗可由使用者明確重試，不自動連續送請求。
-- SDK 為全頁全域物件，刪除 script 無法卸載。切換 Key 或 SDK 初始化失敗後，必須保存草稿並重新載入；不假裝已切換到新專案。設定精靈尚須接上這項流程。
+## 資料與請求邊界
 
-## 下一批介面與資料決策
+- Key 不寫入旅程、Firebase、備份或頁面網址。SDK 載入網址必須傳給 Google，瀏覽器 Key 應搭配網站與 API 限制。
+- 匯入模組、缺 Key、錯誤格式、公開體驗站均不主動呼叫 Google；恢復記住設定也不預載 SDK。
+- 搜尋使用官方 widget；選取後取得必要欄位，短暫呈現名稱、地址、座標及 attribution。只帶入 Place ID 連結，使用者自行填寫名稱／私人備註。
+- 每日交通依群組及時間排序，共同安排加入各組；不跨越航班／交通安排接線。開車不採即時交通，步行不傳開車選項；其他交通方式保留手動／外部導航。
+- 手動分鐘含 0 優先。每批最多 20 個邏輯路段，同批相同起終點及模式共用請求；服務失敗停止餘下路段。僅按鈕觸發，沒有背景重試。
+- 結果只留於當前畫面，旅程、revision、日期、Google Key 或儲存專案切換均失效；晚到結果不得覆蓋新情境。警告及錯誤安全呈現。
+- 請求最多等 20 秒；SDK 無法卸載。停用清除設定及搜尋預覽，換 Key 必須先保存草稿並重新載入。已送出的網路請求不能撤回。
+- 本批未改 Firebase Rules、未部署 Functions、未更動雲端計費。
 
-1. 使用 Google 官方 `PlaceAutocompleteElement`，保留其建議清單及來源標示，處理 `gmp-select` 與錯誤事件。選取後才要求必要欄位，避免每次按鍵都額外取得詳情。
-2. API 回傳的名稱、地址與座標需與使用者手動資料分開。Place ID 可長期保存；其他內容不得直接當作永久旅程資料寫入 IndexedDB、Firebase 或 JSON 備份。接入前須完成顯示、保存與重新取得策略，包含第三方 attribution、公開隱私與使用條款。
-3. 保留手動景點、停車與免 Key Maps URLs；Places 不可用時顯示具體錯誤，不清空草稿，不把外部導航成功當成站內搜尋成功。
-4. Routes 使用瀏覽器支援的功能另做真實驗證；本批載入 `routes` library 的模擬成功不代表已計算任何真實距離或時間。
-5. Firebase 維持 Spark。Google Maps 的啟用、計費、SKU 免費額度與配額需要另外驗證；若啟用須連結計費的 Google 服務，設定指南應採獨立 Google Cloud 專案以免更動 Firebase Spark 專案。不把免費額度說成無上限免費，也不以移除需求達成免費宣稱。
+## 本批驗證
 
-## 驗證
+150 項單元測試及正式建置通過，包括 loader、Places、Routes、集中設定及 UI 批次控制。模擬覆蓋地址／Place ID、最小回傳欄位、步行、無路線、逾時、服務失敗停止、20 路段限制、去重、手動 0 分鐘、專案／日期切換及晚到結果。
 
-載入器 10 項模擬測試加上搜尋 8 項測試，涵蓋無 Key、載入／詳情逾時、授權失敗、過期選取、關閉後晚到結果、搜尋 Enter 不提交表單、僅保存 ID 連結及導航沿用 ID。全套 135 項單元測試與建置通過。測試沒有呼叫 Google，不能取代真實服務驗收。
+真實本機瀏覽器已操作跨年旅程、兩站、手動 0 分鐘、Key 格式錯誤與清除、缺 Key 搜尋、設定視窗返回草稿、儲存並重整。390px 設定視窗可操作；320px 發現 body 最小寬度造成水平溢出，已修正，實測 document 寬度與可視寬度一致。未使用真實 Key，未把這些結果列為 Google 成功驗收。
 
-本機實際桌面瀏覽器：建立合成旅程，在景點視窗展開搜尋，空 Key 顯示修正訊息；名稱與備註未清除，仍可保存，重整後仍存在；主控台無錯誤。沒有真實 Key，未把模擬成功列為真實搜尋成功。使用條款與隱私說明由相對路徑 `service-notice.html` 提供。
-
-尚待：精靈整合、Places 真實選取與保存驗收、Routes 計算、真實 Key／未啟用 API／配額不足、新手流程、手機與桌面真實 widget，以及清除／切換設定。現階段每次開啟景點視窗需重新輸入 Key，後續統一到精靈；混合手動與 Place ID 的多站導航中，只有所有中途站都有 ID 時才傳 waypoint_place_ids，其餘維持文字中途站。以上完成前 WP1–WP3 不關閉。
+待驗：真實搜尋及 Routes、API 未啟用／限制／額度、真實 widget 手機及鍵盤、多帳號 Spark、完整首次設定、根路徑及子路徑正式部署。WP1–WP3 仍未關閉。
 
 ## 官方依據
 
-- [SDK 載入方式與 importLibrary](https://developers.google.com/maps/documentation/javascript/load-maps-js-api)
-- [認證失敗回呼](https://developers.google.com/maps/documentation/javascript/events#auth-errors)
-- [Autocomplete widget 與選取事件](https://developers.google.com/maps/documentation/javascript/place-autocomplete-new)
-- [Places 保存限制及 attribution](https://developers.google.com/maps/documentation/places/web-service/policies)
-- [Google Maps 錯誤修復](https://developers.google.com/maps/documentation/javascript/error-messages)
-- [Google Maps 計價概覽](https://developers.google.com/maps/billing-and-pricing/overview)
+- [SDK 載入](https://developers.google.com/maps/documentation/javascript/load-maps-js-api)
+- [Autocomplete widget](https://developers.google.com/maps/documentation/javascript/place-autocomplete-new)
+- [Places 保存與 attribution](https://developers.google.com/maps/documentation/places/web-service/policies)
+- [Routes 計算](https://developers.google.com/maps/documentation/javascript/routes/get-a-route)
+- [Route 欄位與模式](https://developers.google.com/maps/documentation/javascript/reference/route)
+- [錯誤修復](https://developers.google.com/maps/documentation/javascript/error-messages)
+- [計價與額度](https://developers.google.com/maps/billing-and-pricing/overview)

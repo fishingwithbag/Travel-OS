@@ -15,7 +15,7 @@ export function parkingMapUrl(spot) {
   return spot.mapsUrl || mapSearchUrl(spot.name);
 }
 
-function savedPlaceId(item) {
+export function savedPlaceId(item) {
   try {
     const url=new URL(item.mapsUrl);
     const id=url.searchParams.get('query_place_id');

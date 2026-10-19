@@ -17,6 +17,9 @@ import { setupExpenseUi } from './ui/expenses.js';
 import { setupGroupUi } from './ui/groups.js';
 import {recoverMissingGroups} from './domain/groups.js';
 import {setupPlaceSearch} from './ui/place-search.js';
+import {setupGoogleSettings} from './ui/google-settings.js';
+import {setupTravelEstimates} from './ui/travel-estimates.js';
+import {googleKey} from './config/google-settings.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, access:Object.create(null) };
@@ -45,6 +48,8 @@ const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openD
 const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const groupUi = setupGroupUi({currentTrip,saveTrip,openDialog,setError,showToast,canEdit:canEditTrip});
 setupPlaceSearch({sharedPublicDemo,canEdit:()=>canEditTrip() && !placeSaving});
+setupGoogleSettings({sharedPublicDemo,openDialog});
+const travelEstimates=setupTravelEstimates({currentTrip,selectedDate:()=>state.selectedDate,escapeHtml});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
@@ -231,7 +236,7 @@ function renderVerificationSummary() {
   try {
     const input = formData(form);
     const config = parseFirebaseConfigInput(input);
-    $('#verification-summary').innerHTML = `<strong>準備驗證以下設定</strong><span>Firebase：${escapeHtml(config.projectId)}</span><span>Database：${escapeHtml(config.databaseURL)}</span><span>登入帳號：${escapeHtml(input.email || '')}</span><span>Google Maps：免 Key 外部導航與路線</span><span>Spark 免費額度內同步；不使用付費 API</span>`;
+    $('#verification-summary').innerHTML = `<strong>準備驗證以下設定</strong><span>Firebase：${escapeHtml(config.projectId)}</span><span>Database：${escapeHtml(config.databaseURL)}</span><span>登入帳號：${escapeHtml(input.email || '')}</span><span>Google：${googleKey() ? '已設定 Key，搜尋／估算需分別實測' : '未設定 Key，使用外部導航與手動安排'}</span><span>本步僅驗證 Firebase 登入與本人範圍讀寫。</span>`;
   } catch (error) {
     $('#verification-summary').textContent = error instanceof ValidationError ? error.message : '設定尚未完成。';
   }
@@ -296,6 +301,7 @@ function render() {
   renderMembers();
   $('#welcome').hidden = Boolean(trip);
   $('#workspace').hidden = !trip;
+  travelEstimates.render();
   if (!trip) {
     for(const id of ['timeline','place-list','rental-list','stay-list','expense-list','next-stop-details','group-list','day-routes','trip-title','trip-destination','trip-dates']) document.getElementById(id).replaceChildren();
     $('#trip-select').replaceChildren();
@@ -303,6 +309,7 @@ function render() {
   }
   const dates = tripDates(trip.startDate, trip.endDate);
   if (!dates.includes(state.selectedDate)) state.selectedDate = dates[0];
+  travelEstimates.render();
   $('#trip-title').textContent = trip.title;
   $('#trip-destination').textContent = trip.destination;
   $('#trip-dates').textContent = `${trip.startDate} — ${trip.endDate}`;
@@ -516,6 +523,7 @@ async function activateStore(nextStore, mode, connection = null) {
   const nextTrips = await prepareStoreSwitch(store, nextStore);
   const warnings = nextStore.consumeWarnings?.() || [];
   store = nextStore;
+  travelEstimates.clear();
   state.mode = mode; state.connection = connection;
   state.access=Object.create(null);
   for(const id of ['item-form','place-form','rental-form','stay-form','expense-form','group-form','member-form']) document.getElementById(id).reset();
@@ -564,11 +572,11 @@ $('#connection-form').addEventListener('submit', async (event) => {
     progress.innerHTML += '<span>3／3　Firebase 診斷讀寫已完成，正在載入旅程…</span>';
     const warnings = await activateStore(cloudStore, 'cloud', connection);
     localStorage.setItem(STORAGE_KEYS.onboardingMode, 'cloud');
-    const mapsStatus = '免 Key 外部導航與路線；不載入 Google 付費 API';
+    const mapsStatus = googleKey() ? '已設定 Key；請分別實測景點搜尋與路程估算' : '免 Key 外部導航與手動安排';
     if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config }));
     else localStorage.removeItem(STORAGE_KEYS.connection);
     form.elements.password.value = '';
-    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：${escapeHtml(mapsStatus)}</span><span>不需要 Billing、Blaze 或 Functions</span>`;
+    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：${escapeHtml(mapsStatus)}</span><span>Firebase 同步不需要 Blaze 或 Functions；Google API 另依設定與額度使用。</span>`;
     setSetupStep(5);
     showToast(warnings.length ? `已連接 ${connection.projectId}；另略過 ${warnings.length} 筆失效或損壞的雲端資料。` : `已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
   } catch (error) {

@@ -12,6 +12,12 @@ export function parseGoogleBrowserKey(value) {
   return value.trim();
 }
 
+export function checkGoogleKeySwitch(value) {
+  const key=parseGoogleBrowserKey(value);
+  if(loadedKey && loadedKey!==key) throw error('請先保存草稿並重新載入頁面，再設定另一組 Google Key。');
+  return key;
+}
+
 function error(message) { return new ValidationError(message); }
 
 // One SDK/key per document: removing a script cannot unload its global SDK.

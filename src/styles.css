@@ -2,7 +2,7 @@
 [data-theme="dark"] { --bg:#252c2a; --surface:#303936; --surface-2:#3b4642; --ink:#f5f5ef; --muted:#c1cac5; --line:#53625c; --accent:#a9c9b8; --accent-ink:#193128; --danger:#ffb4a9; color-scheme:dark; }
 * { box-sizing:border-box; }
 [hidden] { display:none!important; }
-body { min-width:320px; min-height:100vh; margin:0; background:var(--bg); color:var(--ink); line-height:1.5; }
+body { min-width:0; min-height:100vh; margin:0; background:var(--bg); color:var(--ink); line-height:1.5; }
 button,input,select,textarea { font:inherit; }
 button,select { cursor:pointer; }
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent); outline-offset:2px; }

@@ -1,9 +1,10 @@
 import {mountPlaceSearch} from '../providers/google-places.js';
 import {ValidationError} from '../domain/trip.js';
+import {googleKey,googleSettingsChanged} from '../config/google-settings.js';
 
 export function setupPlaceSearch({sharedPublicDemo,canEdit}) {
   const dialog=document.querySelector('#place-dialog'),panel=document.querySelector('#google-place-search');
-  const key=panel.querySelector('input'),load=panel.querySelector('[data-google-load]'),clear=panel.querySelector('[data-google-clear]');
+  const load=panel.querySelector('[data-google-load]'),clear=panel.querySelector('[data-google-clear]');
   const host=panel.querySelector('[data-google-widget]'),status=panel.querySelector('[role="status"]'),preview=panel.querySelector('[data-google-preview]');
   const apply=panel.querySelector('[data-google-apply]');
   let cleanup,controller,version=0,selection=null;
@@ -13,7 +14,8 @@ export function setupPlaceSearch({sharedPublicDemo,canEdit}) {
     if(sharedPublicDemo || !canEdit()) return;
     reset();controller=new AbortController();const request=version;load.disabled=true;status.textContent='正在載入 Google 搜尋…';
     try {
-      const dispose=await mountPlaceSearch(host,key.value,{
+      if(!googleKey()) throw new ValidationError('請先開啟「Google 功能設定」貼上並套用自己的瀏覽器 Key。');
+      const dispose=await mountPlaceSearch(host,googleKey(),{
         signal:controller.signal,
         onLoading:()=>{selection=null;apply.hidden=true;preview.replaceChildren();status.textContent='正在取得地點資料…';},
         onError:showError,
@@ -39,8 +41,8 @@ export function setupPlaceSearch({sharedPublicDemo,canEdit}) {
     dialog.querySelector('[name="mapsUrl"]').value=selection.mapsUrl;
     status.textContent='已帶入地點連結。請填寫自己的景點名稱與備註，再按「儲存景點」。';
   });
-  clear.addEventListener('click',()=>{reset();key.value='';status.textContent='搜尋已關閉，Key 輸入已清除。若要更換 Key，請保存草稿後重新載入頁面。';});
-  dialog.addEventListener('close',()=>{reset();key.value='';panel.open=false;});
-  key.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();load.click();}});
+  clear.addEventListener('click',()=>{reset();status.textContent='搜尋已關閉，預覽已清除。';});
+  dialog.addEventListener('close',()=>{reset();panel.open=false;});
+  googleSettingsChanged.addEventListener('change',reset);
   if(sharedPublicDemo) {panel.querySelector('fieldset').disabled=true;load.hidden=true;clear.hidden=true;status.textContent='公開體驗站不接受 Key；請在自己的網站使用搜尋。';}
 }

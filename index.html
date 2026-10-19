@@ -76,6 +76,14 @@
               <p class="field-help">包含共同安排與該群組的地點，依時間排序。長路線分段開啟，前段終點會接續下一段起點。</p>
               <div id="day-routes"></div>
             </details>
+            <details id="travel-estimates" class="day-routes-panel">
+              <summary>站內路程與時間估算</summary>
+              <p>依各群組順序估算開車或步行路段；手動交通時間優先。開車估算不含即時交通，不代表預定出發時刻的路況。</p>
+              <div class="setup-actions-inline"><button type="button" class="secondary" data-google-settings>Google 功能設定</button><button type="button" class="primary" data-travel-calculate>估算剩餘路段</button><button type="button" class="text-button" data-travel-reset>清除估算／重新計算</button></div>
+              <p role="status" aria-live="polite"></p><ul data-travel-list></ul>
+              <span class="google-attribution" translate="no">Google Maps</span>
+              <p>估算僅供本次規劃參考，不寫入備份。修改旅程、日期或 Google 設定後需重新估算；可在「編輯安排」填寫自己的手動交通時間。</p>
+            </details>
             <ol id="timeline" class="timeline"></ol>
             <div id="timeline-empty" class="empty-state">
               <span aria-hidden="true">＋</span><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p>
@@ -210,9 +218,8 @@
           <summary>用 Google 搜尋地點（選用）</summary>
           <fieldset class="connection-fields">
           <p>在自己的 Google Cloud 專案啟用 Maps JavaScript API 與 Places API (New)，使用限制於自己網站的瀏覽器 Key。此功能有服務額度與計費條件，與 Firebase Spark 分開。</p>
-          <label>Google Maps 瀏覽器 API Key<input type="password" autocomplete="off" spellcheck="false" aria-label="Google Maps 瀏覽器 API Key" /></label>
-          <p>Key 僅用於本分頁，關閉視窗會清除輸入。搜尋內容會傳送給 Google。<a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noopener noreferrer">官方設定說明</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google 隱私權政策</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">Google Maps 使用條款</a></p>
-          <div class="setup-actions-inline"><button type="button" class="secondary" data-google-load>啟用地點搜尋</button><button type="button" class="text-button" data-google-clear>關閉搜尋並清除輸入</button></div>
+          <p>搜尋與交通估算共用 Google 功能設定；搜尋內容會傳送給 Google。</p>
+          <div class="setup-actions-inline"><button type="button" class="secondary" data-google-settings>Google 功能設定</button><button type="button" class="secondary" data-google-load>啟用地點搜尋</button><button type="button" class="text-button" data-google-clear>關閉搜尋並清除預覽</button></div>
           <div data-google-widget></div><p role="status" aria-live="polite"></p>
           <div data-google-preview class="google-place-preview"></div>
           <button type="button" class="secondary" data-google-apply hidden>使用此地點連結</button>
@@ -376,7 +383,7 @@
 
             <section class="setup-panel" data-setup-step="2" hidden>
               <p class="eyebrow">STEP 3 · GOOGLE MAPS</p>
-              <h3>使用免 Key 的 Google 地圖</h3>
+              <h3>設定 Google 搜尋與交通估算</h3>
               <p><strong>基本導航：</strong>景點、停車場及開車／步行路線透過 Google Maps 外部連結開啟。不需建立 API 金鑰、不需 Google Cloud、不需連結計費帳戶，直接下一步即可。</p>
               <ol class="setup-steps detailed">
                 <li>在新增安排中手動輸入地點名稱或地址。</li>
@@ -384,7 +391,14 @@
                 <li>主要與備用停車場可各自填入名稱及地圖分享連結；每日行程與下一個安排會分開顯示。</li>
                 <li>相鄰安排可開啟 Google Maps 開車或步行路線，路程與時間在 Google Maps 查看。</li>
               </ol>
-              <div class="security-note"><strong>Google 增強功能仍在恢復中</strong><span>目前可用免 Key 外部導航。站內 Places 搜尋與自動路程計算尚未完成恢復及驗收；完成後會在這裡提供設定與驗證。請勿貼上 Server Key。</span></div>
+              <ol class="setup-steps detailed">
+                <li>若要站內搜尋與距離／時間估算，在 Google Cloud 建立獨立專案，避免對 Firebase Spark 專案連結計費。</li>
+                <li>依官方說明確認 Google Maps 的計費及免費額度條件，啟用 Maps JavaScript API、Places API (New) 與 Routes API。免費額度不等於無上限免費，預算通知不會自動停止用量。</li>
+                <li>建立瀏覽器 API Key，將網站限制設為自己的網站，API 限制只勾選實際使用的服務。不要貼服務帳戶私鑰或伺服器憑證。</li>
+                <li>按下方「Google 功能設定」貼上 Key 並套用，可選擇記住此裝置。SDK 載入檢查只確認程式載入，不代表服務或額度已驗證。</li>
+                <li>建立旅程後，在「新增景點」實際搜尋及選取；再新增兩站，在「站內路程與時間估算」實測。兩項都成功才算 Google 功能驗證完成。</li>
+              </ol>
+              <button type="button" class="secondary" data-google-settings>Google 功能設定</button>
               <div class="setup-links"><a href="https://developers.google.com/maps/documentation/urls/get-started" target="_blank" rel="noopener noreferrer">Google 官方免 Key Maps URL 說明</a></div>
             </section>
 
@@ -400,7 +414,7 @@
             <section class="setup-panel" data-setup-step="4" hidden>
               <p class="eyebrow">STEP 5 · VERIFY</p>
               <h3>最後由 Travel OS 自動檢查</h3>
-              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除。此流程不載入 Google 付費 API，也不部署 Functions；連線測試無法查證計費方案，請在 Firebase 控制台確認 Spark。</p>
+              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除。本步不驗證 Google 搜尋或交通估算，也不部署 Functions；請在 Firebase 控制台確認 Spark。</p>
               <div id="verification-summary" class="setup-check-result"></div>
               <div id="connection-progress" class="checklist" aria-live="polite"></div>
               <div class="warning-card"><strong>「登入成功」不代表 Rules 一定安全</strong><span>Travel OS repository 另外用 Firebase Emulator 測試 owner/editor/viewer 與跨旅程拒絕。這裡只確認你的 self-host 設定可以正常連線與合法讀寫。</span></div>
@@ -428,6 +442,22 @@
       </form>
     </dialog>
 
+    <dialog id="google-settings-dialog">
+      <form class="dialog-form">
+        <header><p class="eyebrow">GOOGLE SERVICES</p><h2>Google 功能設定</h2></header>
+        <p>搜尋與交通估算共用這組瀏覽器 Key，Firebase 同步設定維持獨立。請使用自己控制的 Google Cloud 專案及網站限制。</p>
+        <fieldset class="connection-fields">
+          <label>Google Maps 瀏覽器 API Key<input name="key" type="password" autocomplete="off" spellcheck="false" /></label>
+          <label class="check-row"><input name="remember" type="checkbox" />記住這台裝置的 Google Key（共用裝置請勿勾選）</label>
+          <div class="setup-actions-inline"><button type="submit" class="primary">套用 Google 設定</button><button type="button" class="secondary" data-google-forget>停用並清除 Google 設定</button></div>
+          <div class="setup-actions-inline"><button type="button" class="secondary" data-google-check="places">檢查搜尋 SDK 載入</button><button type="button" class="secondary" data-google-check="routes">檢查交通 SDK 載入</button></div>
+        </fieldset>
+        <p role="status" aria-live="polite"></p>
+        <p>Key 不會寫入旅程、備份或 Firebase。已載入 SDK 的分頁要更換 Key，請先保存草稿並重新載入；停用會停止新的功能請求，但不能卸載已載入的 SDK。</p>
+        <p><a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noopener noreferrer">官方 Key 設定與限制</a> · <a href="https://developers.google.com/maps/billing-and-pricing/overview" target="_blank" rel="noopener noreferrer">額度與計價</a> · <a href="./service-notice.html" target="_blank" rel="noopener noreferrer">使用條款與隱私說明</a></p>
+        <footer><button type="button" class="secondary" data-close>返回原畫面</button></footer>
+      </form>
+    </dialog>
     <dialog id="import-dialog">
       <form id="import-form" class="dialog-form">
         <header><p class="eyebrow">IMPORT PREVIEW</p><h2>確認匯入備份</h2></header>
