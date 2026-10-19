@@ -278,7 +278,7 @@ export function createItem(input, trip, id = crypto.randomUUID(), options = {}) 
     if (!options.allowLegacyFlightTimeZones && departureTimeZone) validTimeZone(departureTimeZone, '出發時區');
     if (!options.allowLegacyFlightTimeZones && arrivalTimeZone) validTimeZone(arrivalTimeZone, '抵達時區');
     const arrivalDateTime = cleanOptional(input.arrivalDateTime, 32, '抵達日期與時間');
-    if (arrivalDateTime && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(arrivalDateTime)) throw new ValidationError('抵達日期與時間格式不正確。', 'arrivalDateTime');
+    if (arrivalDateTime && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(arrivalDateTime) || !isRealDate(arrivalDateTime.slice(0,10)) || !clockTime.test(arrivalDateTime.slice(11)))) throw new ValidationError('抵達日期與時間格式不正確。', 'arrivalDateTime');
     item.flight = {
       origin: cleanOptional(input.origin, 12, '出發機場').toUpperCase(),
       destination: cleanOptional(input.destination, 12, '抵達機場').toUpperCase(),
