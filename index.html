@@ -261,7 +261,7 @@
         <div class="field-pair"><label>類型<select name="type"><option value="place">景點</option><option value="meal">餐飲</option><option value="stay">住宿</option><option value="flight">航班</option><option value="transport">交通</option><option value="other">其他</option></select></label><label>開始時間<input name="startTime" type="time" /></label></div>
         <div id="end-fields" class="field-pair"><label>結束日期（跨日時填寫）<input name="endDate" type="date" /></label><label>結束時間<input name="endTime" type="time" /></label></div>
         <div class="field-pair"><label>前往下一站交通方式<select name="transitMode"><option value="">未設定</option><option value="driving">開車</option><option value="walking">步行</option><option value="transit">大眾交通</option><option value="other">其他</option></select></label><label>交通分鐘（手動）<input name="transitMinutes" type="number" min="0" max="1440" step="1" /></label></div>
-        <p class="field-help">交通時間為手動估計。一般安排依旅程時區檢查重疊；航班依起降時區顯示，不納入這項衝突檢查。</p>
+        <p class="field-help">交通時間為手動估計。一般安排按旅程當地鐘面時間計算時長與重疊，不換算夏令時間切換造成的實際經過分鐘；航班依起降時區顯示，不納入這項衝突檢查。</p>
         <label>名稱<input name="title" maxlength="100" required placeholder="要去哪裡或做什麼？" /></label>
         <label>地址／位置<input name="location" maxlength="200" placeholder="可直接手動輸入" /></label>
         <label>目的地 Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" placeholder="https://maps.app.goo.gl/..." /></label>
@@ -385,6 +385,7 @@
               <p class="eyebrow">STEP 3 · GOOGLE MAPS</p>
               <h3>設定 Google 搜尋與交通估算</h3>
               <p><strong>基本導航：</strong>景點、停車場及開車／步行路線透過 Google Maps 外部連結開啟。不需建立 API 金鑰、不需 Google Cloud、不需連結計費帳戶，直接下一步即可。</p>
+              <div class="warning-card"><strong>先確認你的零費用要求</strong><span>Google Cloud「免費試用帳戶」有期限，並非永久免費方案；不升級時，試用到期或抵免用完會停止相關服務。將帳單帳戶連結至 Firebase 專案會使 Firebase 自動轉為 Blaze，即使 Cloud 帳戶仍是免費試用。若必須維持 Spark，請勿對同一專案連結帳單。Travel OS 不會替你升級帳戶，也無法保證 Google API 永遠零費用。</span><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans" target="_blank" rel="noopener noreferrer">Firebase 方案與帳單連結說明</a><a href="https://docs.cloud.google.com/free/docs/free-cloud-features" target="_blank" rel="noopener noreferrer">Google Cloud 免費試用到期說明</a></div>
               <ol class="setup-steps detailed">
                 <li>在新增安排中手動輸入地點名稱或地址。</li>
                 <li>若要精確定位，從 Google Maps 複製分享連結，貼到安排的「Google Maps 連結」欄位。</li>
