@@ -89,7 +89,7 @@ flowchart LR
 - Firebase Rules 以 UID、`tripId` 和 membership 隔離資料。
 - Google Maps 外部連結不需 Key；站內 Places 搜尋與自動交通時間／距離仍待恢復與驗證。需後端的能力不能把 Server Key 放進瀏覽器。天氣已依產品決定移除。
 
-更多細節請讀[資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)、[安全政策](SECURITY.md)及[共享體驗站架構決策](docs/decisions/003-shared-demo-local-only.md)。
+更多細節請讀[資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)、[舊旅程升級與回復](docs/STORAGE_MIGRATION.zh-TW.md)、[安全政策](SECURITY.md)及[共享體驗站架構決策](docs/decisions/003-shared-demo-local-only.md)。
 
 ## 本機開發
 

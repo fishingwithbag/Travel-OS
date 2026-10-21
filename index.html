@@ -51,6 +51,17 @@
           </div>
         </header>
 
+        <section id="storage-migration" class="panel" aria-labelledby="storage-migration-title" hidden>
+          <h2 id="storage-migration-title">舊旅程需要升級儲存格式</h2>
+          <p>資料仍可閱讀。請由擁有者先下載私人備份，再確認逐趟升級。升級保留成員及行程內容，完成前暫停編輯；其他裝置也需要更新網站。</p>
+          <button id="migration-prepare" type="button">下載備份並預覽升級</button>
+          <div id="migration-preview" hidden>
+            <p id="migration-summary"></p>
+            <label><input id="migration-ack" type="checkbox">我已確認備份檔案已保存，並同意上述資料修復與升級</label>
+            <button id="migration-confirm" class="primary" type="button" disabled>確認升級這趟旅程</button>
+          </div>
+          <p id="migration-status" role="status"></p>
+        </section>
         <section id="group-recovery" class="panel" aria-labelledby="group-recovery-title" hidden>
           <h2 id="group-recovery-title">部分群組資料需要確認</h2>
           <p id="group-recovery-summary"></p>
@@ -415,7 +426,7 @@
             <section class="setup-panel" data-setup-step="4" hidden>
               <p class="eyebrow">STEP 5 · VERIFY</p>
               <h3>最後由 Travel OS 自動檢查</h3>
-              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除。本步不驗證 Google 搜尋或交通估算，也不部署 Functions；請在 Firebase 控制台確認 Spark。</p>
+              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除，以及目前儲存格式所需的 Rules。若仍使用舊版 Rules，請回 Step 2 複製並發布目前版本。本步不驗證 Google 搜尋或交通估算，也不部署 Functions；請在 Firebase 控制台確認 Spark。</p>
               <div id="verification-summary" class="setup-check-result"></div>
               <div id="connection-progress" class="checklist" aria-live="polite"></div>
               <div class="warning-card"><strong>「登入成功」不代表 Rules 一定安全</strong><span>Travel OS repository 另外用 Firebase Emulator 測試 owner/editor/viewer 與跨旅程拒絕。這裡只確認你的 self-host 設定可以正常連線與合法讀寫。</span></div>

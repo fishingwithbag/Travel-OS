@@ -1,14 +1,34 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFile } from 'node:fs/promises';
-import { get, ref, runTransaction, set, update } from 'firebase/database';
+import { get as rawGet, ref, runTransaction, set as rawSet, update as rawUpdate } from 'firebase/database';
 import * as databaseSdk from 'firebase/database';
 import {createExpense,createItem,createPlace,createRental,createStay,createTrip,restoredTripCopy} from '../src/domain/trip.js';
 import {renameGroup,removeGroup,recoverMissingGroups} from '../src/domain/groups.js';
 import {normalizeFirebaseTrip,parseFirebaseTrip} from '../src/storage/firebase-store.js';
-import {FirebaseTripStore,serializeFirebaseTrip} from '../src/storage/firebase-store.js';
+import {FirebaseTripStore,serializeFirebaseTrip,firebaseTripEnvelope} from '../src/storage/firebase-store.js';
 import {touchTrip} from '../src/domain/trip.js';
 
+// Field-validation cases build a full candidate from the current snapshot.
+// The /data refs below are test-only aliases, never actual production writes.
+const isData=target=>target.toString().endsWith('/data');
+async function get(target) {
+  if(!isData(target)) return rawGet(target);
+  const root=await rawGet(target.parent);return root.child('versions/'+root.child('head').val());
+}
+async function update(target,changes) {
+  if(!isData(target)) return rawUpdate(target,changes);
+  const root=await rawGet(target.parent),head=root.child('head').val();
+  const next={...root.child('versions/'+head).val(),...changes};
+  if(next.revision===head) return rawUpdate(databaseSdk.child(target.parent,'versions/'+head),changes);
+  return rawUpdate(target.parent,{head:next.revision,['versions/'+(Number.isInteger(next.revision)?next.revision:head+1)]:next,['versions/'+head]:null});
+}
+async function set(target,value) {
+  if(!isData(target)) return rawSet(target,value);
+  const root=await rawGet(target.parent),head=root.child('head').val();
+  if(value.revision===head) return rawSet(databaseSdk.child(target.parent,'versions/'+head),value);
+  return rawUpdate(target.parent,{head:value.revision,['versions/'+value.revision]:value,['versions/'+head]:null});
+}
 let environment;
 
 const trip = {
@@ -27,7 +47,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await environment.withSecurityRulesDisabled(async (context) => {
     await set(ref(context.database()), null);
-    await set(ref(context.database(), 'trips/trip-a'), trip);
+    await set(ref(context.database(), 'trips/trip-a'), {ownerId:trip.ownerId,members:trip.members,head:1,versions:{1:trip.data}});
     await set(ref(context.database(), 'userTrips/owner/trip-a'), true);
     await set(ref(context.database(), 'userTrips/editor/trip-a'), true);
     await set(ref(context.database(), 'userTrips/viewer/trip-a'), true);
@@ -37,21 +57,11 @@ beforeEach(async () => {
 afterAll(async () => environment?.cleanup());
 
 describe('Realtime Database tenant isolation', () => {
-  it('reproduces partial group deletion and recovers original references with existing permissions',async()=>{
-    let source={...createTrip({title:'Recover partial write',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'trip-a'),groups:[{id:'a',name:'A'}]};
-    source.items=[createItem({title:'Museum',type:'place',date:source.startDate,groupId:'a',parking:{mode:'split',byGroup:{a:{primary:{name:'Garage'},notes:'Entrance'}}}},source,'item')];
-    await environment.withSecurityRulesDisabled(context=>set(ref(context.database(),'trips/trip-a/data'),serializeFirebaseTrip(source)));
-    const target=ref(environment.authenticatedContext('editor').database(),'trips/trip-a/data');
-    await assertSucceeds(update(target,{'groups/a':null,revision:2}));
-    const raw=(await get(target)).val();expect(()=>parseFirebaseTrip(raw)).toThrow();
-    const {trip:preview,recovered}=recoverMissingGroups(normalizeFirebaseTrip(raw));
-    expect(recovered).toEqual([{id:'a',name:'待確認群組 1'}]);expect(preview.items).toEqual(source.items);
-    expect((await get(target)).val().groups).toBeUndefined();
-    source=touchTrip(preview);
-    await assertFails(set(ref(environment.authenticatedContext('viewer').database(),'trips/trip-a/data'),serializeFirebaseTrip(source)));
-    await assertFails(get(ref(environment.authenticatedContext('outsider').database(),'trips/trip-a/data')));
-    await assertSucceeds(set(target,serializeFirebaseTrip(source)));
-    expect(parseFirebaseTrip((await get(target)).val()).groups).toEqual(recovered);
+  it('rejects direct partial deletion of groups in a published snapshot',async()=>{
+    const source={...createTrip({title:'Protected',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'trip-a'),groups:[{id:'a',name:'A'}]};
+    source.items=[createItem({title:'Museum',type:'place',date:source.startDate,groupId:'a'},source,'item')];
+    await environment.withSecurityRulesDisabled(context=>rawSet(ref(context.database(),'trips/trip-a/versions/1'),serializeFirebaseTrip(source)));
+    for(const uid of ['owner','editor']) await assertFails(rawUpdate(ref(environment.authenticatedContext(uid).database(),'trips/trip-a/versions/1'),{'groups/a':null,revision:2}));
   });
   it('accepts complete group rename and removal transfers while rejecting viewer changes',async()=>{
     let source={...createTrip({title:'Group sample',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC',currency:'USD'},'trip-a'),groups:[{id:'a',name:'A'},{id:'b',name:'B'}]};
@@ -118,7 +128,7 @@ describe('Realtime Database tenant isolation', () => {
     source.stays=[createStay({title:'Sample hotel',location:'Sample street',checkInDate:'2027-01-01',checkInTime:'15:00',checkOutDate:'2027-01-02',checkOutTime:'11:00',guests:2},source,'s')];
     source.expenses=[createExpense({title:'Sample dinner',date:'2027-01-01',amount:'10',splitCount:3,currency:'USD'},source,'e')];
     const copy=serializeFirebaseTrip(restoredTripCopy(source,'restored'));
-    await assertSucceeds(update(ref(environment.authenticatedContext('owner').database()),{'trips/restored':{ownerId:'owner',members:{owner:'owner'},data:copy},'userTrips/owner/restored':true}));
+    await assertSucceeds(update(ref(environment.authenticatedContext('owner').database()),{'trips/restored':{ownerId:'owner',members:{owner:'owner'},head:1,versions:{1:copy}},'userTrips/owner/restored':true}));
     await assertFails(get(ref(environment.authenticatedContext('viewer').database(),'trips/restored')));
     const restored=(await get(ref(environment.authenticatedContext('owner').database(),'trips/restored/data'))).val();
     expect(restored.places.p.favorite).toBe(true);expect(restored.expenses.e.splitCount).toBe(3);
@@ -206,19 +216,11 @@ describe('Realtime Database tenant isolation', () => {
     await assertSucceeds(update(ref(environment.authenticatedContext('editor').database(), 'trips/trip-a/data'), { title:'Editor edit', revision:3 }));
   });
 
-  it('commits an owner transaction when the trip is not locally cached', async () => {
-    const ownerData = ref(environment.authenticatedContext('owner').database(), 'trips/trip-a/data');
-    const next = { ...trip.data, title:'Transaction edit', revision:2, updatedAt:'2027-01-01T00:01:00.000Z' };
-    const seen = [];
-    const result = await runTransaction(ownerData, (current) => {
-      seen.push(current?.revision ?? null);
-      if (current == null) return next;
-      if (current.revision !== 1) return;
-      return next;
-    }, { applyLocally:false });
-    expect(result.committed, `transaction revisions: ${JSON.stringify(seen)}`).toBe(true);
+  it('rejects old clients writing directly to the legacy data path',async()=>{
+    const ownerData=ref(environment.authenticatedContext('owner').database(),'trips/trip-a/data');
+    await assertFails(rawSet(ownerData,{...trip.data,title:'Old client',revision:2}));
+    await assertFails(runTransaction(ownerData,()=>({...trip.data,revision:2}),{applyLocally:false}));
   });
-
   it('prevents viewer writes and editor privilege escalation', async () => {
     await assertFails(update(ref(environment.authenticatedContext('viewer').database(), 'trips/trip-a/data'), { title:'Viewer edit', revision:4 }));
     await assertFails(set(ref(environment.authenticatedContext('editor').database(), 'trips/trip-a/members/editor'), 'owner'));
@@ -255,9 +257,9 @@ describe('Realtime Database tenant isolation', () => {
 
   it('lets a user create a trip only with themselves as owner', async () => {
     const ownerDb = environment.authenticatedContext('new-owner').database();
-    await assertSucceeds(set(ref(ownerDb, 'trips/trip-new'), { ...trip, ownerId:'new-owner', members:{ 'new-owner':'owner' }, data:{ ...trip.data, id:'trip-new' } }));
+    await assertSucceeds(set(ref(ownerDb, 'trips/trip-new'), {ownerId:'new-owner',members:{'new-owner':'owner'},head:1,versions:{1:{...trip.data,id:'trip-new'}}}));
     await assertSucceeds(update(ref(ownerDb), {
-      'trips/trip-atomic':{ ...trip, ownerId:'new-owner', members:{ 'new-owner':'owner' }, data:{ ...trip.data, id:'trip-atomic' } },
+      'trips/trip-atomic':{ownerId:'new-owner',members:{'new-owner':'owner'},head:1,versions:{1:{...trip.data,id:'trip-atomic'}}},
       'userTrips/new-owner/trip-atomic':true,
     }));
     await assertFails(set(ref(ownerDb, 'trips/trip-revision-two'), { ...trip, ownerId:'new-owner', members:{ 'new-owner':'owner' }, data:{ ...trip.data, id:'trip-revision-two', revision:2 } }));
@@ -370,9 +372,9 @@ describe('Realtime Database tenant isolation', () => {
   });
 
   it('isolates diagnostic writes by uid', async () => {
-    await assertSucceeds(set(ref(environment.authenticatedContext('owner').database(), 'diagnostics/owner/check'), { createdAt:Date.now() }));
+    await assertSucceeds(set(ref(environment.authenticatedContext('owner').database(), 'diagnostics/owner/check'), { createdAt:Date.now(),storageFormat:2 }));
     await assertSucceeds(get(ref(environment.authenticatedContext('owner').database(), 'diagnostics/owner/check')));
-    await assertFails(set(ref(environment.authenticatedContext('editor').database(), 'diagnostics/owner/check'), { createdAt:Date.now() }));
+    await assertFails(set(ref(environment.authenticatedContext('editor').database(), 'diagnostics/owner/check'), { createdAt:Date.now(),storageFormat:2 }));
     await assertFails(get(ref(environment.authenticatedContext('editor').database(), 'diagnostics/owner/check')));
   });
 });

@@ -26,6 +26,7 @@ const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', co
 let deferredLiveRender=false;
 let memberSaving=false;
 let groupRecoverySaving=false;
+let migrationPreview=null,migrationSaving=false;
 let pendingBackup = null;
 let importSaving = false;
 let itemEditor = null;
@@ -53,7 +54,7 @@ const travelEstimates=setupTravelEstimates({currentTrip,selectedDate:()=>state.s
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
-function canEditTrip() {return state.mode==='local' || ['owner','editor'].includes(state.access[state.currentTripId]?.role);}
+function canEditTrip() {return state.mode==='local' || (!store.needsMigration?.(state.currentTripId) && ['owner','editor'].includes(state.access[state.currentTripId]?.role));}
 function upsertTrip(trip) {
   const existing=state.trips.find(entry=>entry.id===trip.id);
   if(existing && existing.revision>trip.revision) return;
@@ -293,11 +294,20 @@ async function saveTrip(trip,confirmGroupRecovery=false) {
 
 function render() {
   const trip = currentTrip();
+  const legacy=Boolean(trip && store.needsMigration?.(trip.id));
+  $('#storage-migration').hidden=!legacy;
+  if(migrationPreview && (migrationPreview.store!==store || migrationPreview.trip.id!==trip?.id || migrationPreview.trip.revision!==trip.revision)) migrationPreview=null;
+  $('#migration-preview').hidden=!migrationPreview;
+  $('#migration-prepare').disabled=migrationSaving || state.access[trip?.id]?.role!=='owner';
+  $('#migration-confirm').disabled=migrationSaving || !migrationPreview || !$('#migration-ack').checked;
+  const waitingForOwner='請聯絡旅程擁有者下載備份並升級；你目前可繼續閱讀。';
+  if(legacy && state.access[trip.id]?.role!=='owner') $('#migration-status').textContent=waitingForOwner;
+  else if($('#migration-status').textContent===waitingForOwner) $('#migration-status').textContent='';
   const recovered=trip ? store.groupRecovery?.(trip.id) || [] : [];
   $('#group-recovery').hidden=!recovered.length;
   $('#group-recovery-summary').textContent=recovered.map(group=>`${group.name}（${group.id}）`).join('、');
   $('#group-recovery-save').disabled=groupRecoverySaving || !canEditTrip();
-  $('#group-recovery-status').textContent=recovered.length && !canEditTrip() ? '目前為唯讀權限，請聯絡旅程擁有者或編輯者確認修復。' : '';
+  $('#group-recovery-status').textContent=recovered.length && legacy ? '請先由擁有者完成上方的備份與升級確認；遺失群組將列在升級預覽中。' : recovered.length && !canEditTrip() ? '目前為唯讀權限，請聯絡旅程擁有者或編輯者確認修復。' : '';
   renderMembers();
   $('#welcome').hidden = Boolean(trip);
   $('#workspace').hidden = !trip;
@@ -624,13 +634,42 @@ $('#local-mode-button').addEventListener('click', async () => {
 
 function downloadBackup(mode) {
   const backup = createBackup(state.trips, mode);
+  downloadJson(backup,`travel-os-${mode}-${new Date().toISOString().slice(0,10)}.json`);
+}
+function downloadJson(backup,name) {
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob); link.download = `travel-os-${mode}-${new Date().toISOString().slice(0,10)}.json`; link.click();
+  link.href = URL.createObjectURL(blob); link.download = name; link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 $('#export-button').addEventListener('click', () => downloadBackup('private'));
 $('#share-export-button').addEventListener('click', () => downloadBackup('share'));
+$('#migration-ack').addEventListener('change',()=>{$('#migration-confirm').disabled=migrationSaving || !migrationPreview || !$('#migration-ack').checked;});
+$('#migration-prepare').addEventListener('click',async()=>{
+  if(migrationSaving) return;
+  const activeStore=store,id=currentTrip()?.id;migrationSaving=true;render();
+  try {
+    const preview=await activeStore.prepareMigration(id);
+    if(store!==activeStore || currentTrip()?.id!==id) throw new ValidationError('連線或旅程已切換，請在目前旅程重新下載備份。');
+    downloadJson(preview.backup,`travel-os-before-upgrade-${new Date().toISOString().slice(0,10)}.json`);
+    migrationPreview={...preview,store:activeStore};$('#migration-ack').checked=false;
+    $('#migration-summary').textContent=`版本 ${preview.trip.revision} → ${preview.trip.revision+1}；${preview.trip.items.length} 筆行程、${preview.trip.places.length} 個景點、${preview.trip.rentals.length} 筆租車、${preview.trip.stays.length} 筆住宿、${preview.trip.expenses.length} 筆費用。`+(preview.recovered.length ? ` 將補回遺失群組：${preview.recovered.map(group=>`${group.name}（${group.id}）`).join('、')}。原有群組 ID 與資料參照會保留。` : ' 無需補回群組。');
+    $('#migration-status').textContent='請先確認下載資料夾內的備份已保存，再勾選並確認升級。';
+  } catch(error) {$('#migration-status').textContent=error instanceof ValidationError ? error.message : '無法準備升級，請確認連線、擁有者權限及目前版本 Rules。';}
+  finally {migrationSaving=false;render();}
+});
+$('#migration-confirm').addEventListener('click',async()=>{
+  if(migrationSaving || !migrationPreview || !$('#migration-ack').checked) return;
+  const preview=migrationPreview;
+  if(store!==preview.store || currentTrip()?.id!==preview.trip.id) {migrationPreview=null;render();return;}
+  migrationSaving=true;render();
+  try {
+    const updated=await preview.store.migrateTrip(preview.trip.id,preview.trip.revision);
+    if(store!==preview.store) throw new ValidationError('連線已切換，請回原專案確認升級結果。');
+    upsertTrip(updated);migrationPreview=null;$('#migration-status').textContent='';showToast('旅程已升級，內容與成員權限已保留。');
+  } catch(error) {$('#migration-status').textContent=error instanceof ValidationError ? error.message : '升級未完成；請保留備份，確認連線及目前版本 Rules 後重試。';}
+  finally {migrationSaving=false;render();}
+});
 $('#group-recovery-save').addEventListener('click',async event=>{
   if(groupRecoverySaving) return;groupRecoverySaving=true;
   const button=event.currentTarget;button.disabled=true;

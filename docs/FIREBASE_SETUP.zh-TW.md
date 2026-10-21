@@ -188,7 +188,8 @@ const firebaseConfig = {
 - **缺少 Realtime Database URL**：Firebase 控制台 → Realtime Database →「資料」→ 複製頁面上方的 HTTPS 網址，再貼到 Travel OS 的 Realtime Database URL 欄位。
 - **Email 或密碼不正確**：確認帳號存在於目前 Firebase 專案的 Authentication →「使用者」。
 - **電子郵件地址/密碼尚未啟用**：Authentication →「登入方式」→「電子郵件地址/密碼」→ 啟用 → 儲存。
-- **PERMISSION_DENIED / Rules 拒絕存取**：確認 Realtime Database →「規則」已發布 Travel OS Rules，而不是鎖定模式原始規則或測試模式。
+- **PERMISSION_DENIED / Rules 拒絕存取**：回精靈 Step 2 重新複製並發布目前版本 Travel OS Rules；Step 5 的儲存格式檢查會拒絕舊規則，不能只確認登入成功。不要使用公開讀寫規則。
+- **舊旅程需要升級**：由擁有者在旅程上方下載備份、預覽修復並確認升級；請閱讀[升級與回復指南](STORAGE_MIGRATION.zh-TW.md)。
 - **看到 Blaze / Billing**：目前的設定流程不需要 Billing；請確認 Firebase project 仍維持 Spark。
 
 完成這一頁後，可閱讀 [Google Maps 導航說明](GOOGLE_CLOUD_SETUP.zh-TW.md)；目前不需另外設定 Google Cloud。

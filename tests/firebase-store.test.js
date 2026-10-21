@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { vi } from 'vitest';
 import { createItem, createTrip, restoredTripCopy, touchTrip } from '../src/domain/trip.js';
-import { commitIfRevisionMatches, FirebaseTripStore, normalizeFirebaseTrip, parseFirebaseTrip, serializeFirebaseTrip } from '../src/storage/firebase-store.js';
+import { firebaseTripEnvelope, firebaseTripValue, FirebaseTripStore, normalizeFirebaseTrip, parseFirebaseTrip, serializeFirebaseTrip } from '../src/storage/firebase-store.js';
 
 
 function snapshot(value) {
@@ -48,23 +48,28 @@ async function connectedStore() {
   return { store, appModule, authModule, databaseModule, emit, fail, listeners };
 }
 
+const envelope=trip=>({ownerId:'owner',members:{owner:'owner'},head:trip.revision,versions:{[trip.revision]:serializeFirebaseTrip(trip)}});
+
 describe('Firebase trip normalization', () => {
-  it('previews missing cloud groups without writing, then clears recovery after saving or revocation',async()=>{
-    const {store,databaseModule,emit}=await connectedStore();
+  it('previews legacy recovery and preserves the original payload in a restorable migration backup',async()=>{
+    const {store,databaseModule}=await connectedStore();
     const source=createTrip({title:'Recovery',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'trip-a');
     source.groups=[{id:'a',name:'A'}];source.items=[createItem({title:'Museum',date:source.startDate,type:'place',groupId:'a'},source,'item')];
     const raw=serializeFirebaseTrip(source);delete raw.groups;
-    databaseModule.get.mockResolvedValueOnce(snapshot(raw));
+    const legacy={ownerId:'owner',members:{owner:'owner'},data:raw};
+    databaseModule.get.mockResolvedValueOnce(snapshot(legacy));
     const preview=await store.getTrip(source.id);
-    expect(preview.items).toEqual(source.items);expect(store.groupRecovery(source.id)).toEqual([{id:'a',name:'待確認群組 1'}]);
-    expect(databaseModule.update).not.toHaveBeenCalled();expect(databaseModule.runTransaction).not.toHaveBeenCalled();
-    databaseModule.get.mockResolvedValueOnce(snapshot({'trip-a':true}));
-    databaseModule.runTransaction.mockImplementationOnce(async(target,mutate)=>({committed:Boolean(mutate(raw))}));
-    await store.saveTrip(touchTrip(preview));expect(store.groupRecovery(source.id)).toEqual([]);
-    store.subscribe({onTrip:vi.fn(),onRemove:vi.fn(),onError:vi.fn()});emit('userTrips/owner',{'trip-a':true});
-    emit('trips/trip-a',{ownerId:'owner',members:{owner:'owner'},data:raw});expect(store.groupRecovery(source.id)).toHaveLength(1);
-    emit('trips/trip-a',{ownerId:'someone',members:{},data:raw});expect(store.groupRecovery(source.id)).toEqual([]);
-    await store.disconnect();
+    expect(store.needsMigration(source.id)).toBe(true);expect(preview.items).toEqual(source.items);
+    expect(store.groupRecovery(source.id)).toEqual([{id:'a',name:'待確認群組 1'}]);
+    databaseModule.get.mockResolvedValueOnce(snapshot(legacy));
+    const prepared=await store.prepareMigration(source.id);
+    expect(prepared.backup.migrationOriginalData).toEqual(raw);expect(prepared.backup.trips[0]).toEqual(preview);
+    expect(databaseModule.update).not.toHaveBeenCalled();
+    databaseModule.get.mockResolvedValueOnce(snapshot(legacy));
+    const migrated=await store.migrateTrip(source.id,1);
+    expect(migrated.revision).toBe(2);expect(store.needsMigration(source.id)).toBe(false);
+    expect(databaseModule.update.mock.calls[0][1]).toEqual({head:2,data:null,'versions/2':serializeFirebaseTrip(migrated)});
+    expect(store.groupRecovery(source.id)).toEqual([]);
   });
   it('restores as a fresh trip owned by the current user without writing the source ID or importing members',async()=>{
     const {store,databaseModule}=await connectedStore();
@@ -118,14 +123,11 @@ describe('Firebase trip normalization', () => {
     expect(() => serializeFirebaseTrip({ ...source, groups:[{ id:'bad/id', name:'Bad' }] })).toThrow(/Firebase/);
   });
 
-  it('accepts only the next revision in optimistic concurrency checks', () => {
-    const current = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-a');
-    const next = touchTrip(current);
-    expect(commitIfRevisionMatches(current, next)).toBe(next);
-    expect(commitIfRevisionMatches({ ...current, revision:2 }, next)).toBeUndefined();
-    expect(commitIfRevisionMatches(null, next)).toBeUndefined();
+  it('detects unknown or incomplete storage envelopes instead of returning blank data',()=>{
+    expect(()=>firebaseTripValue({head:2,versions:{}})).toThrow(/版本資料不完整/);
+    expect(()=>firebaseTripValue({storageFormat:99})).toThrow(/不相容/);
+    expect(()=>firebaseTripValue({head:1,versions:{1:{revision:2}}})).toThrow(/版本資料不完整/);
   });
-
   it('creates trips and membership index in one root update', async () => {
     const { store, databaseModule } = await connectedStore();
     const trip = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-new');
@@ -137,7 +139,7 @@ describe('Firebase trip normalization', () => {
     expect(databaseModule.get).toHaveBeenCalledOnce();
     expect(databaseModule.update).toHaveBeenCalledOnce();
     expect(databaseModule.update.mock.calls[0][1]).toEqual({
-      'trips/trip-new':{ ownerId:'owner', members:{ owner:'owner' }, data:{ ...trip, groups:{}, items:{}, places:{}, rentals:{}, stays:{}, expenses:{} } },
+      'trips/trip-new':firebaseTripEnvelope(trip,'owner'),
       'userTrips/owner/trip-new':true,
     });
   });
@@ -156,24 +158,29 @@ describe('Firebase trip normalization', () => {
     const current = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-a');
     const next = touchTrip(current);
     databaseModule.get.mockResolvedValueOnce(snapshot({ 'trip-a':true }));
-    databaseModule.runTransaction.mockImplementationOnce(async (target, updater) => ({ committed:updater({ ...current, revision:2 }) !== undefined }));
+    databaseModule.get.mockResolvedValueOnce(snapshot(envelope({...current,revision:2})));
     await expect(store.saveTrip(next)).rejects.toThrow(/其他裝置更新/);
   });
 
-  it('lets an uncached transaction retry with server data before checking revision', async () => {
-    const { store, databaseModule } = await connectedStore();
-    const current = createTrip({ title:'Cloud', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'trip-a');
-    const next = touchTrip(current);
-    databaseModule.get.mockResolvedValueOnce(snapshot({ 'trip-a':true }));
-    databaseModule.runTransaction.mockImplementationOnce(async (_target, updater) => {
-      expect(updater(null)).toEqual(serializeFirebaseTrip(next));
-      expect(updater(current)).toEqual(serializeFirebaseTrip(next));
-      expect(updater({ ...current, revision:2 })).toBeUndefined();
-      return { committed:true };
-    });
+  it('publishes a complete new version and deletes the previous one atomically',async()=>{
+    const {store,databaseModule}=await connectedStore();
+    const current=createTrip({title:'Cloud',destination:'Test',startDate:'2027-01-01',endDate:'2027-01-01',timeZone:'UTC'},'trip-a'),next=touchTrip(current);
+    databaseModule.get.mockResolvedValueOnce(snapshot({'trip-a':true})).mockResolvedValueOnce(snapshot(envelope(current)));
     await expect(store.saveTrip(next)).resolves.toEqual(next);
+    expect(databaseModule.update).toHaveBeenCalledWith(expect.objectContaining({path:'trips/trip-a'}),{head:2,'versions/1':null,'versions/2':serializeFirebaseTrip(next)});
   });
-
+  it('blocks implicit migration and rejects stale previews or non-owner migration',async()=>{
+    const {store,databaseModule}=await connectedStore();
+    const trip=createTrip({title:'Legacy',destination:'Test',startDate:'2027-01-01',endDate:'2027-01-01',timeZone:'UTC'},'trip-a');
+    const legacy={ownerId:'owner',members:{owner:'owner'},data:serializeFirebaseTrip(trip)};
+    databaseModule.get.mockResolvedValueOnce(snapshot({'trip-a':true})).mockResolvedValueOnce(snapshot(legacy));
+    await expect(store.saveTrip(touchTrip(trip))).rejects.toThrow(/舊版旅程/);
+    databaseModule.get.mockResolvedValueOnce(snapshot(legacy));
+    await expect(store.migrateTrip(trip.id,2)).rejects.toThrow(/重新下載備份/);
+    databaseModule.get.mockResolvedValueOnce(snapshot({...legacy,ownerId:'someone'}));
+    await expect(store.prepareMigration(trip.id)).rejects.toThrow(/只有旅程擁有者/);
+    expect(databaseModule.update).not.toHaveBeenCalled();
+  });
   it('writes member/index changes atomically and removes every index on trip deletion', async () => {
     const { store, databaseModule } = await connectedStore();
     databaseModule.get.mockResolvedValueOnce(snapshot({ownerId:'owner'}));
@@ -214,10 +221,10 @@ describe('Firebase trip normalization', () => {
     const stop=store.subscribe(events);
     const trip=createTrip({title:'Live',destination:'Sample',startDate:'2027-01-01',endDate:'2027-01-01',timeZone:'UTC'},'trip-a');
     emit('userTrips/owner',{'trip-a':true});
-    const root={ownerId:'owner',members:{owner:'owner',guest:'viewer'},data:serializeFirebaseTrip(trip)};
+    const root={...envelope(trip),members:{owner:'owner',guest:'viewer'}};
     emit('trips/trip-a',root);
     expect(events.onTrip).toHaveBeenLastCalledWith(trip,{ownerId:'owner',members:root.members,role:'owner'});
-    const updated=touchTrip({...trip,title:'Remote edit'});emit('trips/trip-a',{...root,data:serializeFirebaseTrip(updated)});
+    const updated=touchTrip({...trip,title:'Remote edit'});emit('trips/trip-a',{...root,head:updated.revision,versions:{[updated.revision]:serializeFirebaseTrip(updated)}});
     expect(events.onTrip.mock.calls.at(-1)[0].title).toBe('Remote edit');
     const late=databaseModule.onValue.mock.calls.find(([target])=>target.path==='trips/trip-a')[1];
     emit('userTrips/owner',null);late(snapshot(root));
@@ -257,8 +264,8 @@ describe('Firebase trip normalization', () => {
     const good = createTrip({ title:'Good', destination:'Test', startDate:'2027-01-01', endDate:'2027-01-01', timeZone:'UTC', currency:'USD' }, 'good');
     databaseModule.get
       .mockResolvedValueOnce(snapshot({ good:true, bad:true }))
-      .mockResolvedValueOnce(snapshot({ ...good, groups:{}, items:{} }))
-      .mockResolvedValueOnce(snapshot({ ...good, id:'bad', groups:'oops', items:{} }));
+      .mockResolvedValueOnce(snapshot(envelope(good)))
+      .mockResolvedValueOnce(snapshot({data:{ ...good,id:'bad',groups:'oops',items:{} }}));
     const trips = await store.listTrips();
     expect(trips.map((trip) => trip.id)).toEqual(['good']);
     expect(store.consumeWarnings()).toHaveLength(1);

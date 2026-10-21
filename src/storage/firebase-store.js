@@ -1,4 +1,4 @@
-import { validateTrip, ValidationError } from '../domain/trip.js';
+import { createBackup, touchTrip, validateTrip, ValidationError } from '../domain/trip.js';
 import {recoverMissingGroups} from '../domain/groups.js';
 
 export function normalizeFirebaseTrip(value) {
@@ -30,9 +30,20 @@ export function serializeFirebaseTrip(value) {
   };
 }
 
-export function commitIfRevisionMatches(current, next) {
-  if (!current || Number(current.revision) !== Number(next.revision) - 1) return undefined;
-  return next;
+export function firebaseTripValue(envelope) {
+  if (!envelope) return null;
+  if (envelope.head == null) {
+    if (!envelope.data || envelope.versions) throw new ValidationError('雲端儲存格式不相容，請更新網站或聯絡專案擁有者。');
+    return envelope.data;
+  }
+  const value=envelope.versions?.[envelope.head];
+  if (!Number.isSafeInteger(envelope.head) || envelope.head<1 || envelope.data || !value || value.revision!==envelope.head) throw new ValidationError('雲端版本資料不完整，請保留備份並聯絡專案擁有者。');
+  return value;
+}
+
+export function firebaseTripEnvelope(trip,uid) {
+  if(trip.revision!==1) throw new ValidationError('新的雲端旅程必須從版本 1 開始。請使用備份還原建立副本。');
+  return {ownerId:uid,members:{[uid]:'owner'},head:1,versions:{1:serializeFirebaseTrip(trip)}};
 }
 
 function pathKey(value) {
@@ -42,6 +53,15 @@ function pathKey(value) {
 
 export class FirebaseTripStore {
   #groupRecovery = new Map();
+  #legacy = new Set();
+
+  needsMigration(id) {return this.#legacy.has(id);}
+
+  #parseEnvelope(value) {
+    const data=firebaseTripValue(value);
+    if(data) {if(value.head==null) this.#legacy.add(data.id);else this.#legacy.delete(data.id);}
+    return this.#parseTrip(data);
+  }
 
   groupRecovery(id) {return structuredClone(this.#groupRecovery.get(id) || []);}
 
@@ -90,7 +110,7 @@ export class FirebaseTripStore {
     const messages = {
       'auth/invalid-credential':'Email 或密碼不正確。', 'auth/email-already-in-use':'這個 Email 已有帳號。',
       'auth/operation-not-allowed':'Firebase 尚未啟用 Email/Password 登入。', 'auth/unauthorized-domain':'目前網域尚未加入 Firebase 授權網域。',
-      'PERMISSION_DENIED':'資料庫 Rules 拒絕存取，請部署本專案提供的規則。', 'database/permission-denied':'資料庫 Rules 拒絕存取，請部署本專案提供的規則。',
+      'PERMISSION_DENIED':'資料庫 Rules 拒絕存取，請回 Step 2 複製並發布目前版本的 Travel OS 規則，再重新驗證。舊版規則無法通過儲存格式檢查。', 'database/permission-denied':'資料庫 Rules 拒絕存取，請回 Step 2 複製並發布目前版本的 Travel OS 規則，再重新驗證。舊版規則無法通過儲存格式檢查。',
     };
     return messages[code] || 'Firebase 連線失敗，請確認專案設定、登入方式與資料庫 Rules。';
   }
@@ -100,7 +120,7 @@ export class FirebaseTripStore {
     const path = `diagnostics/${this.#uid}/${crypto.randomUUID()}`;
     const target = ref(this.#database, path);
     const createdAt = Date.now();
-    await set(target, { createdAt });
+    await set(target, { createdAt, storageFormat:2 });
     try {
       if ((await get(target)).val()?.createdAt !== createdAt) throw new ValidationError('Firebase 診斷讀取失敗；請檢查 Realtime Database Rules。');
     } finally { await remove(target); }
@@ -110,10 +130,11 @@ export class FirebaseTripStore {
     const { ref, get, remove } = this.#modules;
     this.#warnings = [];
     this.#groupRecovery.clear();
+    this.#legacy.clear();
     const index = (await get(ref(this.#database, `userTrips/${this.#uid}`))).val() || {};
     const ids = Object.keys(index);
     const results = await Promise.all(ids.map(async (id) => {
-      try { return { id, trip:this.#parseTrip((await get(ref(this.#database, `trips/${id}/data`))).val()) }; }
+      try { return { id, trip:this.#parseEnvelope((await get(ref(this.#database, `trips/${id}`))).val()) }; }
       catch (error) { return { id, error }; }
     }));
     const trips = [];
@@ -143,7 +164,7 @@ export class FirebaseTripStore {
     return warnings;
   }
 
-  async getTrip(id) { return this.#parseTrip((await this.#modules.get(this.#modules.ref(this.#database, `trips/${id}/data`))).val()); }
+  async getTrip(id) { pathKey(id);return this.#parseEnvelope((await this.#modules.get(this.#modules.ref(this.#database, `trips/${id}`))).val()); }
 
   subscribe({onTrip,onRemove,onError,onConnection=()=>{}}) {
     this.#stopWatching?.();
@@ -152,7 +173,7 @@ export class FirebaseTripStore {
     if (!uid) throw new ValidationError('請先登入 Firebase。');
     let active=true;
     const listeners=new Map();
-    const stopTrip=id=>{this.#groupRecovery.delete(id);const listener=listeners.get(id);if(listener){listener.active=false;listener.stop?.();listeners.delete(id);}};
+    const stopTrip=id=>{this.#groupRecovery.delete(id);this.#legacy.delete(id);const listener=listeners.get(id);if(listener){listener.active=false;listener.stop?.();listeners.delete(id);}};
     const stopIndex=onValue(ref(this.#database,`userTrips/${uid}`),snapshot=>{
       if(!active) return;
       const ids=Object.keys(snapshot.val() || {});
@@ -164,9 +185,9 @@ export class FirebaseTripStore {
         listener.stop=onValue(ref(this.#database,`trips/${id}`),snapshot=>{
           if(!active || !listener.active) return;
           const value=snapshot.val();
-          if(!value || !['owner','editor','viewer'].includes(value.members?.[uid])) {this.#groupRecovery.delete(id);onRemove(id);return;}
+          if(!value || !['owner','editor','viewer'].includes(value.members?.[uid])) {this.#groupRecovery.delete(id);this.#legacy.delete(id);onRemove(id);return;}
           try {
-            const trip=this.#parseTrip(value.data);
+            const trip=this.#parseEnvelope(value);
             if(!trip || trip.id!==id) throw new ValidationError('雲端旅程 ID 與索引不一致，請聯絡專案擁有者。');
             onTrip(trip,{ownerId:value.ownerId,members:{...value.members},role:value.members[uid]});
           } catch(error) {onRemove(id);onError(error);}
@@ -187,29 +208,61 @@ export class FirebaseTripStore {
 
   async saveTrip(trip) {
     if(this.#connected===false) throw new ValidationError('Firebase 連線已中斷，請恢復連線後再儲存；表單內容仍保留。');
-    const { ref, get, update, runTransaction } = this.#modules;
+    pathKey(trip.id);
+    const { ref, get, update } = this.#modules;
     const firebaseTrip = serializeFirebaseTrip(trip);
     // A new trip is unreadable until its membership exists; inspect the caller's readable index instead.
     const index = (await get(ref(this.#database, `userTrips/${this.#uid}`))).val() || {};
     if (!index[trip.id]) {
       if (Object.keys(index).length >= 100) throw new ValidationError('單一帳號最多支援 100 趟雲端旅程。');
       await update(ref(this.#database), {
-        [`trips/${trip.id}`]:{ ownerId:this.#uid, members:{ [this.#uid]:'owner' }, data:firebaseTrip },
+        [`trips/${trip.id}`]:firebaseTripEnvelope(trip,this.#uid),
         [`userTrips/${this.#uid}/${trip.id}`]:true,
       });
     } else {
-      const expectedRevision = Number(trip.revision) - 1;
-      const result = await runTransaction(ref(this.#database, `trips/${trip.id}/data`), (current) => {
-        // Firebase may call this first with null before downloading an existing remote value.
-        // Returning the candidate lets the server send the real value and retry the revision check.
-        if (current == null) return firebaseTrip;
-        if (Number(current?.revision) !== expectedRevision) return;
-        return commitIfRevisionMatches(current, firebaseTrip);
-      }, { applyLocally:false });
-      if (!result.committed) throw new ValidationError('雲端旅程已被其他裝置更新，請重新載入後再編輯。');
+      const envelope=(await get(ref(this.#database,`trips/${trip.id}`))).val();
+      firebaseTripValue(envelope);
+      if(envelope?.head==null) throw new ValidationError('此為舊版旅程，請先由擁有者在旅程上方下載備份並確認升級。輸入內容仍保留。');
+      await this.#publish(trip.id,envelope, firebaseTrip);
     }
     this.#groupRecovery.delete(trip.id);
     return trip;
+  }
+
+  async #publish(id,envelope,next) {
+    const {ref,get,update}=this.#modules;
+    if(envelope.head!==next.revision-1) throw new ValidationError('雲端旅程已被其他裝置更新，請重新載入後再編輯。');
+    try {
+      await update(ref(this.#database,`trips/${id}`),{head:next.revision,[`versions/${next.revision}`]:next,[`versions/${envelope.head}`]:null});
+    } catch(error) {
+      if(['PERMISSION_DENIED','database/permission-denied'].includes(error?.code)) {
+        const latest=await get(ref(this.#database,`trips/${id}/head`)).catch(()=>null);
+        if(latest && latest.val()!==envelope.head) throw new ValidationError('雲端旅程已被其他裝置更新，請重新載入後再編輯。');
+      }
+      throw error;
+    }
+  }
+
+  async prepareMigration(id) {
+    pathKey(id);
+    const value=(await this.#modules.get(this.#modules.ref(this.#database,`trips/${id}`))).val();
+    if(value?.ownerId!==this.#uid) throw new ValidationError('只有旅程擁有者可以升級舊旅程。');
+    if(value.head!=null) throw new ValidationError('旅程已升級，請重新載入。');
+    const trip=this.#parseEnvelope(value);
+    const backup=createBackup([trip],'private');
+    // Preserve the untouched legacy payload alongside the standard restorable backup.
+    backup.migrationOriginalData=structuredClone(value.data);
+    return {trip,backup,recovered:this.groupRecovery(id)};
+  }
+
+  async migrateTrip(id,expectedRevision) {
+    if(this.#connected===false) throw new ValidationError('Firebase 連線已中斷，請恢復連線後再升級。');
+    const preview=await this.prepareMigration(id);
+    if(preview.trip.revision!==expectedRevision) throw new ValidationError('舊旅程已更新，請重新下載備份並確認升級。');
+    const next=touchTrip(preview.trip);
+    await this.#modules.update(this.#modules.ref(this.#database,`trips/${id}`),{data:null,head:next.revision,[`versions/${next.revision}`]:serializeFirebaseTrip(next)});
+    this.#legacy.delete(id);this.#groupRecovery.delete(id);
+    return next;
   }
 
   async deleteTrip(id) {
@@ -254,6 +307,7 @@ export class FirebaseTripStore {
   async disconnect() {
     this.#stopWatching?.();
     this.#groupRecovery.clear();
+    this.#legacy.clear();
     if (this.#auth) await this.#modules.signOut(this.#auth).catch(() => {});
     if (this.#app) await this.#modules.deleteApp(this.#app).catch(() => {});
     this.#app = this.#auth = this.#database = this.#uid = undefined;
