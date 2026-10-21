@@ -1,6 +1,6 @@
 # 公開發布驗收
 
-更新：2026-10-21。**發布門檻未通過。** Repository 公開、PR 或 CI 成功不等於產品驗收完成。
+更新：2026-10-22。**發布門檻未通過。** Repository 公開、PR 或 CI 成功不等於產品驗收完成。
 
 標準：陌生使用者只依網站與公開指南，能自行完成設定並順暢使用全部預定功能。不得用刪除功能、隱藏入口或縮小測試範圍代替修復。天氣依產品決定移除。
 
@@ -63,3 +63,9 @@ A13／A14：已接入集中設定、Places 預覽、Routes 站內距離與分鐘
 ## 2026-10-21 第 1 包增量
 
 完整版本寫入已從技術驗證接入正式 adapter／Rules，包含 owner 備份預覽後遷移、原子清舊版、競爭保存與失敗無損。153 個單元測試及 40 個正式 Rules 測試通過，隔離 Emulator 瀏覽器完成遷移與再次保存。這關閉原先「僅有恢復機制、正式後端仍允許局部刪除」的開發缺口；真實 Spark、Authentication、大型旅程、多人與正式部署驗收仍待完成。詳見 [本輪報告](VERIFICATION_2026-10-21.zh-TW.md)。
+
+## 2026-10-22 真實服務增量
+
+獨立 Firebase 測試專案已在控制台確認為 Spark，且目前不可變完整版本 Rules 已發布。候選版通過 production build、390／320px 無頁面橫向溢出及乾淨主控台；新的 Step 3 明確阻止把同一 Firebase Project ID 當作 Maps 計費專案。Firebase Authentication 登入後的 Step 5、雲端旅程 CRUD、重登讀回與多人操作仍需帳號持有人在候選版輸入密碼後實走。
+
+同一 Firebase 專案啟用 Maps 會要求連結帳單並使 Firebase 離開 Spark，因此已取消。真實 Places／Routes 驗證仍需一個 **Project ID 不同** 的 Google Cloud 測試專案；尚未建立 Key，也未發出 Google 付費 API 請求。詳見 [本輪報告](VERIFICATION_2026-10-22.zh-TW.md)。

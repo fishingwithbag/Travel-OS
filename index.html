@@ -404,7 +404,7 @@
                 <li>相鄰安排可開啟 Google Maps 開車或步行路線，路程與時間在 Google Maps 查看。</li>
               </ol>
               <ol class="setup-steps detailed">
-                <li>若要站內搜尋與距離／時間估算，在 Google Cloud 建立獨立專案，避免對 Firebase Spark 專案連結計費。</li>
+                <li><strong>建立另一個 Google Cloud 專案：</strong>Project ID 不可與上一步 Firebase 專案相同。Maps API 要求連結帳單；若沿用 Firebase 專案，Firebase 會離開 Spark。看到 Google 要你替 Firebase Project ID 設定帳單時，請按取消並回來建立新專案。</li>
                 <li>依官方說明確認 Google Maps 的計費及免費額度條件，啟用 Maps JavaScript API、Places API (New) 與 Routes API。免費額度不等於無上限免費，預算通知不會自動停止用量。</li>
                 <li>建立瀏覽器 API Key，將網站限制設為自己的網站，API 限制只勾選實際使用的服務。不要貼服務帳戶私鑰或伺服器憑證。</li>
                 <li>按下方「Google 功能設定」貼上 Key 並套用，可選擇記住此裝置。SDK 載入檢查只確認程式載入，不代表服務或額度已驗證。</li>

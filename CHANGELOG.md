@@ -15,21 +15,22 @@
 - 雲端備份可逐趟還原為新 ID，由目前帳號擁有；不覆蓋既有旅程或匯入來源 membership。真實 Spark 驗收仍待完成。
 - 每日行程加入「下一個安排」摘要，直接顯示備註、主要／備用停車場及各自的 Google Maps 導航；完整時間軸也顯示這些資訊。
 - 行程可選填目的地 Google Maps 連結與停車資訊。沒有連結時以地址或名稱搜尋；地圖外部導航不需 API Key。
+- 選配 Google Places 站內搜尋與 Routes 交通時間／距離估算；共用受限瀏覽器 Key，失敗時保留手動資料與外部導航。
 
 ### Changed
 
 - 成員管理只允許原 ownerId；禁止第二個 owner、原擁有者降權或移除。遠端更新保留草稿，切換專案停止訂閱並隔離晚到寫入結果。
 - 完整備份保留景點／收藏、租車、住宿與獨立費用；分享副本移除這些私人資料。
 - 修正本機還原在寫入完成後讀取失效事件參照，導致錯報失敗且視窗未關閉的問題。
-- Google Places／自動交通功能與後續設定精靈列為恢復工作；天氣依產品決定移除。
+- Google Places／自動交通功能已恢復，設定精靈說明 Firebase Spark 與選配 Google Cloud 專案的邊界；天氣依產品決定移除。
 - Firebase 設定精靈不再假設 `firebaseConfig` 一定包含 `databaseURL`。使用者可從 Realtime Database「資料」頁籤另外複製資料庫網址，Travel OS 會自動合併並驗證；Firebase 操作路徑同步改為繁體中文介面名稱。
 - 瀏覽器本機資料改依部署路徑隔離。同一個 `username.github.io` 底下的不同 Travel OS repository，不再共用 IndexedDB 旅程、Firebase 設定、onboarding 狀態或主題。舊版未分路徑的共用資料不自動搬移，避免再次跨 repository 混用。
-- 設定精靈六段式流程：網站 → Firebase → 免 Key 地圖導航 → 登入 → 驗證 → 完成；前兩步沿用現有流程，Step 3 不再要求無用的付費 Maps Browser Key。
+- 設定精靈六段式流程：網站 → Firebase → Google 地圖 → 登入 → 驗證 → 完成；Step 3 保留免 Key 外部導航，也可設定 Places／Routes 使用的受限 Browser Key。
 - Firebase 精靈明確要求 Spark、Email/Password、Realtime Database Locked mode 與 Travel OS Rules，並提供 Rules 一鍵複製與 `firebaseConfig` 解析預覽。
-- Google Maps 目前只使用免 Key 的外部 URL；不需建立 Billing project 或啟用 Maps/Places API。
+- Google Maps 外部 URL 不需要 API Key；站內 Places／Routes 需要另一個 Google Cloud 專案、對應 API、網站/API 限制及 Google 要求的計費設定，不可對 Firebase Spark 專案連結帳單。
 - Self-host 第一次使用改以 Firebase 雲端同步為 onboarding 主流程，本機 IndexedDB 保留為 Demo／離線／fallback。
-- Step 5 在使用者自己的 UID 範圍測試 Firebase 寫入、讀取與刪除；成功後才記住公開 Web config。Firebase Auth 改為僅記憶體登入，舊版保存的 Maps Key 會從設定中移除。
-- 密碼與 Server Key 永不保存。Routes／Geocoding／Weather Server Key 仍只允許存在使用者自己的後端。
+- Step 5 在使用者自己的 UID 範圍測試 Firebase 寫入、讀取與刪除；成功後才記住公開 Web config。Firebase Auth 改為僅記憶體登入。
+- 密碼與 Server Key 永不保存。選配 Browser Key 預設只留在記憶體，使用者可明確選擇記住此裝置，並必須設定網站與 API 限制。
 - Firebase Rules deploy 新增本機明確 target 與 predeploy boundary guard；OpenSource 不再允許從登入帳號或其他 repository 的 Firebase project 推測 production 部署目標。
 
 ## 0.1.0-beta.2 - 2026-09-21
