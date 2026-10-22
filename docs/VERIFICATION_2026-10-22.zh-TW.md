@@ -12,6 +12,7 @@
 - Step 5 已以真實 Firebase Authentication 完成本人診斷路徑的寫入、讀取與刪除；雲端連線成功後可載入既有旅程。
 - 已在真實 Spark 建立跨年、跨時區的雲端旅程，保存並重登讀回景點、備註、目的地地圖、主／備停車、兩個群組、航班與不同幣別費用。含 HTML 標記的備註以純文字安全顯示。
 - 私人 JSON 備份已實際下載並解析，`schemaVersion`、旅程、景點、行程、停車與航班存在；尚待在乾淨雲端狀態還原副本。
+- CRUD 刪除驗收使用的暫存景點已從真實 Firebase 刪除；刪除後景點庫由 2 筆變為 1 筆，正式驗收景點、每日安排、停車、航班、群組及費用均保留。
 - 原版彩色 Google Maps、編輯、收藏、停車、設定與主題圖示已逐項移植到通用程式，保留去個人化資料模型；桌面瀏覽器已確認更新後的 NEXT 卡片、圖示與操作文字正常顯示。
 - 本批 `npm run check` 通過：154 個單元測試與 production build 成功。Rules Emulator 在本機因 Windows Java loopback selector 無法啟動，規則本身未變更，交由本批 GitHub CI 再驗證。
 
@@ -23,10 +24,9 @@
 
 ## 尚待實走
 
-1. 刪除只為驗收建立的暫存景點，並確認正式驗收景點與每日安排不受影響。
-2. 在乾淨雲端狀態還原私人備份，以及另一裝置讀回。
-3. 第二個 Firebase Authentication 使用者的 viewer／editor、撤權、禁止升權與即時同步。
-4. 使用不同 Project ID 的 Google Cloud 測試專案驗證 Places 搜尋、Routes 估算、Key 網站/API 限制，以及 API 未啟用、限制錯誤與額度失敗的降級。
-5. 手機版完整操作、正式 GitHub Pages 子路徑、Service Worker 更新、全歷史憑證／個資掃描與最終 beta 發布。
+1. 在乾淨雲端狀態還原私人備份，以及另一裝置讀回。
+2. 第二個 Firebase Authentication 使用者的 viewer／editor、撤權、禁止升權與即時同步。
+3. 使用不同 Project ID 的 Google Cloud 測試專案驗證 Places 搜尋、Routes 估算、Key 網站/API 限制，以及 API 未啟用、限制錯誤與額度失敗的降級。
+4. 手機版完整操作、正式 GitHub Pages 子路徑、Service Worker 更新、全歷史憑證／個資掃描與最終 beta 發布。
 
 目前不能宣告符合「陌生使用者可完整順暢使用所有功能」的發布標準。
