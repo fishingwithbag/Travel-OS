@@ -16,6 +16,10 @@ describe('Firebase runtime config', () => {
   it('rejects service account credentials', () => {
     expect(() => parseFirebaseConfig('{"private_key":"BEGIN PRIVATE KEY"}')).toThrow(/不接受/);
   });
+  it('recognizes Realtime Database Rules pasted into the Web config field', () => {
+    const rules = JSON.stringify({ rules:{ trips:{ '$tripId':{ '.read':'auth != null', '.write':'auth != null' } } } });
+    expect(() => parseFirebaseConfig(rules)).toThrow(/Realtime Database Rules.*不是 Firebase Web config/);
+  });
   it('rejects a database URL by itself', () => {
     expect(() => parseFirebaseConfig('{"databaseURL":"https://sample.firebaseio.com"}')).toThrow(/缺少/);
   });

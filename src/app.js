@@ -44,6 +44,12 @@ const STORAGE_KEYS = Object.freeze({
   onboardingMode:localStorageKey('onboarding-mode'),
   connection:localStorageKey('connection'),
 });
+const icons = Object.freeze({
+  maps:'<svg class="gmap-icon" viewBox="0 0 36 36" aria-hidden="true"><circle class="gmap-icon__bg" cx="18" cy="18" r="16"/><path class="gmap-icon__green" d="M18 6.2c-5.05 0-9.15 4.05-9.15 9.05 0 6.8 9.15 14.55 9.15 14.55V19.1l-3.75-3.75L18 6.2z"/><path class="gmap-icon__blue" d="M18 29.8s9.15-7.75 9.15-14.55c0-2.45-.98-4.67-2.57-6.3L18 15.5v14.3z"/><path class="gmap-icon__yellow" d="M8.85 15.25c0 2.8 1.55 5.95 3.38 8.6L18 18.1v-2.6l-5.95-5.95a8.95 8.95 0 0 0-3.2 5.7z"/><path class="gmap-icon__red" d="M24.58 8.95A9.08 9.08 0 0 0 18 6.2a9.02 9.02 0 0 0-5.95 2.25L18 14.4l6.58-5.45z"/><circle class="gmap-icon__center" cx="18" cy="15.35" r="3.15"/></svg>',
+  edit:'<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 4.3 4.3-.8L19 8.5 15.5 5 4 16.5Z"/><path d="m13.8 6.7 3.5 3.5"/></svg>',
+  parking:'<svg class="parking-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M9 17V7h4.2a3.2 3.2 0 0 1 0 6.4H9M9 13.4h4.2"/></svg>',
+  heart:'<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.4 5.4 0 0 0-7.6 0L12 5.9l-1.2-1.2a5.4 5.4 0 1 0-7.6 7.6L12 21l8.8-8.7a5.4 5.4 0 0 0 0-7.6Z"/></svg>',
+});
 const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
@@ -125,7 +131,7 @@ $('#member-list').addEventListener('click',async event=>{
 
 function mapLink(item, label = '在 Google Maps 開啟') {
   if (!item.location && !item.mapsUrl && !['place', 'meal', 'stay'].includes(item.type)) return '';
-  return `<a class="map-link" href="${escapeHtml(itemMapUrl(item))}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${label}：${item.title}`)}">${escapeHtml(label)} <span aria-hidden="true">↗</span></a>`;
+  return `<a class="map-link" href="${escapeHtml(itemMapUrl(item))}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${label}：${item.title}`)}">${icons.maps}<span>${escapeHtml(label)}</span></a>`;
 }
 
 function parkingHtml(item) {
@@ -136,7 +142,7 @@ function parkingHtml(item) {
     : [{name:'共用停車',set:parking}];
   return sets.map(({name,set})=> {
     const rows = [['主要停車場',set?.primary],['備用停車場',set?.backup]].filter(([,spot])=>spot?.name);
-    return `<div class="item-parking"><strong>${escapeHtml(name)}</strong><div>${rows.map(([label,spot])=>`<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(name)}${label}：${escapeHtml(spot.name)}"><small>${label}</small><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>${spot.walkMinutes == null ? '' : `<p>步行 ${spot.walkMinutes} 分鐘</p>`}${spot.feeMinor == null ? '' : `<p>預估停車費 ${escapeHtml(spot.currency)} ${(spot.feeMinor/100).toFixed(2)}</p>`}${spot.note ? `<p class="parking-notes">${escapeHtml(spot.note)}</p>` : ''}`).join('')}${set?.notes ? `<p class="parking-notes">${escapeHtml(set.notes)}</p>` : ''}${rows.length ? '' : '<p class="parking-unset">停車場未設定</p>'}</div></div>`;
+    return `<div class="item-parking"><span class="parking-title">${icons.parking}<strong>${escapeHtml(name)}</strong></span><div>${rows.map(([label,spot])=>`<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(name)}${label}：${escapeHtml(spot.name)}"><small>${label}</small><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>${spot.walkMinutes == null ? '' : `<p>步行 ${spot.walkMinutes} 分鐘</p>`}${spot.feeMinor == null ? '' : `<p>預估停車費 ${escapeHtml(spot.currency)} ${(spot.feeMinor/100).toFixed(2)}</p>`}${spot.note ? `<p class="parking-notes">${escapeHtml(spot.note)}</p>` : ''}`).join('')}${set?.notes ? `<p class="parking-notes">${escapeHtml(set.notes)}</p>` : ''}${rows.length ? '' : '<p class="parking-unset">停車場未設定</p>'}</div></div>`;
   }).join('');
 }
 
@@ -333,7 +339,7 @@ function render() {
   $('#next-stop').hidden = !upcoming;
   if (upcoming) {
     $('#next-stop-heading').textContent = upcoming.title;
-    $('#next-stop-details').innerHTML = `<p class="next-stop-meta">${escapeHtml(upcoming.startTime || '彈性時間')} · ${escapeHtml(typeLabels[upcoming.type])}</p>${itemTimingHtml(upcoming)}${flightScheduleHtml(upcoming)}${itemNotesHtml(upcoming)}${parkingHtml(upcoming)}${!upcoming.parking && ['place', 'meal', 'stay'].includes(upcoming.type) ? '<p class="parking-unset">停車資訊未設定</p>' : ''}<div class="next-stop-actions">${mapLink(upcoming, 'Google Maps')}<button class="secondary" data-edit-item="${escapeHtml(upcoming.id)}" type="button">編輯下一個安排</button></div>`;
+    $('#next-stop-details').innerHTML = `<p class="next-stop-meta">${escapeHtml(upcoming.startTime || '彈性時間')} · ${escapeHtml(typeLabels[upcoming.type])}</p>${itemTimingHtml(upcoming)}${flightScheduleHtml(upcoming)}${itemNotesHtml(upcoming)}${parkingHtml(upcoming)}${!upcoming.parking && ['place', 'meal', 'stay'].includes(upcoming.type) ? '<p class="parking-unset">停車資訊未設定</p>' : ''}<div class="next-stop-actions">${mapLink(upcoming, 'Google Maps')}<button class="secondary icon-label-button" data-edit-item="${escapeHtml(upcoming.id)}" type="button">${icons.edit}<span>詳情・編輯</span></button></div>`;
   }
   $('#day-heading').textContent = formatDay(state.selectedDate);
   $('#timeline').innerHTML = items.map((item, index) => {
@@ -378,9 +384,9 @@ function renderPlaces() {
   $('#places-count').textContent = `${shown.length} / ${places.length} 個景點 · ${places.filter(place=>place.favorite).length} 個收藏`;
   $('#places-empty').hidden = shown.length > 0;
   $('#places-empty').textContent = places.length ? '沒有符合篩選的景點，請調整搜尋條件。' : '尚無景點。新增想去的地點，就能保存備註並加入每日行程。';
-  $('#place-list').innerHTML = shown.map(place=>`<li class="place-card"><div class="panel-heading"><div><p class="eyebrow">${escapeHtml([place.region,place.category,place.subcategory].filter(Boolean).join(' · '))}</p><h3>${escapeHtml(place.title)}</h3></div><button class="secondary" type="button" data-favorite-place="${escapeHtml(place.id)}" aria-pressed="${place.favorite}" aria-label="${place.favorite ? '取消收藏' : '收藏'}：${escapeHtml(place.title)}">${place.favorite ? '♥ 已收藏' : '♡ 收藏'}</button></div>
+  $('#place-list').innerHTML = shown.map(place=>`<li class="place-card"><div class="panel-heading"><div><p class="eyebrow">${escapeHtml([place.region,place.category,place.subcategory].filter(Boolean).join(' · '))}</p><h3>${escapeHtml(place.title)}</h3></div><button class="place-icon-button favorite-button${place.favorite ? ' is-favorite' : ''}" type="button" data-favorite-place="${escapeHtml(place.id)}" aria-pressed="${place.favorite}" aria-label="${place.favorite ? '取消收藏' : '收藏'}：${escapeHtml(place.title)}">${icons.heart}</button></div>
     ${place.location ? `<p class="muted compact">${escapeHtml(place.location)}</p>` : ''}${place.hours ? `<p class="compact">營業時間：${escapeHtml(place.hours)}</p>` : ''}${itemNotesHtml(place)}
-    <div class="next-stop-actions">${mapLink({...place,type:'place'},'Google Maps')}<button class="secondary" type="button" data-edit-place="${escapeHtml(place.id)}">編輯景點</button><button class="primary" type="button" data-schedule-place="${escapeHtml(place.id)}">加入每日行程</button></div></li>`).join('');
+    <div class="next-stop-actions">${mapLink({...place,type:'place'},'Google Maps')}<button class="secondary icon-label-button" type="button" data-edit-place="${escapeHtml(place.id)}">${icons.edit}<span>編輯</span></button><button class="primary" type="button" data-schedule-place="${escapeHtml(place.id)}">加入行程</button></div></li>`).join('');
   setPlaceSaving(placeSaving);
 }
 
@@ -611,11 +617,11 @@ $('#copy-rules-button').addEventListener('click', async () => {
 
 function updateFirebaseConfigPreview() {
   try { renderFirebasePreview(parseFirebaseConfigInput(formData($('#connection-form')))); }
-  catch { $('#firebase-config-preview').innerHTML = '<span>設定尚未完整；請貼上 firebaseConfig，並從 Realtime Database →「資料」頁籤另外貼上 HTTPS 資料庫網址。</span>'; }
+  catch (error) { $('#firebase-config-preview').innerHTML = `<strong>設定尚未完成</strong><span>${escapeHtml(error instanceof ValidationError ? error.message : '請貼上 Firebase Web config。')}</span>`; }
 }
 
-$('#connection-form').elements.firebaseConfig.addEventListener('change', updateFirebaseConfigPreview);
-$('#connection-form').elements.firebase_databaseURL.addEventListener('change', updateFirebaseConfigPreview);
+$('#connection-form').elements.firebaseConfig.addEventListener('input', updateFirebaseConfigPreview);
+$('#connection-form').elements.firebase_databaseURL.addEventListener('input', updateFirebaseConfigPreview);
 
 $('#setup-create-trip-button').addEventListener('click', () => {
   $('#settings-dialog').close();

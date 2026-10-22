@@ -36,7 +36,7 @@ describe('zero-basis setup wizard', () => {
     expect(html).toContain('Realtime Database →「資料」');
     expect(html).toContain('不要複製資料區裡顯示的');
     expect(html).toContain('firebaseConfig 裡沒有 databaseURL 也沒關係');
-    expect(app).toContain("elements.firebase_databaseURL.addEventListener('change', updateFirebaseConfigPreview)");
+    expect(app).toContain("elements.firebase_databaseURL.addEventListener('input', updateFirebaseConfigPreview)");
     expect(app).not.toContain('請重新複製最新 firebaseConfig');
   });
 

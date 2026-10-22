@@ -32,6 +32,8 @@ function normalizeObjectSyntax(text) {
 export function parseFirebaseConfig(raw, databaseURLOverride = '') {
   const text = String(raw || '').trim();
   if (!text) throw new ValidationError('請貼上 Firebase Web config。');
+  const looksLikeRules = /["']rules["']\s*:/.test(text) && /["']\.(?:read|write|validate)["']\s*:/.test(text);
+  if (looksLikeRules) throw new ValidationError('你貼入的是 Realtime Database Rules，不是 Firebase Web config。請到「專案設定 → 一般 → 您的應用程式 → SDK 設定與配置」，複製 const firebaseConfig = { ... }。');
   if (text.length > 10_000) throw new ValidationError('Firebase config 內容過長。');
   if (FORBIDDEN_MARKERS.some((marker) => text.toLowerCase().includes(marker.toLowerCase()))) throw new ValidationError('偵測到管理憑證或私鑰；本網站不接受這類敏感資料。');
   let parsed;
