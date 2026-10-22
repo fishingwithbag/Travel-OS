@@ -50,6 +50,43 @@ const icons = Object.freeze({
   parking:'<svg class="parking-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M9 17V7h4.2a3.2 3.2 0 0 1 0 6.4H9M9 13.4h4.2"/></svg>',
   heart:'<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.4 5.4 0 0 0-7.6 0L12 5.9l-1.2-1.2a5.4 5.4 0 1 0-7.6 7.6L12 21l8.8-8.7a5.4 5.4 0 0 0 0-7.6Z"/></svg>',
 });
+const views = new Set(['dashboard','itinerary','places','more']);
+
+function setActiveView(requestedView,{updateUrl=true,focus=false}={}) {
+  const view=views.has(requestedView) ? requestedView : 'dashboard';
+  document.body.dataset.view=view;
+  for(const control of document.querySelectorAll('[data-view-target]')) {
+    const active=control.dataset.viewTarget===view;
+    control.classList.toggle('active',active);
+    if(control.closest('.bottom-nav')) {
+      if(active) control.setAttribute('aria-current','page');
+      else control.removeAttribute('aria-current');
+    }
+  }
+  if(updateUrl) {
+    const url=new URL(location.href);
+    if(view==='dashboard') url.searchParams.delete('view');
+    else url.searchParams.set('view',view);
+    history.replaceState(null,'',`${url.pathname}${url.search}${url.hash}`);
+  }
+  if(focus) {
+    const targets={dashboard:'#trip-title',itinerary:'#day-heading',places:'#places-heading',more:'#tools-heading'};
+    const heading=$(targets[view]);
+    heading?.setAttribute('tabindex','-1');
+    heading?.focus({preventScroll:true});
+    $('#main')?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+  }
+}
+
+for(const control of document.querySelectorAll('[data-view-target]')) control.addEventListener('click',()=>{
+  const view=control.dataset.viewTarget;
+  if(control.id==='favorites-button') {
+    const checkbox=$('#place-filters')?.elements?.favorites;
+    if(checkbox) checkbox.checked=true;
+    if(currentTrip()) renderPlaces();
+  }
+  setActiveView(view,{focus:true});
+});
 const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
@@ -142,7 +179,7 @@ function parkingHtml(item) {
     : [{name:'共用停車',set:parking}];
   return sets.map(({name,set})=> {
     const rows = [['主要停車場',set?.primary],['備用停車場',set?.backup]].filter(([,spot])=>spot?.name);
-    return `<div class="item-parking"><span class="parking-title">${icons.parking}<strong>${escapeHtml(name)}</strong></span><div>${rows.map(([label,spot])=>`<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(name)}${label}：${escapeHtml(spot.name)}"><small>${label}</small><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>${spot.walkMinutes == null ? '' : `<p>步行 ${spot.walkMinutes} 分鐘</p>`}${spot.feeMinor == null ? '' : `<p>預估停車費 ${escapeHtml(spot.currency)} ${(spot.feeMinor/100).toFixed(2)}</p>`}${spot.note ? `<p class="parking-notes">${escapeHtml(spot.note)}</p>` : ''}`).join('')}${set?.notes ? `<p class="parking-notes">${escapeHtml(set.notes)}</p>` : ''}${rows.length ? '' : '<p class="parking-unset">停車場未設定</p>'}</div></div>`;
+    return `<div class="item-parking"><span class="parking-title">${icons.parking}<strong>停車</strong></span><div>${rows.map(([label,spot])=>`<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(name)}${label}：${escapeHtml(spot.name)}"><small>${label}</small><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>${spot.walkMinutes == null ? '' : `<p>步行 ${spot.walkMinutes} 分鐘</p>`}${spot.feeMinor == null ? '' : `<p>預估停車費 ${escapeHtml(spot.currency)} ${(spot.feeMinor/100).toFixed(2)}</p>`}${spot.note ? `<p class="parking-notes">${escapeHtml(spot.note)}</p>` : ''}`).join('')}${set?.notes ? `<p class="parking-notes">${escapeHtml(set.notes)}</p>` : ''}${rows.length ? '' : '<p class="parking-unset">停車場未設定</p>'}</div></div>`;
   }).join('');
 }
 
@@ -738,6 +775,7 @@ for(const dialog of document.querySelectorAll('dialog')) dialog.addEventListener
 
 async function start() {
   document.documentElement.dataset.theme = localStorage.getItem(STORAGE_KEYS.theme) || 'light';
+  setActiveView(new URL(location.href).searchParams.get('view') || 'dashboard',{updateUrl:false});
   $('#current-site-url').textContent = location.href.split('#')[0].split('?')[0];
   let initialSetupStep = 0;
   if (sharedPublicDemo) {
