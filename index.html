@@ -1,173 +1,103 @@
 <!doctype html>
-<html lang="zh-Hant" data-theme="light">
+<html lang="zh-Hant" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f1e7" />
+    <meta name="theme-color" content="#596070" />
     <meta name="description" content="Travel OS — 將行程、航班、住宿與費用整理在自己的旅遊工作台。" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <title>Travel OS</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23243e35%22/><path d=%22M18 38c9-15 20-19 29-11-8 0-13 5-15 15%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%225%22 stroke-linecap=%22round%22/></svg>" />
     <script type="module" src="/src/app.js"></script>
   </head>
-  <body class="travel-os-page" data-view="dashboard">
-    <a class="skip-link" href="#main">跳到主要內容</a>
+  <body class="travel-os-page" data-page="dashboard" data-view="dashboard">
+    <a class="skip-link" href="#os-workspace">跳到主要內容</a>
     <header class="topbar os-topbar">
-      <a class="brand os-wordmark" href="./" aria-label="Travel OS 首頁"><span class="brand-mark os-wordmark__mark">旅</span><span><strong>Travel OS</strong><small>YOUR TRIP, YOUR DATA</small></span></a>
-      <div class="top-actions topbar__actions">
-        <span id="save-status" class="status" role="status">本機模式</span>
-        <button id="settings-button" class="icon-button top-icon" type="button" aria-label="連線與設定"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.1A1.7 1.7 0 0 0 8.55 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.2 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2.4V9.6h.1A1.7 1.7 0 0 0 4.2 8.55a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8.55 4.2a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V2.4h4v.1A1.7 1.7 0 0 0 15 4.2a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 8.55a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.1v4h-.1A1.7 1.7 0 0 0 19.4 15Z"/></svg></button>
-        <button id="favorites-button" class="icon-button top-icon" data-view-target="places" type="button" aria-label="只看收藏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.5a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
-        <button id="theme-button" class="icon-button top-icon" type="button" aria-label="切換深色模式"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/></svg></button>
+      <a class="os-wordmark os-wordmark--main" href="./" aria-label="Travel OS 旅程首頁"><span class="os-wordmark__mark">旅</span><span><strong>Travel OS</strong><small>YOUR TRIP</small></span></a>
+      <button class="topbar__left os-wordmark--today" type="button" data-view-target="dashboard" aria-label="返回旅程首頁"><span class="topbar__back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></span><span class="topbar__title">每日行程</span></button>
+      <div class="topbar__actions">
+        <span id="save-status" class="sync-state" role="status">本機模式</span>
+        <button id="settings-button" class="icon-btn help-btn" type="button" aria-label="使用說明與連線設定"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 1 1 3.6 2.1c-.9.5-1.4 1.1-1.4 2.2"/><path d="M12 17h.01"/></svg><span>使用說明</span></button>
+        <button id="favorites-button" class="icon-btn" data-view-target="places" type="button" aria-label="只看收藏" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.5a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
+        <button id="theme-button" class="icon-btn theme-toggle" type="button" aria-label="切換顯示模式"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="theme-icon theme-icon--sun"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></g><path class="theme-icon theme-icon--moon" d="M20.2 15.4A8.4 8.4 0 0 1 8.6 3.8 8.5 8.5 0 1 0 20.2 15.4Z"/></svg></button>
       </div>
     </header>
 
-    <main id="main" class="shell">
-      <section id="cloud-session" class="panel" aria-label="雲端帳號與同步狀態" hidden>
-        <p class="eyebrow">YOUR CLOUD ACCOUNT</p>
-        <p id="cloud-account"></p><p>我的 UID：<code id="cloud-uid"></code> <button id="copy-uid-button" class="secondary small" type="button">複製我的 UID</button></p>
-        <p id="cloud-sync-status" class="muted" role="status">正在接收旅程更新。</p>
-      </section>
-      <section id="welcome" class="welcome" aria-labelledby="welcome-title">
-        <p class="eyebrow">CLOUD-SYNC TRAVEL PLANNER</p>
+    <main class="os-workspace" id="os-workspace">
+      <section id="welcome" class="welcome os-view" aria-labelledby="welcome-title">
+        <p class="dashboard-heading__date">CLOUD-SYNC TRAVEL PLANNER</p>
         <h1 id="welcome-title">把旅程整理成一張清楚的路線圖。</h1>
-        <p>自行部署版本建議先完成雲端同步設定，讓旅程可以跨裝置與多人協作；本機模式保留給試用、離線或暫時不連雲端的情境。</p>
-        <div class="welcome-actions">
-          <button id="cloud-setup-button" class="primary" data-open="settings-dialog" type="button">設定雲端同步</button>
-          <button id="local-start-button" class="secondary" data-open="trip-dialog" type="button">先用本機模式</button>
-          <button class="secondary" data-import type="button">匯入備份</button>
+        <p>完成網站內設定精靈後，即可用自己的 Firebase 建立旅程；也可以先用本機模式體驗。</p>
+        <div class="quick-actions welcome-actions">
+          <button id="cloud-setup-button" class="qa-btn" data-open="settings-dialog" type="button"><span class="qa-btn__info"><strong class="qa-btn__title">設定雲端同步</strong><span class="qa-btn__sub">使用自己的 Firebase</span></span></button>
+          <button id="local-start-button" class="qa-btn" data-open="trip-dialog" type="button"><span class="qa-btn__info"><strong class="qa-btn__title">建立第一趟旅程</strong><span class="qa-btn__sub">先用本機模式</span></span></button>
+          <button class="qa-btn" data-import type="button"><span class="qa-btn__info"><strong class="qa-btn__title">匯入備份</strong><span class="qa-btn__sub">從 JSON 還原</span></span></button>
         </div>
       </section>
 
       <section id="workspace" hidden>
-        <header class="trip-header">
-          <div>
-            <p id="trip-dates" class="eyebrow"></p>
-            <h1 id="trip-title"></h1>
-            <p id="trip-destination" class="muted"></p>
+        <section class="os-view dashboard-view" data-view-panel="dashboard">
+          <header class="dashboard-heading">
+            <div><p id="trip-dates" class="dashboard-heading__date"></p><h1 id="trip-title"></h1><p id="trip-destination" class="dashboard-heading__hint"></p></div>
+            <div class="trip-progress" aria-label="旅程進度"><span id="trip-progress-label">旅程規劃中</span><strong id="trip-progress-day">DAY 1 / 1</strong></div>
+          </header>
+          <div class="command-grid">
+            <section class="now-command" aria-label="目前安排"><div class="command-label"><span>NOW</span><span id="dashboard-city">TRIP</span></div><div id="dashboard-now" class="dashboard-focus"><p>這一天還沒有安排</p></div></section>
+            <section class="next-command" aria-label="下一個安排"><div class="command-label"><span>NEXT</span><span id="dashboard-next-time">--:--</span></div><div id="next-stop" class="dashboard-next"><h3 id="next-stop-heading"></h3><div id="next-stop-details"></div></div></section>
+            <aside class="crew-command"><div class="command-label"><span>同行群組</span><span>即時資料</span></div><p class="crew-command__hint">確認同行群組與這趟旅程的安排。</p><div id="dashboard-fleet" class="fleet-glance"></div><div id="dashboard-alert" class="dashboard-alert">沒有需要立即處理的提醒</div></aside>
           </div>
-          <div class="header-actions">
-            <select id="trip-select" aria-label="切換旅程"></select>
-            <button class="secondary" data-open="trip-dialog" type="button">新增旅程</button>
+          <div class="quick-actions">
+            <button class="qa-btn qa-btn--itinerary" type="button" data-view-target="itinerary"><span class="qa-btn__info"><span class="qa-btn__title">打開每日行程</span><span class="qa-btn__sub">查看安排與整段導航</span></span></button>
+            <button class="qa-btn qa-btn--add" type="button" data-new-place><span class="qa-btn__info"><span class="qa-btn__title">新增地點</span><span class="qa-btn__sub">存進景點庫</span></span></button>
           </div>
-        </header>
-
-        <section id="storage-migration" class="panel" aria-labelledby="storage-migration-title" hidden>
-          <h2 id="storage-migration-title">舊旅程需要升級儲存格式</h2>
-          <p>資料仍可閱讀。請由擁有者先下載私人備份，再確認逐趟升級。升級保留成員及行程內容，完成前暫停編輯；其他裝置也需要更新網站。</p>
-          <button id="migration-prepare" type="button">下載備份並預覽升級</button>
-          <div id="migration-preview" hidden>
-            <p id="migration-summary"></p>
-            <label><input id="migration-ack" type="checkbox">我已確認備份檔案已保存，並同意上述資料修復與升級</label>
-            <button id="migration-confirm" class="primary" type="button" disabled>確認升級這趟旅程</button>
-          </div>
-          <p id="migration-status" role="status"></p>
+          <section class="flight-board" aria-labelledby="flight-board-title"><div class="flight-board__head"><div><h2 class="flight-board__title" id="flight-board-title">旅程航班</h2><span class="flight-board__sub">出發與抵達皆使用各自日期及時區</span></div><span class="flight-board__status">行程資料</span></div><div id="flight-legs" class="flight-legs"></div><p id="flight-board-empty" class="flight-board__note">尚未加入航班。</p></section>
         </section>
-        <section id="group-recovery" class="panel" aria-labelledby="group-recovery-title" hidden>
-          <h2 id="group-recovery-title">部分群組資料需要確認</h2>
-          <p id="group-recovery-summary"></p>
-          <p>已暫時補回原群組 ID，行程、停車、預訂及費用仍保留。原名稱無法推回，請先確認修復，再從群組「管理」更名或移轉。此預覽尚未寫入雲端。</p>
-          <button id="group-recovery-save" class="primary" type="button">確認並保存群組修復</button>
-          <p id="group-recovery-status" role="status"></p>
-        </section>
-        <nav id="day-tabs" class="day-tabs" aria-label="旅程日期"></nav>
 
-        <div class="workspace-grid dashboard-main">
-          <section class="panel timeline-panel" aria-labelledby="day-heading">
-            <div class="panel-heading">
-              <div><p class="eyebrow">DAILY PLAN</p><h2 id="day-heading">每日行程</h2></div>
-              <button class="primary small" data-open="item-dialog" type="button">新增安排</button>
-            </div>
-            <section id="next-stop" class="next-stop" aria-labelledby="next-stop-heading" hidden>
-              <p class="eyebrow">NEXT · 下一個安排</p>
-              <h3 id="next-stop-heading"></h3>
-              <div id="next-stop-details"></div>
+        <section class="os-view itinerary-view" data-view-panel="itinerary" hidden>
+          <div class="today-workspace">
+            <aside class="today-context" aria-label="日期與同行設定">
+              <div class="collab-bar" aria-label="同步狀態"><span class="collab-identity">目前旅程</span><div class="online-users"><span id="context-sync-label" class="online-label">資料已載入</span></div></div>
+              <nav id="day-tabs" class="date-tabs" aria-label="旅程日期"></nav>
+              <div class="region-picker"><div class="region-picker__trigger"><span class="region-picker__label">📍 旅程目的地</span><span id="context-destination" class="region-picker__chips"></span></div></div>
+              <div id="group-list" class="group-view" aria-label="行程分組檢視"></div><p id="group-empty" class="context-empty">尚未建立同行群組。</p>
+            </aside>
+            <section class="today-focus" aria-label="目前與下一站">
+              <header class="today-heading"><div><span id="selected-date-label">每日行程</span><h1 id="day-heading">每日行程</h1><p class="today-heading__hint">依日期查看當日安排、下一站與備註。</p></div><span id="today-day-count">DAY 1 / 1</span></header>
+              <article id="today-now" class="today-now"><div class="focus-loading">這一天還沒有安排</div></article>
+              <article id="today-next" class="today-next"><div class="focus-loading">沒有下一個安排</div></article>
             </section>
-            <details class="day-routes-panel">
-              <summary>各群組今日路線</summary>
-              <p class="field-help">包含共同安排與該群組的地點，依時間排序。長路線分段開啟，前段終點會接續下一段起點。</p>
-              <div id="day-routes"></div>
-            </details>
-            <details id="travel-estimates" class="day-routes-panel">
-              <summary>站內路程與時間估算</summary>
-              <p>依各群組順序估算開車或步行路段；手動交通時間優先。開車估算不含即時交通，不代表預定出發時刻的路況。</p>
-              <div class="setup-actions-inline"><button type="button" class="secondary" data-google-settings>Google 功能設定</button><button type="button" class="primary" data-travel-calculate>估算剩餘路段</button><button type="button" class="text-button" data-travel-reset>清除估算／重新計算</button></div>
-              <p role="status" aria-live="polite"></p><ul data-travel-list></ul>
-              <span class="google-attribution" translate="no">Google Maps</span>
-              <p>估算僅供本次規劃參考，不寫入備份。修改旅程、日期或 Google 設定後需重新估算；可在「編輯安排」填寫自己的手動交通時間。</p>
-            </details>
-            <ol id="timeline" class="timeline"></ol>
-            <div id="timeline-empty" class="empty-state">
-              <span aria-hidden="true">＋</span><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p>
-            </div>
+            <aside class="today-ops" aria-label="行程工具">
+              <div class="action-bar"><button class="action-btn action-btn--primary" data-open="item-dialog" type="button">手動新增行程</button><button class="action-btn" data-view-target="places" type="button">從景點總覽加入</button><button class="action-btn" data-open="item-dialog" data-item-type="flight" type="button">加入航班</button><button class="action-btn" data-new-rental type="button">加入租車</button></div>
+              <div class="day-stats"><div class="day-stat"><span id="summary-items" class="day-stat__n">0</span><span class="day-stat__l">行程數</span></div><div class="day-stat"><span id="summary-days" class="day-stat__n">0</span><span class="day-stat__l">旅程天數</span></div><div class="day-stat"><span id="summary-cost" class="day-stat__n">—</span><span class="day-stat__l">預估費用</span></div></div>
+              <span id="summary-groups" hidden>0</span>
+              <details class="route-bar" open><summary>各群組今日路線</summary><div id="day-routes"></div></details>
+              <details id="travel-estimates" class="route-bar"><summary>站內路程與時間估算</summary><p>手動交通時間優先；Google 功能未設定時仍可使用外部導航。</p><div class="setup-actions-inline"><button type="button" class="secondary" data-google-settings>Google 功能設定</button><button type="button" class="primary" data-travel-calculate>估算剩餘路段</button><button type="button" class="text-button" data-travel-reset>清除估算</button></div><p role="status" aria-live="polite"></p><ul data-travel-list></ul><span class="google-attribution" translate="no">Google Maps</span></details>
+            </aside>
+            <section class="later-plan" aria-labelledby="later-plan-title"><header class="later-plan__head"><div><span>LATER</span><h2 id="later-plan-title">稍後行程</h2></div><button class="later-plan__manage" data-open="item-dialog" type="button">新增安排</button></header><ol id="timeline" class="timeline"></ol><div id="timeline-empty" class="empty-state"><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p></div></section>
+          </div>
+        </section>
+
+        <section class="os-view places-view" data-view-panel="places" hidden>
+          <header class="section-heading"><div><span>PLACES &amp; SAVED</span><h1 id="places-heading">景點收藏</h1></div><p>快速篩選地點、收藏候選清單，並開啟導航。</p></header>
+          <section id="place-library">
+            <form id="place-filters" class="search-bar" role="search" aria-label="搜尋景點庫"><div class="search-wrap"><span class="search-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></span><input name="query" id="search-input" type="search" placeholder="搜尋名稱、地區、備註…" /></div><div class="selects-row"><select name="region" class="filter-select"><option value="">全部地區</option></select><select name="category" class="filter-select"><option value="">全部類別</option></select><select name="subcategory" class="filter-select"><option value="">全部子類別</option></select></div><div class="region-tags"><label class="region-tag"><input name="favorites" type="checkbox" /> 只看收藏</label><select name="sort" class="cards-sort"><option value="default">預設排序</option><option value="region">依地區</option><option value="category">依類別</option><option value="favorite">收藏優先</option></select></div></form>
+            <div class="add-section"><div class="add-section__header"><span class="add-section__title">＋ 新增地點</span><button class="btn-add-place" data-new-place type="button">新增地點</button></div></div>
+            <div class="cards-header"><span id="places-count" class="cards-count"></span></div><p id="places-error" class="form-error" role="alert"></p><ul id="place-list" class="cards"></ul><p id="places-empty" class="empty-state">尚無景點。</p>
           </section>
+        </section>
 
-          <aside class="side-stack">
-            <section class="panel summary-panel" aria-labelledby="summary-heading">
-              <div class="panel-heading"><div><p class="eyebrow">OVERVIEW</p><h2 id="summary-heading">旅程摘要</h2></div></div>
-              <dl class="summary-grid">
-                <div><dt>天數</dt><dd id="summary-days">0</dd></div>
-                <div><dt>安排</dt><dd id="summary-items">0</dd></div>
-                <div><dt>群組</dt><dd id="summary-groups">0</dd></div>
-                <div><dt>費用</dt><dd id="summary-cost">—</dd></div>
-              </dl>
-            </section>
-            <section class="panel group-panel" aria-labelledby="group-heading">
-              <div class="panel-heading"><div><p class="eyebrow">GROUPS</p><h2 id="group-heading">同行群組</h2></div><button class="text-button" data-open="group-dialog" type="button">新增</button></div>
-              <ul id="group-list" class="plain-list"></ul>
-              <p id="group-empty" class="muted compact">可依車輛、家庭或小隊建立任意群組。</p>
-            </section>
-            <section class="panel tools-panel" aria-labelledby="tools-heading">
-              <div class="panel-heading"><div><p class="eyebrow">TOOLS</p><h2 id="tools-heading">資料工具</h2></div></div>
-              <button id="export-button" class="wide secondary" type="button">匯出完整備份</button>
-              <button id="share-export-button" class="wide secondary" type="button">匯出分享副本</button>
-              <button id="import-button" class="wide secondary" data-import type="button">匯入備份</button>
-              <input id="import-file" type="file" accept="application/json" hidden />
-            </section>
-            <section id="members-panel" class="panel" aria-labelledby="members-heading" hidden>
-              <p class="eyebrow">COLLABORATION</p><h2 id="members-heading">旅程成員</h2>
-              <p id="member-role" class="muted" role="status"></p>
-              <ul id="member-list" class="plain-list"></ul>
-              <form id="member-form" class="member-form">
-                <p>由旅程擁有者新增或修改成員。對方須先有同一 Firebase 專案的 Email／Password 帳號，登入同一網站後按「複製我的 UID」，再私下提供給你。只提供本旅程的權限，不會寄出邀請信。</p>
-                <label>成員 UID<input name="uid" maxlength="128" required autocomplete="off" /></label>
-                <label>成員權限<select name="role"><option value="viewer">檢視者：只能閱讀</option><option value="editor">編輯者：可修改旅程</option></select></label>
-                <button class="secondary" type="submit">新增或修改成員</button>
-                <p class="form-error" role="alert"></p>
-              </form>
-            </section>
-          </aside>
-        </div>
-        <section id="expenses-panel" class="panel places-panel management-view" aria-labelledby="expenses-heading">
-          <div class="panel-heading"><div><p class="eyebrow">EXPENSES</p><h2 id="expenses-heading">費用與分攤</h2></div><button class="primary small" data-new-expense type="button">新增費用</button></div>
-          <p class="muted compact">不同幣別分開計算。旅程摘要包含每日安排費用與以下獨立支出；租車／住宿的預訂金額僅供參考，請勿將同一筆支出重複記帳。</p>
-          <p id="expense-totals" class="muted"></p><ul id="expense-list" class="place-list"></ul><p id="expense-empty" class="muted">尚無獨立支出。</p>
-        </section>
-        <section id="stays-panel" class="panel places-panel management-view" aria-labelledby="stays-heading">
-          <div class="panel-heading"><div><p class="eyebrow">STAYS</p><h2 id="stays-heading">住宿預訂</h2></div><button class="primary small" data-new-stay type="button">新增住宿</button></div>
-          <p class="muted compact">保存預訂、房型、人數及入住／退房時間（旅程時區）。預訂費用供參考，實際支出請另外記帳。</p>
-          <ul id="stay-list" class="place-list"></ul><p id="stay-empty" class="muted">尚無住宿預訂。</p>
-        </section>
-        <section class="panel places-panel rental-panel management-view" aria-labelledby="rentals-heading">
-          <div class="panel-heading"><div><p class="eyebrow">RENTAL CARS</p><h2 id="rentals-heading">租車與取還車</h2></div><button class="primary small" data-new-rental type="button">新增租車</button></div>
-          <p class="muted compact">可為任意群組建立多筆租車。日期與時間使用旅程時區；預訂費用僅供參考，加入取還車安排時不會重複計費。</p>
-          <p class="form-error" role="alert"></p><ul id="rental-list" class="place-list"></ul><p id="rental-empty" class="muted">尚無租車資料；可先建立同行群組，也可以選擇所有人共用。</p>
-        </section>
-        <section id="place-library" class="panel places-panel places-view-section" aria-labelledby="places-heading">
-          <div class="panel-heading"><div><p class="eyebrow">PLACES & SAVED</p><h2 id="places-heading">景點庫與收藏</h2></div><button class="primary small" data-new-place type="button">新增景點</button></div>
-          <p class="muted compact">先收藏候選地點，再加入每日安排。景點庫只屬於目前旅程；修改或刪除景點不會更動已加入的安排。</p>
-          <form id="place-filters" class="place-filters" role="search" aria-label="搜尋景點庫">
-            <label>搜尋<input name="query" type="search" placeholder="名稱、地址、地區或備註" /></label>
-            <label>地區<select name="region"><option value="">全部地區</option></select></label>
-            <label>類別<select name="category"><option value="">全部類別</option></select></label>
-            <label>子類別<select name="subcategory"><option value="">全部子類別</option></select></label>
-            <label>排序<select name="sort"><option value="default">新增順序</option><option value="region">依地區</option><option value="category">依類別</option><option value="favorite">收藏優先</option></select></label>
-            <label class="check-row"><input name="favorites" type="checkbox" />只看收藏</label>
-          </form>
-          <p id="places-count" class="muted" role="status"></p>
-          <p id="places-error" class="form-error" role="alert"></p>
-          <ul id="place-list" class="place-list"></ul>
-          <p id="places-empty" class="empty-state">尚無景點。新增想去的地點，就能保存備註並加入每日行程。</p>
+        <section class="os-view more-view" data-view-panel="more" hidden>
+          <header class="section-heading"><div><span>TRIP SYSTEMS</span><h1>旅程設定</h1></div><p>費用、住宿、車輛、成員與資料工具集中管理。</p></header>
+          <section class="system-block trip-switcher"><div class="system-block__head"><div><span>TRIPS</span><h2>旅程管理</h2></div><button class="primary small" data-open="trip-dialog" type="button">新增旅程</button></div><select id="trip-select" aria-label="切換旅程"></select></section>
+          <section id="cloud-session" class="system-block" aria-label="雲端帳號與同步狀態" hidden><div class="system-block__head"><div><span>CLOUD ACCOUNT</span><h2 id="cloud-account"></h2></div></div><p>我的 UID：<code id="cloud-uid"></code> <button id="copy-uid-button" class="secondary small" type="button">複製我的 UID</button></p><p id="cloud-sync-status" class="muted" role="status">正在接收旅程更新。</p></section>
+          <section id="storage-migration" class="system-block" hidden><h2 id="storage-migration-title">舊旅程需要升級儲存格式</h2><p>請由擁有者先下載私人備份，再確認逐趟升級。</p><button id="migration-prepare" type="button">下載備份並預覽升級</button><div id="migration-preview" hidden><p id="migration-summary"></p><label><input id="migration-ack" type="checkbox">我已確認備份並同意升級</label><button id="migration-confirm" class="primary" type="button" disabled>確認升級這趟旅程</button></div><p id="migration-status" role="status"></p></section>
+          <section id="group-recovery" class="system-block" hidden><h2 id="group-recovery-title">部分群組資料需要確認</h2><p id="group-recovery-summary"></p><button id="group-recovery-save" class="primary" type="button">確認並保存群組修復</button><p id="group-recovery-status" role="status"></p></section>
+          <section id="groups-panel" class="system-block"><div class="system-block__head"><div><span>GROUPS</span><h2>同行群組</h2></div><button class="primary small" data-open="group-dialog" type="button">新增群組</button></div><div id="more-group-list" class="management-list"></div></section>
+          <section id="expenses-panel" class="cost-block"><div class="cost-block__header"><span class="cost-block__title">💴 費用與分攤</span><button class="primary small" data-new-expense type="button">新增費用</button></div><div class="cost-block__body"><p id="expense-totals" class="muted"></p><ul id="expense-list" class="management-list"></ul><p id="expense-empty" class="muted">尚無獨立支出。</p></div></section>
+          <section id="stays-panel" class="system-block"><div class="system-block__head"><div><span>STAYS</span><h2>住宿預訂</h2></div><button class="primary small" data-new-stay type="button">新增住宿</button></div><ul id="stay-list" class="management-list"></ul><p id="stay-empty" class="muted">尚無住宿預訂。</p></section>
+          <section class="rental-block rental-panel"><div class="rental-block__header"><span class="rental-block__title">🚗 租車與取還車</span><button class="primary small" data-new-rental type="button">新增租車</button></div><div class="rental-block__body"><p class="form-error" role="alert"></p><ul id="rental-list" class="management-list"></ul><p id="rental-empty" class="muted">尚無租車資料。</p></div></section>
+          <section class="system-block tools-panel"><div class="system-block__head"><div><span>TOOLS</span><h2 id="tools-heading">資料工具</h2></div></div><div class="tools-grid"><button id="export-button" class="secondary" type="button">匯出完整備份</button><button id="share-export-button" class="secondary" type="button">匯出分享副本</button><button id="import-button" class="secondary" data-import type="button">匯入備份</button><input id="import-file" type="file" accept="application/json" hidden /></div></section>
+          <section id="members-panel" class="system-block" hidden><div class="system-block__head"><div><span>COLLABORATION</span><h2 id="members-heading">旅程成員</h2></div></div><p id="member-role" class="muted" role="status"></p><ul id="member-list" class="management-list"></ul><form id="member-form" class="member-form"><p>輸入已登入相同 Firebase 專案的成員 UID。</p><label>成員 UID<input name="uid" maxlength="128" required autocomplete="off" /></label><label>成員權限<select name="role"><option value="viewer">檢視者</option><option value="editor">編輯者</option></select></label><button class="secondary" type="submit">新增或修改成員</button><p class="form-error" role="alert"></p></form></section>
         </section>
       </section>
     </main>
