@@ -419,6 +419,38 @@ body.travel-os-page .card__fav.is-fav { color: var(--os-accent); }
 body.travel-os-page .card__map .gmap-icon { width: 25px; height: 25px; }
 
 .more-view { max-width: 980px; }
+.management-block {
+  margin: 0 0 12px;
+  overflow: hidden;
+  border: 1px solid var(--os-line);
+  border-radius: var(--os-radius);
+  background: var(--os-surface);
+  color: var(--os-ink);
+}
+.management-block > summary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  font-size: .82rem;
+  font-weight: 800;
+}
+.management-block > summary::-webkit-details-marker { display: none; }
+.management-block__toggle { color: var(--os-muted); font-size: .7rem; transition: transform .18s ease; }
+.management-block[open] > summary { border-bottom: 1px solid var(--os-line); }
+.management-block[open] > summary .management-block__toggle { transform: rotate(180deg); }
+.management-block__body { min-width: 0; padding: 12px 14px 14px; }
+.management-block__actions { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.management-block .system-block { margin-bottom: 10px; }
+.management-block .system-block:last-child { margin-bottom: 0; }
+body.travel-os-page details.management-block.cost-block,
+body.travel-os-page details.management-block.rental-block { margin-bottom: 12px; }
+body.travel-os-page details.management-block .cost-block__body,
+body.travel-os-page details.management-block .rental-block__body { border-top: 0; }
 body.travel-os-page .add-section__body,
 body.travel-os-page .cost-block__body,
 body.travel-os-page .rental-block__body,
@@ -993,6 +1025,9 @@ body[data-view="itinerary"] #favorites-button { display:none; }
 .today-context .online-label { color:var(--os-muted); font-size:.64rem; }
 .today-context .region-picker__trigger { cursor:default; }
 .today-context .region-picker__chips { color:var(--os-ink); font-size:.72rem; font-weight:800; }
+.places-view .add-section__header { display:flex; width:100%; align-items:center; justify-content:space-between; border:0; background:transparent; color:var(--os-ink); text-align:left; }
+.places-view .cards-header { display:flex; align-items:center; justify-content:space-between; }
+.places-view .region-tags:empty { display:none; }
 .today-context .group-view { display:flex; }
 .today-context .group-view__btn { flex:1 1 auto; }
 .today-ops details.route-bar { display:block; }

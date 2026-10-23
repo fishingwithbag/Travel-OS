@@ -73,10 +73,6 @@ function setActiveView(requestedView,{updateUrl=true,focus=false}={}) {
     history.replaceState(null,'',`${url.pathname}${url.search}${url.hash}`);
   }
   if(focus) {
-    const targets={dashboard:'#trip-title',itinerary:'#day-heading',places:'#places-heading',more:'#tools-heading'};
-    const heading=$(targets[view]);
-    heading?.setAttribute('tabindex','-1');
-    heading?.focus({preventScroll:true});
     window.scrollTo({top:0,behavior:'auto'});
   }
 }
@@ -500,6 +496,9 @@ function renderPlaces() {
     control.value = choices.includes(selected) ? selected : '';
   }
   const shown = filterPlaces(places,{...formData(filters),favorites:filters.elements.favorites.checked});
+  const regions=[...new Set(places.map(place=>place.region).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+  $('#region-tags').innerHTML=regions.length ? ['',...regions].map(region=>`<button class="region-tag${filters.elements.region.value===region ? ' active' : ''}" type="button" data-region-filter="${escapeHtml(region)}">${escapeHtml(region || '全部')}</button>`).join('') : '';
+  $('#favorites-button').setAttribute('aria-pressed',String(filters.elements.favorites.checked));
   $('#places-count').textContent = `${shown.length} / ${places.length} 個景點 · ${places.filter(place=>place.favorite).length} 個收藏`;
   $('#places-empty').hidden = shown.length > 0;
   $('#places-empty').textContent = places.length ? '沒有符合篩選的景點，請調整搜尋條件。' : '尚無景點。新增想去的地點，就能保存備註並加入每日行程。';
@@ -534,6 +533,12 @@ function setPlaceSaving(busy) {
 
 $('#place-filters').addEventListener('submit',event=>event.preventDefault());
 $('#place-filters').addEventListener('input',renderPlaces);
+$('#region-tags').addEventListener('click',event=>{
+  const button=event.target.closest('[data-region-filter]');
+  if(!button) return;
+  $('#place-filters').elements.region.value=button.dataset.regionFilter;
+  renderPlaces();
+});
 $('#place-dialog').addEventListener('cancel',event=>{ if (placeSaving) event.preventDefault(); });
 $('#place-dialog').addEventListener('close',()=>{ placeEditor = null; $('[data-new-place]')?.focus(); });
 $('#place-form').addEventListener('submit',async event=>{
