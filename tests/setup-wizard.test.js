@@ -36,15 +36,13 @@ describe('zero-basis setup wizard', () => {
     expect(html).toContain('Realtime Database →「資料」');
     expect(html).toContain('不要複製資料區裡顯示的');
     expect(html).toContain('firebaseConfig 裡沒有 databaseURL 也沒關係');
-    expect(app).toContain("elements.firebase_databaseURL.addEventListener('change', updateFirebaseConfigPreview)");
+    expect(app).toContain("elements.firebase_databaseURL.addEventListener('input', updateFirebaseConfigPreview)");
     expect(app).not.toContain('請重新複製最新 firebaseConfig');
   });
 
-  it('separates the billed Maps project from the Spark Firebase project', () => {
-    expect(html).toContain('和上一頁的 Firebase Spark project 分開');
-    expect(html).toContain('Application restrictions');
-    expect(html).toContain('API restrictions');
-    expect(html).toContain('不要保留 unrestricted');
+  it('does not require a paid Maps key for keyless external navigation or cloud login', () => {
+    expect(html).toContain('不需建立 API 金鑰');
+    expect(html).toContain('基本導航');
   });
 
   it('contains a dedicated warning for the official demo URL', () => {
