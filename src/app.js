@@ -11,7 +11,7 @@ import { localStorageKey } from './storage/browser-scope.js';
 import { itemMapUrl, parkingMapUrl, routeMapUrl, dayRouteSections } from './providers/maps.js';
 import { nextStop } from './domain/next-stop.js';
 import { formatFlightSchedule } from './domain/flight-schedule.js';
-import { durationMinutes, scheduleWarnings } from './domain/schedule.js';
+import { durationMinutes, itemsForGroup, scheduleWarnings } from './domain/schedule.js';
 import { setupRentalUi } from './ui/rentals.js';
 import { setupStayUi } from './ui/stays.js';
 import { setupExpenseUi } from './ui/expenses.js';
@@ -23,7 +23,7 @@ import {setupTravelEstimates} from './ui/travel-estimates.js';
 import {googleKey} from './config/google-settings.js';
 
 let store = new IndexedDbTripStore();
-const state = { trips: [], currentTripId: '', selectedDate: '', mode:'local', connection:null, access:Object.create(null) };
+const state = { trips: [], currentTripId: '', selectedDate: '', groupView:'all', mode:'local', connection:null, access:Object.create(null) };
 let deferredLiveRender=false;
 let memberSaving=false;
 let groupRecoverySaving=false;
@@ -421,6 +421,7 @@ function render() {
   }
   const dates = tripDates(trip.startDate, trip.endDate);
   if (!dates.includes(state.selectedDate)) state.selectedDate = dates[0];
+  if(state.groupView!=='all' && !trip.groups.some(group=>group.id===state.groupView)) state.groupView='all';
   travelEstimates.render();
   $('#trip-title').textContent = trip.title;
   $('#trip-destination').textContent = trip.destination;
@@ -431,18 +432,23 @@ function render() {
   tripSelect.replaceChildren(...state.trips.map((entry) => new Option(entry.title, entry.id, false, entry.id === trip.id)));
   const selectedDayIndex=dates.indexOf(state.selectedDate);
   $('#day-tabs').innerHTML = dates.map((date, index) => `<button class="day-tab${date === state.selectedDate ? ' active' : ''}" type="button" data-date="${date}" role="tab" aria-selected="${date === state.selectedDate}"><span class="date-tab__day">${escapeHtml(formatDay(date).split('（')[0])}</span><span class="date-tab__city">DAY ${index + 1}</span></button>`).join('');
-  const items = trip.items.filter((item) => item.date === state.selectedDate).sort((a,b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
-  $('#day-routes').innerHTML = dayRouteSections(items, trip.groups).map(({ name, segments }) => `<div class="day-route-group"><strong>${escapeHtml(name)}</strong>${segments.length ? segments.map((segment, index) => `<div>${segment.url ? `<a href="${escapeHtml(segment.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}${segment.titles.length === 1 ? '地點' : '今日開車路線'}${segments.length > 1 ? ` · 第 ${index + 1} 段` : ''} ↗</a>` : '<p>地址過長，無法建立此段 Google Maps 連結；請使用各站地圖入口。</p>'}<small>${segment.titles.map(escapeHtml).join(' → ')}</small></div>`).join('') : '<small>今天尚無可導航的地點</small>'}</div>`).join('');
+  const dayItems = trip.items.filter((item) => item.date === state.selectedDate).sort((a,b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
+  const items = itemsForGroup(dayItems,state.groupView);
+  $('#day-routes').innerHTML = dayRouteSections(dayItems, trip.groups).map(({ name, segments }) => `<div class="day-route-group"><strong>${escapeHtml(name)}</strong>${segments.length ? segments.map((segment, index) => `<div>${segment.url ? `<a href="${escapeHtml(segment.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}${segment.titles.length === 1 ? '地點' : '今日開車路線'}${segments.length > 1 ? ` · 第 ${index + 1} 段` : ''} ↗</a>` : '<p>地址過長，無法建立此段 Google Maps 連結；請使用各站地圖入口。</p>'}<small>${segment.titles.map(escapeHtml).join(' → ')}</small></div>`).join('') : '<small>今天尚無可導航的地點</small>'}</div>`).join('');
+  const dashboardUpcoming = nextStop(dayItems, state.selectedDate, trip.timeZone) || dayItems[0];
+  const dashboardIndex=Math.max(0,dayItems.indexOf(dashboardUpcoming));
+  const dashboardCurrent=dayItems[dashboardIndex] || null;
+  const dashboardNext=dayItems[dashboardIndex+1] || null;
   const upcoming = nextStop(items, state.selectedDate, trip.timeZone) || items[0];
   const currentIndex=Math.max(0,items.indexOf(upcoming));
   const currentItem=items[currentIndex] || null;
   const nextItem=items[currentIndex+1] || null;
   const warnings = scheduleWarnings(trip.items, trip.groups);
   $('#next-stop').hidden = false;
-  $('#next-stop-heading').textContent = nextItem?.title || '';
-  $('#next-stop-details').innerHTML = nextCardHtml(nextItem);
-  $('#dashboard-now').innerHTML=nowCardHtml(currentItem,trip);
-  $('#dashboard-next-time').textContent=nextItem?.startTime || '--:--';
+  $('#next-stop-heading').textContent = dashboardNext?.title || '';
+  $('#next-stop-details').innerHTML = nextCardHtml(dashboardNext);
+  $('#dashboard-now').innerHTML=nowCardHtml(dashboardCurrent,trip);
+  $('#dashboard-next-time').textContent=dashboardNext?.startTime || '--:--';
   $('#dashboard-city').textContent=trip.destination || 'TRIP';
   $('#dashboard-fleet').innerHTML=(trip.groups.length ? trip.groups : [{id:'all',name:'所有人'}]).map(group=>`<p>${escapeHtml(group.name)}<small>${trip.items.filter(item=>item.groupId===group.id || (!item.groupId && group.id==='all')).length} 個安排</small></p>`).join('');
   $('#trip-progress-label').textContent='旅程規劃中';
@@ -464,12 +470,14 @@ function render() {
     return `<li class="tl-item"><div class="tl-time"><span class="tl-time__h">${escapeHtml(hours)}</span>${minutes ? `<span class="tl-time__m">${escapeHtml(minutes)}</span>` : ''}</div><div class="tl-track"><span class="tl-dot"></span><article class="tl-card"><div class="tl-card__main"><div class="tl-card__meta"><span class="tl-card__cat">${escapeHtml(itemTypeLabel(item))}</span><span class="tl-card__dur">${escapeHtml(item.endTime ? `${item.startTime || ''}-${item.endTime}` : '')}</span></div><h3 class="tl-card__name">${escapeHtml(item.title)}</h3><p class="tl-card__hours">${escapeHtml([item.location,item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : ''].filter(Boolean).join(' · '))}</p>${itemTimingHtml(item)}${warningHtml}${flightScheduleHtml(item)}${item.notes ? `<p class="tl-card__note is-visible">${escapeHtml(item.notes)}</p>` : ''}${timelineParkingHtml(item)}${route}</div><footer class="tl-card__footer"><span class="tl-card__cost">${item.amountMinor == null ? '' : `${escapeHtml(item.currency)} ${(item.amountMinor/100).toLocaleString('zh-TW')}`}</span><div class="tl-card__actions">${mapLink(item)}<button class="tl-card__btn" type="button" data-edit-item="${escapeHtml(item.id)}" aria-label="編輯安排：${escapeHtml(item.title)}">編輯</button></div></footer></article></div></li>`;
   }).join('');
   $('#timeline-empty').hidden = items.length > 0;
-  $('#summary-days').textContent = dates.length;
-  $('#summary-items').textContent = trip.items.length;
+  const scheduledMinutes=items.reduce((total,item)=>total+(durationMinutes(item) || 0),0);
+  $('#summary-items').textContent = items.length;
+  $('#summary-hours').textContent = scheduledMinutes ? `${Math.floor(scheduledMinutes/60)}h${scheduledMinutes%60 ? `${scheduledMinutes%60}m` : ''}` : '—';
   $('#summary-groups').textContent = trip.groups.length;
-  const totals = expenseTotals([...trip.items,...(trip.expenses || [])]);
+  const visibleExpenses=(trip.expenses || []).filter(expense=>expense.date===state.selectedDate && (state.groupView==='all' || !expense.groupId || expense.groupId===state.groupView));
+  const totals = expenseTotals([...items,...visibleExpenses]);
   $('#summary-cost').textContent = Object.keys(totals).length ? Object.entries(totals).map(([currency, minor]) => `${currency} ${(minor / 100).toLocaleString('zh-TW')}`).join(' / ') : '—';
-  $('#group-list').innerHTML = `<button class="group-view__btn active" type="button">所有行程</button>${trip.groups.map((group) => `<button class="group-view__btn" type="button" data-edit-group="${escapeHtml(group.id)}" ${canEditTrip() ? '' : 'disabled'} aria-label="管理群組：${escapeHtml(group.name)}">${escapeHtml(group.name)}</button>`).join('')}`;
+  $('#group-list').innerHTML = `<button class="group-view__btn${state.groupView==='all' ? ' active' : ''}" type="button" data-group-view="all" aria-pressed="${state.groupView==='all'}">所有行程</button>${trip.groups.map((group) => `<button class="group-view__btn${state.groupView===group.id ? ' active' : ''}" type="button" data-group-view="${escapeHtml(group.id)}" aria-pressed="${state.groupView===group.id}">${escapeHtml(group.name)}</button>`).join('')}`;
   $('#more-group-list').innerHTML = trip.groups.map((group) => `<div class="management-row"><strong>${escapeHtml(group.name)}</strong><button class="text-button" type="button" data-edit-group="${escapeHtml(group.id)}" ${canEditTrip() ? '' : 'disabled'}>管理</button></div>`).join('') || '<p class="muted">尚未建立同行群組。</p>';
   $('#group-empty').hidden = trip.groups.length > 0;
   if(!$('#item-dialog').open) {
@@ -481,7 +489,7 @@ function render() {
   rentalUi.render();
   stayUi.render();
   expenseUi.render();
-  for(const control of document.querySelectorAll('[data-open="item-dialog"],[data-open="group-dialog"],[data-edit-item]')) control.disabled=!canEditTrip();
+  for(const control of document.querySelectorAll('[data-open="item-dialog"],[data-open="group-dialog"],[data-edit-item],#clear-day-button')) control.disabled=!canEditTrip();
 }
 
 function renderPlaces() {
@@ -598,7 +606,11 @@ document.addEventListener('click', (event) => {
   if (event.target.closest('[data-close]')) event.target.closest('dialog')?.close();
 });
 
-$('#trip-select').addEventListener('change', (event) => { state.currentTripId = event.target.value; state.selectedDate = ''; render(); });
+$('#trip-select').addEventListener('change', (event) => { state.currentTripId = event.target.value; state.selectedDate = ''; state.groupView='all'; render(); });
+$('#group-list').addEventListener('click',event=>{
+  const button=event.target.closest('[data-group-view]');if(!button) return;
+  state.groupView=button.dataset.groupView;render();
+});
 $('#settings-button').addEventListener('click', () => {
   if (!sharedPublicDemo) setSetupStep(state.mode === 'cloud' ? 5 : 0);
   openDialog('settings-dialog');
@@ -607,7 +619,7 @@ $('#theme-button').addEventListener('click', () => { const next = document.docum
 
 $('#trip-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; setError(form, '');
-  try { const trip = createTrip(formData(form)); await saveToActiveStore(()=>store,trip); upsertTrip(trip); state.currentTripId = trip.id; state.selectedDate = trip.startDate; form.reset(); form.elements.timeZone.value = 'Asia/Taipei'; form.elements.currency.value = 'TWD'; form.closest('dialog').close(); render(); showToast(state.mode === 'cloud' ? '旅程已建立並同步到自己的 Firebase。' : '旅程已建立並儲存在本機。'); } catch (error) { setError(form, error); }
+  try { const trip = createTrip(formData(form)); await saveToActiveStore(()=>store,trip); upsertTrip(trip); state.currentTripId = trip.id; state.selectedDate = trip.startDate; state.groupView='all'; form.reset(); form.elements.timeZone.value = 'Asia/Taipei'; form.elements.currency.value = 'TWD'; form.closest('dialog').close(); render(); showToast(state.mode === 'cloud' ? '旅程已建立並同步到自己的 Firebase。' : '旅程已建立並儲存在本機。'); } catch (error) { setError(form, error); }
 });
 
 $('#item-form select[name="type"]').addEventListener('change', (event) => { $('#flight-fields').hidden = event.target.value !== 'flight'; $('#end-fields').hidden = event.target.value === 'flight'; });
@@ -636,6 +648,21 @@ $('#item-delete-button').addEventListener('click', async () => {
     await saveTrip({ ...trip, items:trip.items.filter(item=>item.id !== itemEditor.id) });
     $('#item-dialog').close(); showToast('安排已刪除。');
   } catch (error) { setError($('#item-form'),error); } finally { setItemSaving(false); }
+});
+
+$('#clear-day-button').addEventListener('click',async()=>{
+  const trip=currentTrip();
+  if(!trip || !canEditTrip()) return;
+  const count=trip.items.filter(item=>item.date===state.selectedDate).length;
+  if(!count){showToast('這一天沒有可清空的安排。');return;}
+  if(!window.confirm(`確定清空 ${formatDay(state.selectedDate)}的 ${count} 個安排？此動作無法復原。`)) return;
+  const button=$('#clear-day-button');button.disabled=true;
+  try {
+    await saveTrip({...trip,items:trip.items.filter(item=>item.date!==state.selectedDate)});
+    showToast(`已清空 ${formatDay(state.selectedDate)}的行程。`);
+  } catch(error) {
+    showToast(error instanceof ValidationError ? error.message : '清空失敗；原有行程沒有變更。');
+  } finally {button.disabled=!canEditTrip();}
 });
 
 $('#group-form').addEventListener('submit', async (event) => {
@@ -667,7 +694,7 @@ async function activateStore(nextStore, mode, connection = null) {
   for(const id of ['item-form','place-form','rental-form','stay-form','expense-form','group-form','member-form']) document.getElementById(id).reset();
   itemEditor=placeEditor=null;pendingBackup=null;
   state.trips = nextTrips;
-  state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = '';
+  state.currentTripId = state.trips[0]?.id || ''; state.selectedDate = ''; state.groupView='all';
   updateConnectionSummary(); render();
   if(mode==='cloud') nextStore.subscribe({
     onTrip:(trip,access)=>{

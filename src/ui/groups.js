@@ -12,7 +12,7 @@ export function setupGroupUi({currentTrip,saveTrip,openDialog,setError,showToast
     if(!editor || trip?.id!==editor.tripId || trip.revision!==editor.revision) throw new ValidationError('旅程已更新，請保留輸入內容並重新開啟群組，確認最新影響範圍。');
     return trip;
   }
-  document.querySelector('#group-list').addEventListener('click',event=>{
+  document.querySelector('#more-group-list').addEventListener('click',event=>{
     const button=event.target.closest('[data-edit-group]');if(!button || saving || !canEdit()) return;
     const trip=currentTrip(),group=trip.groups.find(entry=>entry.id===button.dataset.editGroup);if(!group) return;
     editor={tripId:trip.id,revision:trip.revision,id:group.id};form.reset();

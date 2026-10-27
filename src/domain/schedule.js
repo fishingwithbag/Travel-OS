@@ -6,6 +6,10 @@ export function durationMinutes(item) {
   return minute(item.endDate || item.date, item.endTime) - minute(item.date, item.startTime);
 }
 
+export function itemsForGroup(items,groupId='all') {
+  return groupId==='all' ? [...items] : items.filter(item=>!item.groupId || item.groupId===groupId);
+}
+
 export function scheduleWarnings(items, groups) {
   const warnings = new Map();
   for (const group of groups.length ? groups : [{id:'', name:'所有人'}]) {

@@ -1,10 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { createTrip, createItem, editItem, createBackup, validateBackup } from '../src/domain/trip.js';
 import { serializeFirebaseTrip, parseFirebaseTrip } from '../src/storage/firebase-store.js';
-import { durationMinutes, scheduleWarnings } from '../src/domain/schedule.js';
+import { durationMinutes, itemsForGroup, scheduleWarnings } from '../src/domain/schedule.js';
 
 const trip = createTrip({title:'Schedule',destination:'Sample',startDate:'2026-12-31',endDate:'2027-01-02',timeZone:'UTC'},'schedule');
 const input = {date:'2026-12-31',type:'place',title:'Museum',startTime:'23:00',endDate:'2027-01-01',endTime:'01:00',transitMode:'walking',transitMinutes:'15'};
+
+it('filters a group itinerary while retaining shared stops',()=>{
+  const items=[{id:'shared',groupId:''},{id:'a',groupId:'a'},{id:'b',groupId:'b'}];
+  expect(itemsForGroup(items,'a').map(item=>item.id)).toEqual(['shared','a']);
+  expect(itemsForGroup(items,'b').map(item=>item.id)).toEqual(['shared','b']);
+  expect(itemsForGroup(items,'all').map(item=>item.id)).toEqual(['shared','a','b']);
+  expect(itemsForGroup(items,'all')).not.toBe(items);
+});
 
 describe('editable itinerary schedule', () => {
   it('preserves overnight times and manual travel through backup and Firebase serialization', () => {

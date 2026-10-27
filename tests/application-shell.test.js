@@ -54,4 +54,23 @@ describe('original Travel OS application shell', () => {
     expect(originalUi).toContain('.management-block > summary');
     expect(originalUi).toContain('.places-view .region-tags:empty { display:none; }');
   });
+
+  it('keeps the original itinerary tool order, daily stats and clear-day action', () => {
+    const actions = html.match(/<div class="action-bar">([\s\S]*?)<\/div>/)?.[1] || '';
+    expect(actions.indexOf('從景點總覽加入')).toBeLessThan(actions.indexOf('手動新增行程'));
+    for (const label of ['加入航班','加入租車','清空這天']) expect(actions).toContain(label);
+    expect(html).toContain('id="summary-hours"');
+    expect(html).toContain('行程時數');
+    expect(app).toContain("$('#clear-day-button').addEventListener('click'");
+    expect(app).toContain("item.date!==state.selectedDate");
+    expect(originalUi).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
+  });
+
+  it('uses itinerary group controls for filtering and keeps editing in management', () => {
+    expect(app).toContain("state.groupView=button.dataset.groupView");
+    expect(app).toContain('itemsForGroup(dayItems,state.groupView)');
+    expect(app).toContain('dashboardCurrent=dayItems[dashboardIndex]');
+    expect(html).toContain('id="more-group-list"');
+    expect(fs.readFileSync(`${root}src/ui/groups.js`, 'utf8')).toContain("document.querySelector('#more-group-list').addEventListener");
+  });
 });

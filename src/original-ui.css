@@ -647,9 +647,15 @@ body.show-today-tools .today-context .region-picker { display: flex; order: 6; m
 .today-ops .action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; padding: 10px; border: 1px solid var(--os-line); border-radius: var(--os-radius); background: var(--os-surface); }
 .today-ops .action-btn { min-height: 44px; border-color: var(--os-line); border-radius: 11px; background: var(--os-surface-2); color: var(--os-ink); }
 .today-ops .action-btn--primary { border-color: var(--os-accent); background: var(--os-accent); color: var(--os-accent-ink); }
-.today-ops .day-stats { margin: 0 0 10px; padding: 0; }
-.today-ops .day-stat { border-color: var(--os-line); border-radius: 12px; background: var(--os-surface); }
-.today-ops .day-stat__n { color: var(--os-accent); font-family: ui-monospace, monospace; }
+.today-ops .action-btn--flight,
+.today-ops .action-btn--rental,
+.today-ops .action-btn--clear { grid-column: 1 / -1; }
+.today-ops .action-btn--clear { min-height: 36px; background: transparent; color: var(--danger); }
+.today-ops .day-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0 0 10px; padding: 0; overflow: hidden; border: 1px solid var(--os-line); border-radius: var(--os-radius); background: var(--os-surface); }
+.today-ops .day-stat { min-width: 0; padding: 13px 8px; border: 0; border-right: 1px solid var(--os-line); border-radius: 0; background: transparent; text-align: center; }
+.today-ops .day-stat:last-child { border-right: 0; }
+.today-ops .day-stat__n { display: block; overflow-wrap: anywhere; color: var(--os-accent); font-family: "Noto Serif TC", "Songti TC", serif; font-size: 1.2rem; font-weight: 700; line-height: 1.15; }
+.today-ops .day-stat__l { display: block; margin-top: 3px; color: var(--os-muted); font-size: .62rem; letter-spacing: .08em; }
 .today-ops .route-bar { display: grid; grid-template-columns: 1fr; gap: 7px; margin: 0; padding: 10px; border: 1px solid var(--os-line); border-radius: var(--os-radius); background: var(--os-surface); }
 
 .later-plan { order: 4; min-width: 0; margin-top: 16px; }
