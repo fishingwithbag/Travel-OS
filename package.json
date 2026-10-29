@@ -22,9 +22,9 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",
-    "@vitest/coverage-v8": "^5.0.1",
-    "fake-indexeddb": "^6.2.2",
+    "@vitest/coverage-v8": "^5.0.5",
+    "fake-indexeddb": "^6.2.6",
     "vite": "^7.1.7",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.5"
   }
 }
