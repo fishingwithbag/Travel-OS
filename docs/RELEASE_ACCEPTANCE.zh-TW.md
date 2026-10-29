@@ -66,6 +66,8 @@
 
 PR CI run `40908692830` 的 163 項單元測試、production build、依賴稽核及正式 Rules Emulator 全部成功。尚未通過的主要門檻是 editor／viewer 真實多帳號、真實雲端匯入還原、第二 Firebase 專案切換、正式 Pages／Service Worker、錯誤服務降級及最終歷史／素材掃描。詳見[本輪報告](VERIFICATION_2026-10-30.zh-TW.md)。
 
+同日另將 production 產物置於純靜態伺服器的 `/Travel-OS/` 子目錄驗證；首頁、雜湊資源、manifest 與 Service Worker 均由正確子路徑回應，並將 shell cache 升至 v3 以清理舊版快取。這是正式 Pages 前的本機部署證據，不取代合併後的 GitHub Pages 線上驗收。
+
 ## 2026-10-20 Google 整合驗證增量
 
 A13／A14：已接入集中設定、Places 預覽、Routes 站內距離與分鐘、手動優先與請求控制；150 項單元及 build 通過。瀏覽器實測跨年旅程、手動 0 分鐘、缺 Key、格式錯誤、清除設定、景點草稿與重整保存；320／390px 檢查並修正窄螢幕溢出。真實 Google 成功／配額錯誤尚未驗證，A13／A14 不勾選完成。

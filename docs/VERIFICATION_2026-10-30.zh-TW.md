@@ -17,11 +17,12 @@
 - 驗收建立的暫存每日安排及景點已透過介面刪除；刪除後景點庫回到 0 筆，未殘留該筆暫存資料。
 - 新增的「登出並清除 Firebase 設定」成功停止雲端工作階段、切回 IndexedDB、移除已記住的 Web config、清空精靈欄位並回到 Step 1；雲端旅程沒有被刪除。
 - PR CI run `40908692830` 全數成功：163 項單元測試、production build、`npm audit --audit-level=high` 與正式 Firebase Rules Emulator 測試均通過。
+- 將 production `dist` 放在實際 `/Travel-OS/` 子目錄，以純靜態伺服器載入；首頁、雜湊 CSS／JavaScript、`sw.js` 及 `manifest.webmanifest` 均由子路徑成功回應。Service Worker cache 版本升至 v3，啟用時會移除舊版 shell cache。
 
 ## 驗收邊界
 
 - 本輪只使用一個 owner 帳號；真實 editor／viewer、撤權及跨裝置即時更新仍待第二、第三測試帳號操作。
 - 已驗證重新登入讀回與清除設定，尚未用第二個 Firebase Project ID 實測專案切換及跨專案快取隔離。
 - 匯出入口已驗；真實雲端匯入還原、錯誤備份檔與大資料量仍待完成。
-- 本輪網址是本機候選版，不是正式 GitHub Pages。正式 Pages 子路徑、Service Worker 更新與受限 Google Key 仍須在合併候選版本後重測。
+- 本輪已用純靜態伺服器驗證 Pages 型態的 `/Travel-OS/` 子路徑產物，但不是 GitHub 正式環境。正式 Pages 部署、Service Worker 線上更新與受限 Google Key 仍須在合併候選版本後重測。
 - 因此本輪關閉單帳號 Spark CRUD／重登讀回／清除設定的主要缺口，但尚不能宣告整體公開發布門檻通過。
