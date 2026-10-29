@@ -672,6 +672,9 @@ $('#group-form').addEventListener('submit', async (event) => {
 
 function updateConnectionSummary() {
   const summary = $('#connection-summary');
+  const hasRememberedConnection = Boolean(localStorage.getItem(STORAGE_KEYS.connection));
+  $('#local-mode-button').textContent = state.mode === 'cloud' ? '切換到本機模式' : '先使用本機模式';
+  $('#firebase-forget-button').hidden = sharedPublicDemo || (state.mode !== 'cloud' && !hasRememberedConnection);
   if (state.mode === 'cloud') {
     summary.innerHTML = `<strong>雲端同步已啟用</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')}</span>`;
     $('#save-status').textContent = '已連接自己的 Firebase';
@@ -780,11 +783,40 @@ $('#setup-create-trip-button').addEventListener('click', () => {
 $('#setup-finish-button').addEventListener('click', () => $('#settings-dialog').close());
 
 $('#local-mode-button').addEventListener('click', async () => {
-  const localStore = await new IndexedDbTripStore().connect();
-  await activateStore(localStore, 'local');
-  localStorage.setItem(STORAGE_KEYS.onboardingMode, 'local');
-  $('#connection-form').closest('dialog').close();
-  showToast('已進入本機模式；之後仍可從設定啟用雲端同步。');
+  const form = $('#connection-form'); setError(form, '');
+  try {
+    const localStore = await new IndexedDbTripStore().connect();
+    await activateStore(localStore, 'local');
+    localStorage.setItem(STORAGE_KEYS.onboardingMode, 'local');
+    form.closest('dialog').close();
+    showToast('已切換到本機模式；Firebase 設定仍保留，可之後重新登入。');
+  } catch (error) { setError(form, error); }
+});
+
+function clearFirebaseSetupFields() {
+  const form = $('#connection-form');
+  for (const name of ['firebaseConfig','firebase_apiKey','firebase_authDomain','firebase_projectId','firebase_storageBucket','firebase_messagingSenderId','firebase_appId','firebase_databaseURL','email','password']) {
+    form.elements[name].value = '';
+  }
+  form.elements.remember.checked = false;
+  $('#firebase-config-preview').innerHTML = '<strong>設定尚未完成</strong><span>請貼上 Firebase Web config，並補上 Realtime Database URL。</span>';
+}
+
+$('#firebase-forget-button').addEventListener('click', async () => {
+  const form = $('#connection-form'); setError(form, '');
+  try {
+    if (state.mode === 'cloud') {
+      const localStore = await new IndexedDbTripStore().connect();
+      await activateStore(localStore, 'local');
+    }
+    localStorage.removeItem(STORAGE_KEYS.connection);
+    localStorage.setItem(STORAGE_KEYS.onboardingMode, 'local');
+    clearFirebaseSetupFields();
+    highestSetupStep = 0;
+    setSetupStep(0);
+    updateConnectionSummary();
+    showToast('已登出 Firebase 並清除這台裝置記住的設定；雲端旅程未刪除。');
+  } catch (error) { setError(form, error); }
 });
 
 function downloadBackup(mode) {
@@ -914,6 +946,7 @@ async function start() {
     } catch { localStorage.removeItem(STORAGE_KEYS.connection); }
   }
   await store.connect(); state.trips = await store.listTrips(); state.trips.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)); state.currentTripId = state.trips[0]?.id || ''; render();
+  updateConnectionSummary();
   if (sharedPublicDemo) setSetupStep(0); else setSetupStep(initialSetupStep);
   if (shouldOpenCloudOnboarding(location.hostname, location.pathname, localStorage.getItem(STORAGE_KEYS.onboardingMode) || '')) openDialog('settings-dialog');
 }

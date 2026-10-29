@@ -73,4 +73,11 @@ describe('original Travel OS application shell', () => {
     expect(html).toContain('id="more-group-list"');
     expect(fs.readFileSync(`${root}src/ui/groups.js`, 'utf8')).toContain("document.querySelector('#more-group-list').addEventListener");
   });
+
+  it('keeps local switching separate from destructive credential cleanup', () => {
+    expect(html).toContain('id="local-mode-button"');
+    expect(html).toContain('id="firebase-forget-button"');
+    expect(app).toContain("state.mode === 'cloud' ? '切換到本機模式' : '先使用本機模式'");
+    expect(app).toContain('Firebase 設定仍保留');
+  });
 });

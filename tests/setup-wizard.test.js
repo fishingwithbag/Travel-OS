@@ -50,4 +50,12 @@ describe('zero-basis setup wizard', () => {
     expect(html).toContain('官方 Demo 教學網址');
     expect(html).toContain('請勿在此設定 Firebase、Google API Key 或登入帳密');
   });
+
+  it('lets a user sign out and remove remembered Firebase settings without deleting cloud trips', () => {
+    expect(html).toContain('id="firebase-forget-button"');
+    expect(html).toContain('登出並清除 Firebase 設定');
+    expect(app).toContain("localStorage.removeItem(STORAGE_KEYS.connection)");
+    expect(app).toContain('clearFirebaseSetupFields()');
+    expect(app).toContain('雲端旅程未刪除');
+  });
 });
