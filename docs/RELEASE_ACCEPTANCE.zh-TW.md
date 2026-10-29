@@ -1,6 +1,6 @@
 # 公開發布驗收
 
-更新：2026-10-22。**發布門檻未通過。** Repository 公開、PR 或 CI 成功不等於產品驗收完成。
+更新：2026-10-29。**發布門檻未通過。** Repository 公開、PR 或 CI 成功不等於產品驗收完成。
 
 標準：陌生使用者只依網站與公開指南，能自行完成設定並順暢使用全部預定功能。不得用刪除功能、隱藏入口或縮小測試範圍代替修復。天氣依產品決定移除。
 
@@ -22,8 +22,8 @@
 | A10 | 各群組租車、取還車資料與加入行程 | 已恢復；本機取還車安排、備份還原、手機與單元測試通過；真實雲端待驗 |
 | A11 | 住宿預訂、入住與退房流程 | 已恢復；本機預訂、入住退房安排、備份還原與手機通過；真實雲端待驗 |
 | A12 | 獨立費用新增、編輯、刪除及人數分攤 | 已恢復；本機 CRUD、分攤餘額、幣別分開、還原與手機通過；真實雲端待驗 |
-| A13 | Places 真實搜尋、選定地址／座標、錯誤修正 | 已接入官方 widget、短暫預覽與 Place ID 保存；真實服務及長期零費用前提未通過 |
-| A14 | 自動交通時間／距離，錯誤時可手動繼續 | 站內 Routes adapter 與分組估算已接入；真實服務未驗，外部連結不計為完成 |
+| A13 | Places 真實搜尋、選定地址／座標、錯誤修正 | 2026-10-29 本機候選版真實搜尋 Tokyo Station／Tokyo Tower，地址、座標與 Maps 連結成功；正式 Pages、拒絕／額度錯誤及 Spark 分離專案流程待驗 |
+| A14 | 自動交通時間／距離，錯誤時可手動繼續 | 2026-10-29 真實 Routes 回傳 Tokyo Station → Tokyo Tower 約 3.7 公里／12 分鐘；正式 Pages、錯誤降級及 Spark 分離專案流程待驗 |
 | A15 | 邀請成員、owner/editor/viewer 與跨裝置即時更新 | 已實作 UID 成員管理、唯讀介面及即時訂閱；多 SDK Emulator 通過，真實登入／多人瀏覽器待驗 |
 | A16 | 完整備份、預覽、還原、分享副本及錯誤檔案防呆 | 本機已實測並新增遺失群組參照修復預覽；雲端逐趟還原為新旅程已有 adapter／Rules CI 證據，真實雲端待驗 |
 | A17 | 切換 Firebase 專案、登出、清除設定與快取隔離 | 程式與部分單元證據；完整瀏覽器流程待測 |
@@ -69,3 +69,9 @@ A13／A14：已接入集中設定、Places 預覽、Routes 站內距離與分鐘
 獨立 Firebase 測試專案已在控制台確認為 Spark，且目前不可變完整版本 Rules 已發布。候選版通過 production build、390／320px 無頁面橫向溢出及乾淨主控台；新的 Step 3 明確阻止把同一 Firebase Project ID 當作 Maps 計費專案。Firebase Authentication 登入後的 Step 5、雲端旅程 CRUD、重登讀回與多人操作仍需帳號持有人在候選版輸入密碼後實走。
 
 同一 Firebase 專案啟用 Maps 會要求連結帳單並使 Firebase 離開 Spark，因此已取消。真實 Places／Routes 驗證仍需一個 **Project ID 不同** 的 Google Cloud 測試專案；尚未建立 Key，也未發出 Google 付費 API 請求。詳見 [本輪報告](VERIFICATION_2026-10-22.zh-TW.md)。
+
+## 2026-10-29 Google 真實服務增量
+
+使用者指定沿用同一測試專案並完成 Google Maps Platform 帳單設定後，建立僅允許 Maps JavaScript API、Places API (New)、Routes API，且限制於本機與正式 Pages 網址的專用 Browser Key。候選版真實 Places 搜尋與 Routes 距離／時間計算均成功；Key 未寫入 repository 或報告。
+
+Firebase 控制台同時顯示該專案為 Blaze／免費試用，因此這份證據只能完成 A13／A14 的真實服務技術驗證，不能取代 Firebase Spark 的陌生使用者發布驗收，也不能宣稱永久零費用。完整證據與剩餘工作見[本輪報告](VERIFICATION_2026-10-29.zh-TW.md)。
