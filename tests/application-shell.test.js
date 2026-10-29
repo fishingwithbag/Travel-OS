@@ -45,7 +45,7 @@ describe('original Travel OS application shell', () => {
     expect(html).toContain('class="add-section__header" data-new-place');
     expect(html).toContain('class="add-toggle-icon" aria-hidden="true">▼');
     expect(html).toContain('class="cards-sort" form="place-filters"');
-    expect(html).toContain('<input name="favorites" type="checkbox" hidden');
+    expect(html).toContain('<input name="favorites" type="checkbox" aria-label="只顯示收藏" hidden');
     expect(html).toContain('<details class="management-block">');
     expect(html).not.toContain('<details class="management-block" open>');
     for (const label of ['旅程與同行','費用與分攤','住宿預訂','租車與取還車','資料與備份']) {

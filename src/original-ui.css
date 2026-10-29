@@ -1082,12 +1082,45 @@ body[data-view="itinerary"] #favorites-button { display:none; }
 
 @media (min-width:960px) {
   .os-workspace .today-workspace { width:100%; margin:0; padding:0; }
-  .itinerary-view { margin:-6px -10px 0; }
+  .itinerary-view { margin:-6px 0 0; }
 }
 @media (max-width:720px) {
   .welcome .quick-actions,.tools-grid { grid-template-columns:1fr; }
   .dashboard-heading { align-items:flex-start; }
   .today-context .group-view { margin:0 -12px; }
+}
+
+/* Responsive acceptance fixes for the open-source shell.
+   Preserve the original wide-screen composition while preventing clipped
+   cards and fixed-minimum desktop grids on narrower devices. */
+body.travel-os-page { min-width:0; }
+
+@media (min-width:960px) and (max-width:1199px) {
+  .command-grid {
+    grid-template-columns:minmax(0,1.5fr) minmax(260px,.8fr);
+  }
+  .crew-command { grid-column:1 / -1; }
+
+  .today-workspace {
+    grid-template-columns:210px minmax(0,1fr);
+    grid-template-areas:
+      "context focus"
+      "context later"
+      "ops ops";
+  }
+  .today-ops {
+    position:static;
+    margin:0;
+  }
+}
+
+@media (max-width:959px) {
+  body.travel-os-page .card__footer {
+    grid-column:1 / -1;
+    flex-wrap:wrap;
+  }
+  body.travel-os-page .card__cost { min-width:0; overflow-wrap:anywhere; }
+  body.travel-os-page .card__actions { margin-left:auto; }
 }
 
 .flight-board{overflow:hidden}.flight-board__head{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem}.flight-board__sub{display:block;margin-top:.18rem}.flight-board__status{flex:0 0 auto;padding:.2rem .48rem}.flight-legs{display:grid;grid-template-columns:1fr 1fr}.flight-leg{min-width:0;padding:.85rem .9rem}.flight-leg+.flight-leg{border-left:1px solid var(--os-line)}.flight-leg__top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.65rem}.flight-leg__date{font-size:.7rem}.flight-leg__number{font-size:.9rem;font-weight:700}.flight-route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.65rem;margin-bottom:.75rem}.flight-airport:last-child{text-align:right}.flight-airport strong{display:block;font-size:1.35rem;line-height:1}.flight-airport span{display:block;margin-top:.25rem;font-size:.62rem}.flight-route__line{position:relative;width:88px;height:30px}.flight-route__line::before{content:'';position:absolute;left:2px;right:2px;top:50%;height:2px;background:color-mix(in srgb,var(--os-accent) 55%,transparent);transform:translateY(-50%)}.flight-facts{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}.flight-fact{min-width:0;padding:.5rem .55rem;border:1px solid var(--os-line);border-radius:6px;background:var(--os-surface-2)}.flight-fact span{display:block;font-size:.58rem}.flight-fact strong{display:block;margin-top:.18rem;font-size:.68rem;line-height:1.45;overflow-wrap:anywhere}.flight-leg__actions{display:flex;gap:.4rem;margin-top:.65rem}.flight-action{display:inline-flex;min-height:38px;flex:1;align-items:center;justify-content:center;padding:.35rem .5rem;border:1px solid var(--os-line);border-radius:6px;background:transparent;color:inherit;font-size:.67rem}.flight-board__note{margin:0;padding:.6rem .9rem;border-top:1px solid var(--os-line)}
