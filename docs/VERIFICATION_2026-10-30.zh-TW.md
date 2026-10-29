@@ -18,6 +18,8 @@
 - 新增的「登出並清除 Firebase 設定」成功停止雲端工作階段、切回 IndexedDB、移除已記住的 Web config、清空精靈欄位並回到 Step 1；雲端旅程沒有被刪除。
 - PR CI run `40908692830` 全數成功：163 項單元測試、production build、`npm audit --audit-level=high` 與正式 Firebase Rules Emulator 測試均通過。
 - 將 production `dist` 放在實際 `/Travel-OS/` 子目錄，以純靜態伺服器載入；首頁、雜湊 CSS／JavaScript、`sw.js` 及 `manifest.webmanifest` 均由子路徑成功回應。Service Worker cache 版本升至 v3，啟用時會移除舊版 shell cache。
+- 掃描目前公開樹及 69 個可達 commits 的 Google Key 格式、私鑰、測試專案、Email、原旅程名稱與 Windows 使用者路徑。命中項為重複數字的合成 Key、拒絕私鑰的安全程式／測試，以及舊測試中一組 Web-config 形狀但不含有效 Key 的 fixture；目前樹已將後者改為 `sample-travel-os`。未發現可用憑證、帳號、私人行程或本機使用者路徑。
+- `package-lock.json` 共 186 個套件項目均有 license 欄位，授權集合為 0BSD、Apache-2.0、BSD-3-Clause、ISC、MIT；repository 唯一影像素材是自行繪製的 README SVG，與 `THIRD_PARTY_NOTICES.md` 記錄一致。
 
 ## 驗收邊界
 

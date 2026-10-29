@@ -53,17 +53,17 @@ describe('Firebase runtime config', () => {
   });
   it('accepts Firebase US-central firebaseio.com database URLs', () => {
     expect(parseFirebaseConfigInput({
-      firebase_apiKey:'example-browser-key', firebase_authDomain:'simon-travel-os-30897.firebaseapp.com',
-      firebase_databaseURL:'https://simon-travel-os-30897-default-rtdb.firebaseio.com',
-      firebase_projectId:'simon-travel-os-30897', firebase_appId:'1:404970483269:web:example',
-    }).databaseURL).toBe('https://simon-travel-os-30897-default-rtdb.firebaseio.com');
+      firebase_apiKey:'example-browser-key', firebase_authDomain:'sample-travel-os.firebaseapp.com',
+      firebase_databaseURL:'https://sample-travel-os-default-rtdb.firebaseio.com',
+      firebase_projectId:'sample-travel-os', firebase_appId:'1:111111111111:web:example',
+    }).databaseURL).toBe('https://sample-travel-os-default-rtdb.firebaseio.com');
   });
   it('accepts and normalizes a trailing slash from Firebase Console', () => {
     expect(parseFirebaseConfigInput({
-      firebase_apiKey:'example-browser-key', firebase_authDomain:'simon-travel-os-30897.firebaseapp.com',
-      firebase_databaseURL:'https://simon-travel-os-30897-default-rtdb.firebaseio.com/',
-      firebase_projectId:'simon-travel-os-30897', firebase_appId:'1:404970483269:web:example',
-    }).databaseURL).toBe('https://simon-travel-os-30897-default-rtdb.firebaseio.com');
+      firebase_apiKey:'example-browser-key', firebase_authDomain:'sample-travel-os.firebaseapp.com',
+      firebase_databaseURL:'https://sample-travel-os-default-rtdb.firebaseio.com/',
+      firebase_projectId:'sample-travel-os', firebase_appId:'1:111111111111:web:example',
+    }).databaseURL).toBe('https://sample-travel-os-default-rtdb.firebaseio.com');
   });
   it('rejects non-Firebase hosts even when they contain firebaseio.com in the name', () => {
     expect(() => parseFirebaseConfigInput({

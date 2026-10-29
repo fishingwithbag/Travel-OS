@@ -68,6 +68,8 @@ PR CI run `40908692830` 的 163 項單元測試、production build、依賴稽�
 
 同日另將 production 產物置於純靜態伺服器的 `/Travel-OS/` 子目錄驗證；首頁、雜湊資源、manifest 與 Service Worker 均由正確子路徑回應，並將 shell cache 升至 v3 以清理舊版快取。這是正式 Pages 前的本機部署證據，不取代合併後的 GitHub Pages 線上驗收。
 
+公開樹與 69 個可達 commits 的憑證／個資掃描完成；格式命中均為合成測試值或拒絕私鑰的安全測試，沒有可用憑證、帳號、私人旅程或本機使用者路徑。舊測試的 Web-config 形狀 fixture 已在目前樹改為通用 sample。186 個套件項目的 license 欄位完整且落在 0BSD、Apache-2.0、BSD-3-Clause、ISC、MIT；唯一影像為自行繪製的 README SVG。正式發布仍須對合併後 main、tag 與 Pages 產物再執行一次相同掃描。
+
 ## 2026-10-20 Google 整合驗證增量
 
 A13／A14：已接入集中設定、Places 預覽、Routes 站內距離與分鐘、手動優先與請求控制；150 項單元及 build 通過。瀏覽器實測跨年旅程、手動 0 分鐘、缺 Key、格式錯誤、清除設定、景點草稿與重整保存；320／390px 檢查並修正窄螢幕溢出。真實 Google 成功／配額錯誤尚未驗證，A13／A14 不勾選完成。
