@@ -16,6 +16,10 @@ describe('Firebase runtime config', () => {
   it('rejects service account credentials', () => {
     expect(() => parseFirebaseConfig('{"private_key":"BEGIN PRIVATE KEY"}')).toThrow(/不接受/);
   });
+  it('recognizes Realtime Database Rules pasted into the Web config field', () => {
+    const rules = JSON.stringify({ rules:{ trips:{ '$tripId':{ '.read':'auth != null', '.write':'auth != null' } } } });
+    expect(() => parseFirebaseConfig(rules)).toThrow(/Realtime Database Rules.*不是 Firebase Web config/);
+  });
   it('rejects a database URL by itself', () => {
     expect(() => parseFirebaseConfig('{"databaseURL":"https://sample.firebaseio.com"}')).toThrow(/缺少/);
   });
@@ -49,17 +53,17 @@ describe('Firebase runtime config', () => {
   });
   it('accepts Firebase US-central firebaseio.com database URLs', () => {
     expect(parseFirebaseConfigInput({
-      firebase_apiKey:'example-browser-key', firebase_authDomain:'simon-travel-os-30897.firebaseapp.com',
-      firebase_databaseURL:'https://simon-travel-os-30897-default-rtdb.firebaseio.com',
-      firebase_projectId:'simon-travel-os-30897', firebase_appId:'1:404970483269:web:example',
-    }).databaseURL).toBe('https://simon-travel-os-30897-default-rtdb.firebaseio.com');
+      firebase_apiKey:'example-browser-key', firebase_authDomain:'sample-travel-os.firebaseapp.com',
+      firebase_databaseURL:'https://sample-travel-os-default-rtdb.firebaseio.com',
+      firebase_projectId:'sample-travel-os', firebase_appId:'1:111111111111:web:example',
+    }).databaseURL).toBe('https://sample-travel-os-default-rtdb.firebaseio.com');
   });
   it('accepts and normalizes a trailing slash from Firebase Console', () => {
     expect(parseFirebaseConfigInput({
-      firebase_apiKey:'example-browser-key', firebase_authDomain:'simon-travel-os-30897.firebaseapp.com',
-      firebase_databaseURL:'https://simon-travel-os-30897-default-rtdb.firebaseio.com/',
-      firebase_projectId:'simon-travel-os-30897', firebase_appId:'1:404970483269:web:example',
-    }).databaseURL).toBe('https://simon-travel-os-30897-default-rtdb.firebaseio.com');
+      firebase_apiKey:'example-browser-key', firebase_authDomain:'sample-travel-os.firebaseapp.com',
+      firebase_databaseURL:'https://sample-travel-os-default-rtdb.firebaseio.com/',
+      firebase_projectId:'sample-travel-os', firebase_appId:'1:111111111111:web:example',
+    }).databaseURL).toBe('https://sample-travel-os-default-rtdb.firebaseio.com');
   });
   it('rejects non-Firebase hosts even when they contain firebaseio.com in the name', () => {
     expect(() => parseFirebaseConfigInput({
@@ -68,14 +72,14 @@ describe('Firebase runtime config', () => {
       firebase_projectId:'sample', firebase_appId:'1:123:web:abc',
     })).toThrow(/Realtime Database/);
   });
-  it('restores a restricted Google Browser Key with remembered Firebase settings', () => {
+  it('drops obsolete Google keys from remembered Firebase settings', () => {
     const firebase = parseFirebaseConfig(raw);
     const googleMapsKey = 'AIza123456789012345678901234567890';
-    expect(parseRememberedConnection(JSON.stringify({ firebase, googleMapsKey }))).toEqual({ firebase, googleMapsKey });
+    expect(parseRememberedConnection(JSON.stringify({ firebase, googleMapsKey }))).toEqual({ firebase });
   });
   it('keeps older Firebase-only remembered settings compatible', () => {
     const firebase = parseFirebaseConfig(raw);
-    expect(parseRememberedConnection(JSON.stringify({ firebase }))).toEqual({ firebase, googleMapsKey:'' });
+    expect(parseRememberedConnection(JSON.stringify({ firebase }))).toEqual({ firebase });
   });
   it('rejects a remembered entry that contains no Firebase config', () => {
     expect(() => parseRememberedConnection(JSON.stringify({ googleMapsKey:'AIza123456789012345678901234567890' }))).toThrow(/不完整/);

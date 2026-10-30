@@ -1,4 +1,4 @@
-const CACHE = 'travel-os-shell-v2';
+const CACHE = 'travel-os-shell-v3';
 const SHELL = ['./'];
 const CACHEABLE_DESTINATIONS = new Set(['script', 'style', 'image', 'font', 'manifest']);
 

@@ -1,95 +1,200 @@
 <!doctype html>
-<html lang="zh-Hant" data-theme="light">
+<html lang="zh-Hant" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f1e7" />
+    <meta name="theme-color" content="#596070" />
     <meta name="description" content="Travel OS — 將行程、航班、住宿與費用整理在自己的旅遊工作台。" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <title>Travel OS</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23243e35%22/><path d=%22M18 38c9-15 20-19 29-11-8 0-13 5-15 15%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%225%22 stroke-linecap=%22round%22/></svg>" />
     <script type="module" src="/src/app.js"></script>
   </head>
-  <body>
-    <a class="skip-link" href="#main">跳到主要內容</a>
-    <header class="topbar">
-      <a class="brand" href="./" aria-label="Travel OS 首頁"><span class="brand-mark">T</span><span><strong>Travel OS</strong><small>YOUR TRIP, YOUR DATA</small></span></a>
-      <div class="top-actions">
-        <span id="save-status" class="status" role="status">本機模式</span>
-        <button id="settings-button" class="icon-button" type="button" aria-label="連線與設定">設定</button>
-        <button id="theme-button" class="icon-button" type="button" aria-label="切換深色模式">◐</button>
+  <body class="travel-os-page" data-page="dashboard" data-view="dashboard">
+    <a class="skip-link" href="#os-workspace">跳到主要內容</a>
+    <header class="topbar os-topbar">
+      <a class="os-wordmark os-wordmark--main" href="./" aria-label="Travel OS 旅程首頁"><span class="os-wordmark__mark">旅</span><span><strong>Travel OS</strong><small>YOUR TRIP</small></span></a>
+      <button class="topbar__left os-wordmark--today" type="button" data-view-target="dashboard" aria-label="返回旅程首頁"><span class="topbar__back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></span><span class="topbar__title">每日行程</span></button>
+      <div class="topbar__actions">
+        <span id="save-status" class="sync-state" role="status">本機模式</span>
+        <button id="settings-button" class="icon-btn help-btn" type="button" aria-label="使用說明與連線設定"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 1 1 3.6 2.1c-.9.5-1.4 1.1-1.4 2.2"/><path d="M12 17h.01"/></svg><span>使用說明</span></button>
+        <button id="favorites-button" class="icon-btn" data-view-target="places" type="button" aria-label="只看收藏" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.5a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
+        <button id="theme-button" class="icon-btn theme-toggle" type="button" aria-label="切換顯示模式"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="theme-icon theme-icon--sun"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></g><path class="theme-icon theme-icon--moon" d="M20.2 15.4A8.4 8.4 0 0 1 8.6 3.8 8.5 8.5 0 1 0 20.2 15.4Z"/></svg></button>
       </div>
     </header>
 
-    <main id="main" class="shell">
-      <section id="welcome" class="welcome" aria-labelledby="welcome-title">
-        <p class="eyebrow">CLOUD-SYNC TRAVEL PLANNER</p>
+    <main class="os-workspace" id="os-workspace">
+      <section id="welcome" class="welcome os-view" aria-labelledby="welcome-title">
+        <p class="dashboard-heading__date">CLOUD-SYNC TRAVEL PLANNER</p>
         <h1 id="welcome-title">把旅程整理成一張清楚的路線圖。</h1>
-        <p>自行部署版本建議先完成雲端同步設定，讓旅程可以跨裝置與多人協作；本機模式保留給試用、離線或暫時不連雲端的情境。</p>
-        <div class="welcome-actions">
-          <button id="cloud-setup-button" class="primary" data-open="settings-dialog" type="button">設定雲端同步</button>
-          <button id="local-start-button" class="secondary" data-open="trip-dialog" type="button">先用本機模式</button>
+        <p>完成網站內設定精靈後，即可用自己的 Firebase 建立旅程；也可以先用本機模式體驗。</p>
+        <div class="quick-actions welcome-actions">
+          <button id="cloud-setup-button" class="qa-btn" data-open="settings-dialog" type="button"><span class="qa-btn__info"><strong class="qa-btn__title">設定雲端同步</strong><span class="qa-btn__sub">使用自己的 Firebase</span></span></button>
+          <button id="local-start-button" class="qa-btn" data-open="trip-dialog" type="button"><span class="qa-btn__info"><strong class="qa-btn__title">建立第一趟旅程</strong><span class="qa-btn__sub">先用本機模式</span></span></button>
+          <button class="qa-btn" data-import type="button"><span class="qa-btn__info"><strong class="qa-btn__title">匯入備份</strong><span class="qa-btn__sub">從 JSON 還原</span></span></button>
         </div>
       </section>
 
       <section id="workspace" hidden>
-        <header class="trip-header">
-          <div>
-            <p id="trip-dates" class="eyebrow"></p>
-            <h1 id="trip-title"></h1>
-            <p id="trip-destination" class="muted"></p>
+        <section class="os-view dashboard-view" data-view-panel="dashboard">
+          <header class="dashboard-heading">
+            <div><p id="trip-dates" class="dashboard-heading__date"></p><h1 id="trip-title"></h1><p id="trip-destination" class="dashboard-heading__hint"></p></div>
+            <div class="trip-progress" aria-label="旅程進度"><span id="trip-progress-label">旅程規劃中</span><strong id="trip-progress-day">DAY 1 / 1</strong></div>
+          </header>
+          <div class="command-grid">
+            <section class="now-command" aria-label="目前安排"><div class="command-label"><span>NOW</span><span id="dashboard-city">TRIP</span></div><div id="dashboard-now" class="dashboard-focus"><p>這一天還沒有安排</p></div></section>
+            <section class="next-command" aria-label="下一個安排"><div class="command-label"><span>NEXT</span><span id="dashboard-next-time">--:--</span></div><div id="next-stop" class="dashboard-next"><h3 id="next-stop-heading"></h3><div id="next-stop-details"></div></div></section>
+            <aside class="crew-command"><div class="command-label"><span>同行群組</span><span>即時資料</span></div><p class="crew-command__hint">確認同行群組與這趟旅程的安排。</p><div id="dashboard-fleet" class="fleet-glance"></div><div id="dashboard-alert" class="dashboard-alert">沒有需要立即處理的提醒</div></aside>
           </div>
-          <div class="header-actions">
-            <select id="trip-select" aria-label="切換旅程"></select>
-            <button class="secondary" data-open="trip-dialog" type="button">新增旅程</button>
+          <div class="quick-actions">
+            <button class="qa-btn qa-btn--itinerary" type="button" data-view-target="itinerary"><span class="qa-btn__info"><span class="qa-btn__title">打開每日行程</span><span class="qa-btn__sub">查看安排與整段導航</span></span></button>
+            <button class="qa-btn qa-btn--add" type="button" data-new-place><span class="qa-btn__info"><span class="qa-btn__title">新增地點</span><span class="qa-btn__sub">存進景點庫</span></span></button>
           </div>
-        </header>
+          <section class="flight-board" aria-labelledby="flight-board-title"><div class="flight-board__head"><div><h2 class="flight-board__title" id="flight-board-title">旅程航班</h2><span class="flight-board__sub">出發與抵達皆使用各自日期及時區</span></div><span class="flight-board__status">行程資料</span></div><div id="flight-legs" class="flight-legs"></div><p id="flight-board-empty" class="flight-board__note">尚未加入航班。</p></section>
+        </section>
 
-        <nav id="day-tabs" class="day-tabs" aria-label="旅程日期"></nav>
-
-        <div class="workspace-grid">
-          <section class="panel timeline-panel" aria-labelledby="day-heading">
-            <div class="panel-heading">
-              <div><p class="eyebrow">DAILY PLAN</p><h2 id="day-heading">每日行程</h2></div>
-              <button class="primary small" data-open="item-dialog" type="button">新增安排</button>
-            </div>
-            <section id="next-stop" class="next-stop" aria-labelledby="next-stop-heading" hidden>
-              <p class="eyebrow">NEXT · 下一個安排</p>
-              <h3 id="next-stop-heading"></h3>
-              <div id="next-stop-details"></div>
+        <section class="os-view itinerary-view" data-view-panel="itinerary" hidden>
+          <div class="today-workspace">
+            <aside class="today-context" aria-label="日期與同行設定">
+              <div class="collab-bar" aria-label="同步狀態"><span class="collab-identity">目前旅程</span><div class="online-users"><span id="context-sync-label" class="online-label">資料已載入</span></div></div>
+              <nav id="day-tabs" class="date-tabs" aria-label="旅程日期"></nav>
+              <div class="region-picker"><div class="region-picker__trigger"><span class="region-picker__label">📍 旅程目的地</span><span id="context-destination" class="region-picker__chips"></span></div></div>
+              <div id="group-list" class="group-view" aria-label="行程分組檢視"></div><p id="group-empty" class="context-empty">尚未建立同行群組。</p>
+            </aside>
+            <section class="today-focus" aria-label="目前與下一站">
+              <header class="today-heading"><div><span id="selected-date-label">每日行程</span><h1 id="day-heading">每日行程</h1><p class="today-heading__hint">依日期查看當日安排、下一站與備註。</p></div><span id="today-day-count">DAY 1 / 1</span></header>
+              <article id="today-now" class="today-now"><div class="focus-loading">這一天還沒有安排</div></article>
+              <article id="today-next" class="today-next"><div class="focus-loading">沒有下一個安排</div></article>
             </section>
-            <ol id="timeline" class="timeline"></ol>
-            <div id="timeline-empty" class="empty-state">
-              <span aria-hidden="true">＋</span><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p>
-            </div>
+            <aside class="today-ops" aria-label="行程工具">
+              <div class="action-bar"><button class="action-btn action-btn--primary" data-view-target="places" type="button">從景點總覽加入</button><button class="action-btn" data-open="item-dialog" type="button">手動新增行程</button><button class="action-btn action-btn--flight" data-open="item-dialog" data-item-type="flight" type="button">加入航班</button><button class="action-btn action-btn--rental" data-new-rental type="button">加入租車</button><button id="clear-day-button" class="action-btn action-btn--clear" type="button">清空這天</button></div>
+              <div class="day-stats"><div class="day-stat"><span id="summary-items" class="day-stat__n">0</span><span class="day-stat__l">行程數</span></div><div class="day-stat"><span id="summary-hours" class="day-stat__n">—</span><span class="day-stat__l">行程時數</span></div><div class="day-stat"><span id="summary-cost" class="day-stat__n">—</span><span class="day-stat__l">預估費用</span></div></div>
+              <span id="summary-groups" hidden>0</span>
+              <details class="route-bar" open><summary>各群組今日路線</summary><div id="day-routes"></div></details>
+              <details id="travel-estimates" class="route-bar"><summary>站內路程與時間估算</summary><p>手動交通時間優先；Google 功能未設定時仍可使用外部導航。</p><div class="setup-actions-inline"><button type="button" class="secondary" data-google-settings>Google 功能設定</button><button type="button" class="primary" data-travel-calculate>估算剩餘路段</button><button type="button" class="text-button" data-travel-reset>清除估算</button></div><p role="status" aria-live="polite"></p><ul data-travel-list></ul><span class="google-attribution" translate="no">Google Maps</span></details>
+            </aside>
+            <section class="later-plan" aria-labelledby="later-plan-title"><header class="later-plan__head"><div><span>LATER</span><h2 id="later-plan-title">稍後行程</h2></div><button class="later-plan__manage" data-open="item-dialog" type="button">新增安排</button></header><ol id="timeline" class="timeline"></ol><div id="timeline-empty" class="empty-state"><h3>這一天還沒有安排</h3><p>加入景點、航班、住宿或交通，開始排出順路的一天。</p></div></section>
+          </div>
+        </section>
+
+        <section class="os-view places-view" data-view-panel="places" hidden>
+          <header class="section-heading"><div><span>PLACES &amp; SAVED</span><h1 id="places-heading">景點收藏</h1></div><p>快速篩選地點、收藏候選清單，並開啟導航。</p></header>
+          <section id="place-library">
+            <form id="place-filters" class="search-bar" role="search" aria-label="搜尋景點庫"><div class="search-wrap"><span class="search-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></span><input name="query" id="search-input" type="search" aria-label="搜尋景點" placeholder="搜尋名稱、地區、備註…" /></div><div class="selects-row"><select name="region" class="filter-select" aria-label="篩選地區"><option value="">全部地區</option></select><select name="category" class="filter-select" aria-label="篩選類別"><option value="">全部類別</option></select><select name="subcategory" class="filter-select" aria-label="篩選子類別"><option value="">全部子類別</option></select></div><div id="region-tags" class="region-tags"></div><input name="favorites" type="checkbox" aria-label="只顯示收藏" hidden /></form>
+            <div class="add-section"><button class="add-section__header" data-new-place type="button"><span class="add-section__title">＋ 新增地點</span><span class="add-toggle-icon" aria-hidden="true">▼</span></button></div>
+            <div class="cards-header"><span id="places-count" class="cards-count"></span><select name="sort" class="cards-sort" form="place-filters" aria-label="景點排序"><option value="default">預設排序</option><option value="region">依地區</option><option value="category">依類別</option><option value="favorite">收藏優先</option></select></div><p id="places-error" class="form-error" role="alert"></p><ul id="place-list" class="cards"></ul><p id="places-empty" class="empty-state">尚無景點。</p>
           </section>
+        </section>
 
-          <aside class="side-stack">
-            <section class="panel summary-panel" aria-labelledby="summary-heading">
-              <div class="panel-heading"><div><p class="eyebrow">OVERVIEW</p><h2 id="summary-heading">旅程摘要</h2></div></div>
-              <dl class="summary-grid">
-                <div><dt>天數</dt><dd id="summary-days">0</dd></div>
-                <div><dt>安排</dt><dd id="summary-items">0</dd></div>
-                <div><dt>群組</dt><dd id="summary-groups">0</dd></div>
-                <div><dt>費用</dt><dd id="summary-cost">—</dd></div>
-              </dl>
-            </section>
-            <section class="panel group-panel" aria-labelledby="group-heading">
-              <div class="panel-heading"><div><p class="eyebrow">GROUPS</p><h2 id="group-heading">同行群組</h2></div><button class="text-button" data-open="group-dialog" type="button">新增</button></div>
-              <ul id="group-list" class="plain-list"></ul>
-              <p id="group-empty" class="muted compact">可依車輛、家庭或小隊建立任意群組。</p>
-            </section>
-            <section class="panel tools-panel" aria-labelledby="tools-heading">
-              <div class="panel-heading"><div><p class="eyebrow">TOOLS</p><h2 id="tools-heading">資料工具</h2></div></div>
-              <button id="export-button" class="wide secondary" type="button">匯出完整備份</button>
-              <button id="share-export-button" class="wide secondary" type="button">匯出分享副本</button>
-              <button id="import-button" class="wide secondary" type="button">匯入備份</button>
-              <input id="import-file" type="file" accept="application/json" hidden />
-            </section>
-          </aside>
-        </div>
+        <section class="os-view more-view" data-view-panel="more" hidden>
+          <header class="section-heading"><div><span>TRIP SYSTEMS</span><h1>旅程設定</h1></div><p>費用、住宿、車輛、成員與資料工具集中管理。</p></header>
+          <details class="management-block">
+            <summary><span>🧳 旅程與同行</span><span class="management-block__toggle" aria-hidden="true">▼</span></summary>
+            <div class="management-block__body">
+              <section class="system-block trip-switcher"><div class="system-block__head"><div><span>TRIPS</span><h2>旅程管理</h2></div><button class="primary small" data-open="trip-dialog" type="button">新增旅程</button></div><select id="trip-select" aria-label="切換旅程"></select></section>
+              <section id="cloud-session" class="system-block" aria-label="雲端帳號與同步狀態" hidden><div class="system-block__head"><div><span>CLOUD ACCOUNT</span><h2 id="cloud-account"></h2></div></div><p>我的 UID：<code id="cloud-uid"></code> <button id="copy-uid-button" class="secondary small" type="button">複製我的 UID</button></p><p id="cloud-sync-status" class="muted" role="status">正在接收旅程更新。</p></section>
+              <section id="storage-migration" class="system-block" hidden><h2 id="storage-migration-title">舊旅程需要升級儲存格式</h2><p>請由擁有者先下載私人備份，再確認逐趟升級。</p><button id="migration-prepare" type="button">下載備份並預覽升級</button><div id="migration-preview" hidden><p id="migration-summary"></p><label><input id="migration-ack" type="checkbox">我已確認備份並同意升級</label><button id="migration-confirm" class="primary" type="button" disabled>確認升級這趟旅程</button></div><p id="migration-status" role="status"></p></section>
+              <section id="group-recovery" class="system-block" hidden><h2 id="group-recovery-title">部分群組資料需要確認</h2><p id="group-recovery-summary"></p><button id="group-recovery-save" class="primary" type="button">確認並保存群組修復</button><p id="group-recovery-status" role="status"></p></section>
+              <section id="groups-panel" class="system-block"><div class="system-block__head"><div><span>GROUPS</span><h2>同行群組</h2></div><button class="primary small" data-open="group-dialog" type="button">新增群組</button></div><div id="more-group-list" class="management-list"></div></section>
+              <section id="members-panel" class="system-block" hidden><div class="system-block__head"><div><span>COLLABORATION</span><h2 id="members-heading">旅程成員</h2></div></div><p id="member-role" class="muted" role="status"></p><ul id="member-list" class="management-list"></ul><form id="member-form" class="member-form"><p>輸入已登入相同 Firebase 專案的成員 UID。</p><label>成員 UID<input name="uid" maxlength="128" required autocomplete="off" /></label><label>成員權限<select name="role"><option value="viewer">檢視者</option><option value="editor">編輯者</option></select></label><button class="secondary" type="submit">新增或修改成員</button><p class="form-error" role="alert"></p></form></section>
+            </div>
+          </details>
+          <details id="expenses-panel" class="management-block cost-block"><summary><span>💴 費用與分攤</span><span class="management-block__toggle" aria-hidden="true">▼</span></summary><div class="management-block__body cost-block__body"><div class="management-block__actions"><button class="primary small" data-new-expense type="button">新增費用</button></div><p id="expense-totals" class="muted"></p><ul id="expense-list" class="management-list"></ul><p id="expense-empty" class="muted">尚無獨立支出。</p></div></details>
+          <details id="stays-panel" class="management-block"><summary><span>🏨 住宿預訂</span><span class="management-block__toggle" aria-hidden="true">▼</span></summary><div class="management-block__body"><div class="management-block__actions"><button class="primary small" data-new-stay type="button">新增住宿</button></div><ul id="stay-list" class="management-list"></ul><p id="stay-empty" class="muted">尚無住宿預訂。</p></div></details>
+          <details class="management-block rental-block rental-panel"><summary><span>🚗 租車與取還車</span><span class="management-block__toggle" aria-hidden="true">▼</span></summary><div class="management-block__body rental-block__body"><div class="management-block__actions"><button class="primary small" data-new-rental type="button">新增租車</button></div><p class="form-error" role="alert"></p><ul id="rental-list" class="management-list"></ul><p id="rental-empty" class="muted">尚無租車資料。</p></div></details>
+          <details class="management-block tools-panel"><summary><span id="tools-heading">📦 資料與備份</span><span class="management-block__toggle" aria-hidden="true">▼</span></summary><div class="management-block__body"><div class="tools-grid"><button id="export-button" class="secondary" type="button">匯出完整備份</button><button id="share-export-button" class="secondary" type="button">匯出分享副本</button><button id="import-button" class="secondary" data-import type="button">匯入備份</button><input id="import-file" type="file" accept="application/json" hidden /></div></div></details>
+        </section>
       </section>
     </main>
+
+    <nav class="bottom-nav" aria-label="主要導覽">
+      <button class="bottom-nav__item active" type="button" data-view-target="dashboard"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect class="nav-icon__fill" x="3" y="3" width="8" height="8" rx="2"/><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg><span>旅程首頁</span></button>
+      <button class="bottom-nav__item" type="button" data-view-target="itinerary"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect class="nav-icon__fill" x="3" y="5" width="18" height="16" rx="2"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m8.5 15 2 2 5-5"/></svg><span>每日行程</span></button>
+      <button class="bottom-nav__item" type="button" data-view-target="places"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="nav-icon__fill" d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span>景點收藏</span></button>
+      <button class="bottom-nav__item" type="button" data-view-target="more"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle class="nav-icon__fill" cx="9" cy="6" r="2.25"/><circle cx="9" cy="6" r="2.25"/><circle class="nav-icon__fill" cx="15" cy="12" r="2.25"/><circle cx="15" cy="12" r="2.25"/><circle class="nav-icon__fill" cx="7" cy="18" r="2.25"/><circle cx="7" cy="18" r="2.25"/></svg><span>行程管理</span></button>
+    </nav>
+
+    <dialog id="expense-dialog">
+      <form id="expense-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">EXPENSE</p><h2 id="expense-dialog-title">新增費用</h2></header>
+        <label>費用名稱<input name="title" maxlength="100" required /></label>
+        <div class="field-pair"><label>費用日期<input name="date" type="date" required /></label><label>費用分類<input name="category" maxlength="50" placeholder="住宿、交通、餐飲或自訂" /></label></div>
+        <label>費用群組<select name="groupId"><option value="">所有人</option></select></label>
+        <div class="field-pair"><label>支出金額<input name="amount" type="number" min="0" max="1000000000" step="0.01" required /></label><label>支出幣別<input name="currency" maxlength="3" required /></label></div>
+        <div class="field-pair"><label>分攤人數<input name="splitCount" type="number" min="1" max="1000" step="1" required /></label><label>付款人（選填）<input name="payer" maxlength="100" /></label></div>
+        <p class="field-help">均分到小數點後兩位；除不盡的餘額會列出需多分攤 0.01 的人數，確保總額一致。</p>
+        <label>費用備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <p class="form-error" role="alert"></p><p id="expense-delete-warning" class="warning-card" hidden>確定刪除此筆獨立支出？每日安排的費用不受影響。</p>
+        <footer><button id="expense-delete-button" class="secondary" type="button" hidden>刪除費用</button><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">儲存費用</button></footer>
+      </form>
+    </dialog>
+    <dialog id="stay-dialog">
+      <form id="stay-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">STAY RESERVATION</p><h2 id="stay-dialog-title">新增住宿</h2></header>
+        <label>住宿名稱<input name="title" maxlength="100" required /></label>
+        <label>住宿群組<select name="groupId"><option value="">所有人共用</option></select></label>
+        <label>住宿地址<input name="location" maxlength="200" required /></label>
+        <label>住宿 Google Maps 連結<input name="mapsUrl" type="url" maxlength="600" /></label>
+        <div class="field-pair"><label>入住日期<input name="checkInDate" type="date" required /></label><label>入住時間<input name="checkInTime" type="time" required /></label></div>
+        <div class="field-pair"><label>退房日期<input name="checkOutDate" type="date" required /></label><label>退房時間<input name="checkOutTime" type="time" required /></label></div>
+        <div class="field-pair"><label>房型<input name="room" maxlength="100" /></label><label>住宿人數<input name="guests" type="number" min="1" max="1000" step="1" required /></label></div>
+        <label>住宿預訂編號<input name="booking" maxlength="100" /></label>
+        <div class="field-pair"><label>住宿預訂費用<input name="amount" type="number" min="0" max="1000000000" step="0.01" /></label><label>住宿費用幣別<input name="currency" maxlength="3" required /></label></div>
+        <label>住宿備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <p class="form-error" role="alert"></p><p id="stay-delete-warning" class="warning-card" hidden>確定刪除住宿預訂？已加入每日行程的入住／退房安排會保留。</p>
+        <footer><button id="stay-delete-button" class="secondary" type="button" hidden>刪除住宿</button><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">儲存住宿</button></footer>
+      </form>
+    </dialog>
+    <dialog id="rental-dialog">
+      <form id="rental-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">RENTAL CAR</p><h2 id="rental-dialog-title">新增租車</h2></header>
+        <label>租車群組<select name="groupId"><option value="">所有人共用</option></select></label>
+        <label>租車公司<input name="company" maxlength="100" required /></label>
+        <label>租車地點／分店<input name="branch" maxlength="200" /></label>
+        <label>車型<input name="car" maxlength="100" /></label>
+        <div class="field-pair"><label>取車日期<input name="pickupDate" type="date" required /></label><label>取車時間<input name="pickupTime" type="time" required /></label></div>
+        <label>取車地點<input name="pickupLocation" maxlength="200" required /></label>
+        <label>取車 Google Maps 連結<input name="pickupMapsUrl" type="url" maxlength="600" /></label>
+        <div class="field-pair"><label>還車日期<input name="returnDate" type="date" required /></label><label>還車時間<input name="returnTime" type="time" required /></label></div>
+        <label>還車地點<input name="returnLocation" maxlength="200" required /></label>
+        <label>還車 Google Maps 連結<input name="returnMapsUrl" type="url" maxlength="600" /></label>
+        <div class="field-pair"><label>租車預訂費用<input name="amount" type="number" min="0" max="1000000000" step="0.01" /></label><label>租車費用幣別<input name="currency" maxlength="3" required /></label></div>
+        <label>預訂編號<input name="booking" maxlength="100" /></label>
+        <label>租車備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <p class="form-error" role="alert"></p><p id="rental-delete-warning" class="warning-card" hidden>確定刪除此租車預訂？已加入的取還車安排會保留，請另外確認是否需要修改。</p>
+        <footer><button id="rental-delete-button" class="secondary" type="button" hidden>刪除租車</button><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">儲存租車</button></footer>
+      </form>
+    </dialog>
+    <dialog id="place-dialog">
+      <form id="place-form" method="dialog" class="dialog-form">
+        <header><p class="eyebrow">PLACE LIBRARY</p><h2 id="place-dialog-title">新增景點</h2></header>
+        <details id="google-place-search" class="google-place-search">
+          <summary>用 Google 搜尋地點（選用）</summary>
+          <fieldset class="connection-fields">
+          <p>在自己的 Google Cloud 專案啟用 Maps JavaScript API 與 Places API (New)，使用限制於自己網站的瀏覽器 Key。此功能有服務額度與計費條件，與 Firebase Spark 分開。</p>
+          <p>搜尋與交通估算共用 Google 功能設定；搜尋內容會傳送給 Google。</p>
+          <div class="setup-actions-inline"><button type="button" class="secondary" data-google-settings>Google 功能設定</button><button type="button" class="secondary" data-google-load>啟用地點搜尋</button><button type="button" class="text-button" data-google-clear>關閉搜尋並清除預覽</button></div>
+          <div data-google-widget></div><p role="status" aria-live="polite"></p>
+          <div data-google-preview class="google-place-preview"></div>
+          <button type="button" class="secondary" data-google-apply hidden>使用此地點連結</button>
+          <p>Google 資料只在這裡預覽；保存的是地點連結。下方景點名稱、地址與備註由你填寫。</p>
+          <a href="./service-notice.html" target="_blank" rel="noopener noreferrer">Travel OS 使用條款與隱私說明</a>
+          </fieldset>
+        </details>
+        <label>景點名稱<input name="title" maxlength="100" required /></label>
+        <label>地區<input name="region" maxlength="100" /></label>
+        <div class="field-pair"><label>類別<input name="category" list="place-categories" maxlength="50" required value="景點" /></label><label>子類別<input name="subcategory" maxlength="50" /></label></div>
+        <datalist id="place-categories"><option value="景點"></option><option value="餐廳"></option><option value="住宿"></option><option value="購物"></option><option value="其他"></option></datalist>
+        <label>營業時間<input name="hours" maxlength="200" placeholder="可填營業時段、公休日或預約提醒" /></label>
+        <label>地址／位置<input name="location" maxlength="200" /></label>
+        <label>Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" /></label>
+        <label>備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
+        <label class="check-row"><input name="favorite" type="checkbox" />加入收藏</label>
+        <p class="form-error" role="alert"></p>
+        <p id="place-delete-warning" class="warning-card" hidden>確定刪除此景點？已加入每日行程的安排會保留。</p>
+        <footer><button id="place-delete-button" class="secondary" type="button" hidden>刪除景點</button><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">儲存景點</button></footer>
+      </form>
+    </dialog>
 
     <dialog id="trip-dialog">
       <form id="trip-form" method="dialog" class="dialog-form">
@@ -105,8 +210,12 @@
 
     <dialog id="item-dialog">
       <form id="item-form" method="dialog" class="dialog-form">
-        <header><p class="eyebrow">ADD TO DAY</p><h2>新增安排</h2></header>
+        <header><p class="eyebrow">ITINERARY</p><h2 id="item-dialog-title">新增安排</h2></header>
+        <label>行程日期<input name="date" type="date" required /></label>
         <div class="field-pair"><label>類型<select name="type"><option value="place">景點</option><option value="meal">餐飲</option><option value="stay">住宿</option><option value="flight">航班</option><option value="transport">交通</option><option value="other">其他</option></select></label><label>開始時間<input name="startTime" type="time" /></label></div>
+        <div id="end-fields" class="field-pair"><label>結束日期（跨日時填寫）<input name="endDate" type="date" /></label><label>結束時間<input name="endTime" type="time" /></label></div>
+        <div class="field-pair"><label>前往下一站交通方式<select name="transitMode"><option value="">未設定</option><option value="driving">開車</option><option value="walking">步行</option><option value="transit">大眾交通</option><option value="other">其他</option></select></label><label>交通分鐘（手動）<input name="transitMinutes" type="number" min="0" max="1440" step="1" /></label></div>
+        <p class="field-help">交通時間為手動估計。一般安排按旅程當地鐘面時間計算時長與重疊，不換算夏令時間切換造成的實際經過分鐘；航班依起降時區顯示，不納入這項衝突檢查。</p>
         <label>名稱<input name="title" maxlength="100" required placeholder="要去哪裡或做什麼？" /></label>
         <label>地址／位置<input name="location" maxlength="200" placeholder="可直接手動輸入" /></label>
         <label>目的地 Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" placeholder="https://maps.app.goo.gl/..." /></label>
@@ -121,14 +230,26 @@
         <label>備註<textarea name="notes" maxlength="1000" rows="3"></textarea></label>
         <fieldset class="parking-fields">
           <legend>停車資訊（選填）</legend>
-          <label>主要停車場名稱<input name="parkingPrimaryName" maxlength="120" placeholder="例：車站旁停車場" /></label>
-          <label>主要停車場 Google Maps 連結<input name="parkingPrimaryMapsUrl" type="url" maxlength="600" placeholder="未貼連結時依名稱搜尋" /></label>
-          <label>備用停車場名稱<input name="parkingBackupName" maxlength="120" /></label>
-          <label>備用停車場 Google Maps 連結<input name="parkingBackupMapsUrl" type="url" maxlength="600" /></label>
-          <label>停車備註<textarea name="parkingNotes" maxlength="300" rows="2" placeholder="例：入口在後方、限高資訊"></textarea></label>
+          <label>停車模式<select name="parkingMode"><option value="shared">所有群組共用</option><option value="split">各群組分開停車</option></select></label>
+          <p class="field-help">分組停車依同行群組設定。切換模式會保留另一模式的內容；停車費是預估資訊，不會自動加入行程費用。</p>
+          <div id="parking-editor"></div>
         </fieldset>
         <p class="form-error" role="alert"></p>
-        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" value="default">加入行程</button></footer>
+        <p id="item-delete-warning" class="warning-card" hidden>刪除後無法從此畫面復原；請確認刪除的是這筆安排。</p>
+        <footer><button id="item-delete-button" class="secondary" type="button" hidden>刪除安排</button><button class="secondary" data-close type="button">取消</button><button id="item-save-button" class="primary" value="default">加入行程</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="group-edit-dialog">
+      <form id="group-edit-form" class="dialog-form">
+        <header><p class="eyebrow">GROUP</p><h2>管理同行群組</h2></header>
+        <label>群組名稱<input name="name" maxlength="50" required /></label>
+        <p id="group-impact" class="muted"></p>
+        <label>刪除後將資料移轉至<select name="targetId"></select></label>
+        <p class="muted">若目標已有停車資訊，請先整理停車設定；系統不會覆蓋既有內容。</p>
+        <p id="group-remove-warning" role="status" hidden></p>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button id="group-remove" class="secondary" type="button">刪除並移轉資料</button><button class="primary" type="submit">儲存名稱</button></footer>
       </form>
     </dialog>
 
@@ -160,7 +281,7 @@
           <nav class="setup-stepper" aria-label="設定步驟">
             <button type="button" data-setup-jump="0"><span>1</span><strong>網站</strong></button>
             <button type="button" data-setup-jump="1"><span>2</span><strong>Firebase</strong></button>
-            <button type="button" data-setup-jump="2"><span>3</span><strong>Google Maps</strong></button>
+            <button type="button" data-setup-jump="2"><span>3</span><strong>Google 地圖</strong></button>
             <button type="button" data-setup-jump="3"><span>4</span><strong>登入</strong></button>
             <button type="button" data-setup-jump="4"><span>5</span><strong>驗證</strong></button>
             <button type="button" data-setup-jump="5"><span>6</span><strong>完成</strong></button>
@@ -173,24 +294,24 @@
               <p>正式雲端模式必須在你自己控制的網站中設定。GitHub Pages 可以免費託管這個網站；Travel OS repository 已經準備好 GitHub Actions，不需要你寫部署程式。</p>
               <div class="setup-card"><strong>你現在開啟的網站</strong><code id="current-site-url"></code><strong id="official-demo-url-warning" class="demo-url-warning" hidden>⚠ 您目前開啟的是官方 Demo 教學網址，請勿在此設定 Firebase、Google API Key 或登入帳密。請先建立自己的 Travel OS 網站，再進行正式設定。</strong><span>如果這是你自己的 GitHub Pages 或自訂網域，就可以繼續。</span></div>
               <ol class="setup-steps detailed">
-                <li><strong>登入 GitHub</strong>，開啟 Travel OS repository。</li>
+                <li><strong>還沒有 GitHub 帳號？</strong>先依 GitHub 官方說明註冊，完成電子郵件驗證，再登入 GitHub；已有帳號就直接登入。然後開啟 Travel OS repository。</li>
                 <li>點右上方附近的 <strong>Use this template</strong> → <strong>Create a new repository</strong>。</li>
                 <li><strong>Owner</strong> 選你的帳號；Repository name 建議填 <code>Travel-OS</code>；GitHub Free 請選 <strong>Public</strong>。</li>
                 <li>建立後進入你的 repository → <strong>Settings</strong> → 左側 <strong>Pages</strong>。</li>
                 <li>在 <strong>Build and deployment</strong> 的 <strong>Source</strong> 選 <strong>GitHub Actions</strong>。</li>
-                <li>到 <strong>Actions</strong> 頁面等待 Pages workflow 變成綠色成功，再回 <strong>Settings → Pages</strong> 點 <strong>Visit site</strong>。</li>
+                <li>到 <strong>Actions</strong> 頁面查看 <strong>Deploy GitHub Pages</strong>。若尚未執行，選它並按 <strong>Run workflow</strong>（branch 選 <code>main</code>）；若先前因尚未開啟 Pages 而失敗，也請在此重新執行。看到綠色成功後，再回 <strong>Settings → Pages</strong> 點 <strong>Visit site</strong>。</li>
               </ol>
-              <div class="setup-links"><a href="https://github.com/fishingwithbag/Travel-OS/generate" target="_blank" rel="noopener noreferrer">建立自己的 Travel OS repository</a><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site" target="_blank" rel="noopener noreferrer">GitHub 官方 Pages 說明</a></div>
+              <div class="setup-links"><a href="https://docs.github.com/en/account-and-profile/how-tos/account-management/creating-an-account-on-github" target="_blank" rel="noopener noreferrer">GitHub 官方註冊說明</a><a href="https://github.com/fishingwithbag/Travel-OS/generate" target="_blank" rel="noopener noreferrer">建立自己的 Travel OS repository</a><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site" target="_blank" rel="noopener noreferrer">GitHub 官方 Pages 說明</a></div>
               <label class="check-row"><input name="siteReady" type="checkbox" /> 我已經能在自己的網址正常開啟 Travel OS。</label>
             </section>
 
             <section class="setup-panel" data-setup-step="1" hidden>
               <p class="eyebrow">STEP 2 · FIREBASE</p>
               <h3>建立免費的 Firebase 雲端同步</h3>
-              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。這個 Firebase 專案請維持 <strong>Spark 免費方案</strong>，不要替它連結 Cloud Billing（雲端帳單）；Google Maps 會在下一步使用另一個 Google Cloud 專案。</p>
-              <div class="warning-card"><strong>看到「帳單 / Blaze」時先停下來</strong><span>Firebase 官方說，Spark 專案若連結 Cloud Billing（雲端帳單），或在同一個專案使用 Google Maps API，會升級成 Blaze。這就是為什麼 Travel OS 把 Firebase 與 Google Maps 分成兩個專案。</span></div>
+              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。請維持 <strong>Spark 免費方案</strong>，不需要付款資料、Google Cloud 計費帳戶或部署 Functions。</p>
+              <div class="warning-card"><strong>保持 Spark，不連結計費帳戶</strong><span>連結 Cloud Billing 會使 Firebase 專案成為 Blaze。Travel OS 不需要這個步驟；Spark 額度不足時請備份並使用本機模式，不需升級付費。</span></div>
               <ol class="setup-steps detailed">
-                <li><strong>建立 Firebase 專案：</strong>開啟 Firebase 控制台 → <strong>建立專案</strong>。專案名稱可填 <code>My Travel OS</code>。Google Analytics 可略過，並維持 Spark 免費方案。</li>
+                <li><strong>建立 Firebase 專案：</strong>先用自己的 Google 帳戶登入 Firebase 控制台；沒有 Google 帳戶就先依官方說明建立。按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。如果 Gemini in Firebase 或 Google Analytics 預設開啟，可在建立流程中關閉；Travel OS 不需要這兩項。維持 Spark 免費方案。這個 Firebase 專案本身也會是 Google Cloud 專案，不必再建一個給目前的 Maps 導航。</li>
                 <li><strong>註冊網頁應用程式：</strong>進入 <strong>專案總覽</strong> → 點 <strong>&lt;/&gt; 網頁</strong>（若已有應用程式，點「新增應用程式」→「網頁」）→「應用程式暱稱」填 <code>Travel OS</code> → <strong>不要勾選 Firebase Hosting</strong> → 按「註冊應用程式」。</li>
                 <li><strong>啟用電子郵件／密碼登入：</strong>左側進入 <strong>Authentication（驗證）</strong> →「開始使用」→「登入方式」→「電子郵件地址/密碼」→ 啟用 →「儲存」。不要啟用「電子郵件連結」。</li>
                 <li><strong>建立你的登入帳號：</strong>Authentication →「使用者」→「新增使用者」→ 輸入你自己的電子郵件與密碼。這組帳密稍後會填回 Travel OS。</li>
@@ -201,7 +322,7 @@
                 <li><strong>複製 firebaseConfig：</strong>從 <code>const firebaseConfig = {</code> 開始，一路複製到最後的 <code>};</code>。<strong>不用自己加入 databaseURL</strong>；Travel OS 會把你上一步另外複製的 Realtime Database URL 自動合併進設定。</li>
               </ol>
               <div class="setup-actions-inline"><a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">開啟 Firebase 控制台</a><button id="copy-rules-button" class="secondary" type="button">複製 Travel OS Rules</button></div>
-              <details><summary>查看 Firebase 官方文件</summary><div class="setup-links"><a href="https://firebase.google.com/docs/web/setup?hl=zh-TW" target="_blank" rel="noopener noreferrer">建立網頁應用程式／firebaseConfig</a><a href="https://firebase.google.com/docs/auth/web/password-auth?hl=zh-TW" target="_blank" rel="noopener noreferrer">電子郵件／密碼驗證</a><a href="https://firebase.google.com/docs/database/web/start?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database</a><a href="https://firebase.google.com/docs/database/security?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database 安全規則</a><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans?hl=zh-TW" target="_blank" rel="noopener noreferrer">Spark / Blaze 方案</a></div></details>
+              <details><summary>查看 Firebase 官方文件</summary><div class="setup-links"><a href="https://support.google.com/accounts/answer/27441?hl=zh-hant" target="_blank" rel="noopener noreferrer">建立 Google 帳戶</a><a href="https://firebase.google.com/docs/web/setup?hl=zh-TW" target="_blank" rel="noopener noreferrer">建立網頁應用程式／firebaseConfig</a><a href="https://firebase.google.com/docs/auth/web/password-auth?hl=zh-TW" target="_blank" rel="noopener noreferrer">電子郵件／密碼驗證</a><a href="https://firebase.google.com/docs/database/web/start?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database</a><a href="https://firebase.google.com/docs/database/security?hl=zh-TW" target="_blank" rel="noopener noreferrer">Realtime Database 安全規則</a><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans?hl=zh-TW" target="_blank" rel="noopener noreferrer">Spark / Blaze 方案</a></div></details>
               <label>把剛才複製的完整 firebaseConfig 貼在這裡
                 <textarea name="firebaseConfig" rows="9" spellcheck="false" placeholder='const firebaseConfig = {&#10;  apiKey: "...",&#10;  authDomain: "...",&#10;  projectId: "...",&#10;  appId: "..."&#10;};'></textarea>
               </label>
@@ -216,22 +337,24 @@
 
             <section class="setup-panel" data-setup-step="2" hidden>
               <p class="eyebrow">STEP 3 · GOOGLE MAPS</p>
-              <h3>建立另一個 Google Maps Project 與 Browser Key</h3>
-              <p>這個 project 專門給 Google Maps 使用，和上一頁的 Firebase Spark project 分開。Google Maps 正式使用需要 Billing 與 API Key。</p>
+              <h3>設定 Google 搜尋與交通估算</h3>
+              <p><strong>基本導航：</strong>景點、停車場及開車／步行路線透過 Google Maps 外部連結開啟。不需建立 API 金鑰、不需 Google Cloud、不需連結計費帳戶，直接下一步即可。</p>
+              <div class="warning-card"><strong>先確認你的零費用要求</strong><span>Google Cloud「免費試用帳戶」有期限，並非永久免費方案；不升級時，試用到期或抵免用完會停止相關服務。將帳單帳戶連結至 Firebase 專案會使 Firebase 自動轉為 Blaze，即使 Cloud 帳戶仍是免費試用。若必須維持 Spark，請勿對同一專案連結帳單。Travel OS 不會替你升級帳戶，也無法保證 Google API 永遠零費用。</span><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans" target="_blank" rel="noopener noreferrer">Firebase 方案與帳單連結說明</a><a href="https://docs.cloud.google.com/free/docs/free-cloud-features" target="_blank" rel="noopener noreferrer">Google Cloud 免費試用到期說明</a></div>
               <ol class="setup-steps detailed">
-                <li>開啟 <strong>Google Cloud Console</strong>，建立新的 project，例如 <code>My Travel OS Maps</code>。不要選上一頁的 Firebase project。</li>
-                <li>在這個 Maps project 的 <strong>Billing</strong> 連結付款帳戶。Google Maps Platform production 需要 Billing。</li>
-                <li>到 <strong>Google Maps Platform / APIs &amp; Services</strong> 啟用 <strong>Maps JavaScript API</strong>、<strong>Places API</strong>、<strong>Places API (New)</strong>。</li>
-                <li>到 <strong>Google Maps Platform → Keys &amp; Credentials</strong> → <strong>Create credentials → API key</strong>。</li>
-                <li>點進剛建立的 Key。<strong>Application restrictions</strong> 選 <strong>Websites</strong>，加入下方 Travel OS 顯示的 Website referrer。</li>
-                <li><strong>API restrictions</strong> 選 <strong>Restrict key</strong>，只允許 Maps JavaScript API、Places API、Places API (New)。不要保留 unrestricted。</li>
-                <li>到各 API 的 <strong>Quotas</strong> 設合理的 request 上限；到 Billing 建立 <strong>Budget &amp; alerts</strong>。Budget alert 是通知，不是硬性停用，所以 quota 仍然需要。</li>
+                <li>在新增安排中手動輸入地點名稱或地址。</li>
+                <li>若要精確定位，從 Google Maps 複製分享連結，貼到安排的「Google Maps 連結」欄位。</li>
+                <li>主要與備用停車場可各自填入名稱及地圖分享連結；每日行程與下一個安排會分開顯示。</li>
+                <li>相鄰安排可開啟 Google Maps 開車或步行路線，路程與時間在 Google Maps 查看。</li>
               </ol>
-              <div class="security-note"><strong>Website restriction 請填</strong><code id="maps-referrer-recommendation"></code><span>Travel OS 使用 origin 等級的 referrer 驗證。Browser Key 在瀏覽器中可見；安全靠 Website/API restrictions 與 quota，不靠把 Key 隱藏起來。</span></div>
-              <div class="setup-links"><a href="https://console.cloud.google.com/google/maps-apis/credentials" target="_blank" rel="noopener noreferrer">開啟 Google Maps Platform Credentials</a><a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noopener noreferrer">Google 官方 API Key 設定</a><a href="https://developers.google.com/maps/api-security-best-practices" target="_blank" rel="noopener noreferrer">Google 官方 Key 安全指南</a></div>
-              <label>Google Maps Browser Key<input name="googleMapsKey" type="password" autocomplete="off" placeholder="AIza…" /></label>
-              <label class="check-row"><input name="mapsRestrictionsReady" type="checkbox" /> 我已設定 Websites restriction、API restrictions，並確認不是 unrestricted key。</label>
-              <p class="field-help"><strong>不要把 Server Key 貼在這裡。</strong>Routes／Geocoding／Weather 未來只能由你自己的後端使用 Server Key。</p>
+              <ol class="setup-steps detailed">
+                <li><strong>建立另一個 Google Cloud 專案：</strong>Project ID 不可與上一步 Firebase 專案相同。Maps API 要求連結帳單；若沿用 Firebase 專案，Firebase 會離開 Spark。看到 Google 要你替 Firebase Project ID 設定帳單時，請按取消並回來建立新專案。</li>
+                <li>依官方說明確認 Google Maps 的計費及免費額度條件，啟用 Maps JavaScript API、Places API (New) 與 Routes API。免費額度不等於無上限免費，預算通知不會自動停止用量。</li>
+                <li>建立瀏覽器 API Key，將網站限制設為自己的網站，API 限制只勾選實際使用的服務。不要貼服務帳戶私鑰或伺服器憑證。</li>
+                <li>按下方「Google 功能設定」貼上 Key 並套用，可選擇記住此裝置。SDK 載入檢查只確認程式載入，不代表服務或額度已驗證。</li>
+                <li>建立旅程後，在「新增景點」實際搜尋及選取；再新增兩站，在「站內路程與時間估算」實測。兩項都成功才算 Google 功能驗證完成。</li>
+              </ol>
+              <button type="button" class="secondary" data-google-settings>Google 功能設定</button>
+              <div class="setup-links"><a href="https://developers.google.com/maps/documentation/urls/get-started" target="_blank" rel="noopener noreferrer">Google 官方免 Key Maps URL 說明</a></div>
             </section>
 
             <section class="setup-panel" data-setup-step="3" hidden>
@@ -240,13 +363,13 @@
               <p>這不是 Google Cloud IAM。Authentication 只負責回答「現在登入 Travel OS 的人是誰」；Travel OS 的 owner／editor／viewer 是另一層旅程權限。</p>
               <div class="field-pair"><label>Firebase 使用者 Email<input name="email" type="email" autocomplete="username" placeholder="you@example.com" /></label><label>Firebase 使用者密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
               <p class="field-help">帳號來源：Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」。Travel OS 不會保存你的密碼。</p>
-              <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的公開 Firebase config 與受限制 Browser Key（不保存密碼）</label>
+              <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的 Firebase Web config（不保存密碼）</label>
             </section>
 
             <section class="setup-panel" data-setup-step="4" hidden>
               <p class="eyebrow">STEP 5 · VERIFY</p>
               <h3>最後由 Travel OS 自動檢查</h3>
-              <p>按下驗證後，Travel OS 會依序確認 Google Maps/Places、Firebase Authentication、Realtime Database 與 Rules。測試只在你自己的 Firebase 範圍內執行。</p>
+              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除，以及目前儲存格式所需的 Rules。若仍使用舊版 Rules，請回 Step 2 複製並發布目前版本。本步不驗證 Google 搜尋或交通估算，也不部署 Functions；請在 Firebase 控制台確認 Spark。</p>
               <div id="verification-summary" class="setup-check-result"></div>
               <div id="connection-progress" class="checklist" aria-live="polite"></div>
               <div class="warning-card"><strong>「登入成功」不代表 Rules 一定安全</strong><span>Travel OS repository 另外用 Firebase Emulator 測試 owner/editor/viewer 與跨旅程拒絕。這裡只確認你的 self-host 設定可以正常連線與合法讀寫。</span></div>
@@ -264,6 +387,7 @@
         <p class="form-error" role="alert"></p>
         <footer id="setup-footer" class="settings-actions">
           <button id="local-mode-button" class="secondary" type="button">先使用本機模式</button>
+          <button id="firebase-forget-button" class="secondary" type="button" hidden>登出並清除 Firebase 設定</button>
           <span class="setup-spacer"></span>
           <button id="setup-back-button" class="secondary" type="button">上一步</button>
           <button id="setup-next-button" class="primary" type="button">下一步</button>
@@ -274,12 +398,30 @@
       </form>
     </dialog>
 
+    <dialog id="google-settings-dialog">
+      <form class="dialog-form">
+        <header><p class="eyebrow">GOOGLE SERVICES</p><h2>Google 功能設定</h2></header>
+        <p>搜尋與交通估算共用這組瀏覽器 Key，Firebase 同步設定維持獨立。請使用自己控制的 Google Cloud 專案及網站限制。</p>
+        <fieldset class="connection-fields">
+          <label>Google Maps 瀏覽器 API Key<input name="key" type="password" autocomplete="off" spellcheck="false" /></label>
+          <label class="check-row"><input name="remember" type="checkbox" />記住這台裝置的 Google Key（共用裝置請勿勾選）</label>
+          <div class="setup-actions-inline"><button type="submit" class="primary">套用 Google 設定</button><button type="button" class="secondary" data-google-forget>停用並清除 Google 設定</button></div>
+          <div class="setup-actions-inline"><button type="button" class="secondary" data-google-check="places">檢查搜尋 SDK 載入</button><button type="button" class="secondary" data-google-check="routes">檢查交通 SDK 載入</button></div>
+        </fieldset>
+        <p role="status" aria-live="polite"></p>
+        <p>Key 不會寫入旅程、備份或 Firebase。已載入 SDK 的分頁要更換 Key，請先保存草稿並重新載入；停用會停止新的功能請求，但不能卸載已載入的 SDK。</p>
+        <p><a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noopener noreferrer">官方 Key 設定與限制</a> · <a href="https://developers.google.com/maps/billing-and-pricing/overview" target="_blank" rel="noopener noreferrer">額度與計價</a> · <a href="./service-notice.html" target="_blank" rel="noopener noreferrer">使用條款與隱私說明</a></p>
+        <footer><button type="button" class="secondary" data-close>返回原畫面</button></footer>
+      </form>
+    </dialog>
     <dialog id="import-dialog">
       <form id="import-form" class="dialog-form">
         <header><p class="eyebrow">IMPORT PREVIEW</p><h2>確認匯入備份</h2></header>
         <div id="import-summary" class="connection-summary"></div>
-        <p class="muted">匯入會取代目前本機模式的所有旅程；雲端模式不允許批次覆蓋。</p>
-        <footer><button class="secondary" data-close type="button">取消</button><button class="primary" type="submit">確認取代本機資料</button></footer>
+        <label id="import-cloud-choice" hidden>選擇要還原的旅程<select id="import-trip-select"></select></label>
+        <p id="import-warning" class="muted">匯入會取代目前本機模式的所有旅程。</p>
+        <p class="form-error" role="alert"></p>
+        <footer><button class="secondary" data-close type="button">取消</button><button id="import-confirm" class="primary" type="submit">確認取代本機資料</button></footer>
       </form>
     </dialog>
 

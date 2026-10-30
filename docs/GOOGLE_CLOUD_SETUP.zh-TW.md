@@ -1,115 +1,13 @@
-# Google Cloud / Maps Browser Key 設定指南
+# Google Maps 導航與站內功能
 
-Travel OS 的自行部署版本會在雲端設定精靈中驗證你自己的 **Google Maps Browser Key**。這把 Key 只供瀏覽器端的 **Maps JavaScript API / Places** 使用；Routes、Geocoding、Weather 等伺服器 API 必須使用另一把 Server Key，並放在你自己的後端 Secret Manager 或等效 secret storage。
+Travel OS 的基本導航透過 [Google Maps URL](https://developers.google.com/maps/documentation/urls/get-started) 開啟外部地圖網站。輸入景點名稱、地址或 Google Maps 分享連結後，可以從「下一個安排」或每日時間軸開啟目的地與停車場；這部分不需要 Google Cloud project、Billing 或 API Key。
 
-> Browser Key 會出現在瀏覽器送往 Google 的請求中，因此無法被「藏成真正秘密」。安全重點是讓偷到 Key 的人無法在其他網站或其他 API 使用它：一定要同時設定 **Website restrictions** 與 **API restrictions**，並設定配額／帳務告警。
+站內景點搜尋與交通時間／距離估算是選用功能，需要 Maps JavaScript API、Places API (New)、Routes API 與受限瀏覽器 Key。請建立**另一個 Google Cloud 專案**；它的 Project ID 不可與 Firebase Spark 專案相同。Maps 啟用流程要求連結帳單，若沿用 Firebase 專案，Firebase 會改為 Blaze。看到 Google 要你替 Firebase Project ID 設定帳單時，請取消，不要繼續。
 
-## 1. 建立一個獨立的 Google Maps Cloud project
+Google Cloud 免費試用有期限，不能當成永久零費用保證。不願連結任何帳單的使用者可略過站內功能；外部導航、手動地點與手動交通時間仍完整可用。
 
-1. 登入 [Google Cloud Console](https://console.cloud.google.com/)。
-2. 在頂端 project 選單建立一個**新的** project，例如 `My Travel OS Maps`。
-3. 到 **Billing**，確認 project 已連結有效 Billing account。Google Maps Platform production 使用需要 Billing。
+設定精靈 Step 3 可開啟「Google 功能設定」貼入瀏覽器 Key；也可以直接按「下一步」略過。Step 5 只測試 Firebase Authentication、目前 Rules 儲存格式，以及本人 UID 範圍內的 Realtime Database 寫入、讀取與刪除，不會把 Firebase 成功誤報成 Google 成功。
 
-不要選用前一步建立的 Firebase Spark project。Firebase 官方說，同一 Firebase project 若連結 Cloud Billing 或使用 Google Maps API，會自動從 Spark 升級成 Blaze。Travel OS 因此建議把免費 Firebase 與有 Billing 的 Google Maps 分成兩個 project。
+在獨立 Google Cloud project 啟用三項 API 後，建立 Browser Key，網站限制只允許自己的 GitHub Pages／自訂網域，API 限制只允許 Maps JavaScript API、Places API (New) 與 Routes API。Browser Key 可以在瀏覽器中被看見，不能當成私密憑證；限制與 quota 是必要防護，預算通知不會自動停止用量。Travel OS 不接收 Server Key、service account 或私鑰。
 
-也建議不要和其他不相關網站共用同一把 API Key。每一個 Travel OS 網站使用自己的 Browser Key，日後要輪替或撤銷會比較安全。
-
-## 2. 啟用需要的 Maps API
-
-到 **Google Maps Platform → APIs & Services**，啟用：
-
-- Maps JavaScript API
-- Places API
-- Places API (New)
-
-Travel OS 設定精靈會載入 Maps JavaScript API，並呼叫 `google.maps.importLibrary('places')` 驗證 Places 是否可用。
-
-## 3. 建立 Browser Key
-
-1. 開啟 **Google Maps Platform → Keys & Credentials**。
-2. 選擇 **Create credentials → API key**。
-3. 建立後立刻點進這把 Key 編輯限制，不要把 unrestricted key 直接投入使用。
-4. 建議命名為 `Travel OS Browser Key` 或其他能辨識用途的名稱。
-
-## 4. 設定 Website restrictions
-
-在 **Application restrictions** 選 **Websites**。
-
-加入你實際部署 Travel OS 的網站。例如 GitHub Pages：
-
-```text
-https://YOUR_USERNAME.github.io/*
-```
-
-如果使用自訂網域，例如：
-
-```text
-https://travel.example.com/*
-```
-
-本機 Vite 測試若使用 `http://localhost:5173`，可另外加入：
-
-```text
-http://localhost:5173/*
-```
-
-Travel OS 載入 Maps JavaScript API 時使用 `auth_referrer_policy=origin`。不要只依賴很細的 URL path 當唯一限制；現代瀏覽器在跨來源請求時可能縮減 referrer path。
-
-設定精靈會依目前網站 origin 顯示建議值，你應確認它和 Cloud Console 裡的 Website restriction 相符。
-
-## 5. 設定 API restrictions
-
-在同一把 Browser Key 的 **API restrictions**：
-
-1. 選擇 **Restrict key**。
-2. 只允許：
-   - Maps JavaScript API
-   - Places API
-   - Places API (New)
-3. 儲存設定。
-
-不要把 Routes API、Geocoding API、Weather API 或其他 server-side API 加進這把 Browser Key。
-
-## 6. 設定配額與帳務防護
-
-Website/API restrictions 是防止 Key 被拿去其他地方使用的第一道防線；配額是限制異常用量的第二道防線。
-
-在 Google Cloud / Google Maps Platform 的 Quotas 頁面，依你的旅行網站規模設定合理的每日或每分鐘 request 上限。個人旅行網站通常不需要很高的額度，可先用保守值，確定需求後再調高。
-
-再到 **Billing → Budgets & alerts** 建立預算與告警，例如 50%、80%、100%。一般 Budget alert 只負責通知，並不會自動停止 API 使用；要限制 API 請求量，仍要另外設定 quota。
-
-## 7. 回 Travel OS 驗證
-
-回到你自己的 Travel OS：
-
-1. 開啟「設定」。
-2. 在「Google Maps」步驟貼入 Browser Key。
-3. Travel OS 不會把 Key放進 URL、repository 或備份檔。
-4. 若勾選「記住這台裝置」，受限制的 Browser Key 會和公開 Firebase Web config 一起保存在目前瀏覽器的 localStorage；密碼不保存。
-5. 按「驗證 Google + Firebase 並啟用雲端」。
-
-驗證失敗時優先檢查：Billing、API 是否啟用、Website restriction 是否包含目前 origin、API restrictions 是否包含 Maps JavaScript API / Places，以及 quota 是否用盡。
-
-## Server Key：另一條完全不同的安全邊界
-
-如果未來啟用 Routes、Geocoding、Weather：
-
-```text
-Travel OS browser
-    ↓ authenticated request
-你的後端 / Firebase Functions
-    ↓
-Secret Manager 中的 Server Key
-    ↓
-Google server-side API
-```
-
-Server Key 不得出現在：
-
-- HTML / JavaScript bundle
-- GitHub repository
-- Browser localStorage / IndexedDB
-- Network request query string 由前端直接送出
-- Travel OS 設定精靈
-
-這條規則和 Browser Key 不同；Browser Key 是可見但受限制的 client credential，Server Key 則必須保持秘密。
+驗證時先在「新增景點」實際搜尋並選取，再安排兩個非航班／交通站點，按「估算剩餘路段」。SDK 載入成功不等於 Places 與 Routes 都成功；兩項都成功才算站內 Google 功能通過。API 未啟用、Key 限制錯誤、額度或網路失敗時，應顯示具體錯誤並保留手動資料。

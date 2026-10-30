@@ -28,6 +28,23 @@ describe('trip domain', () => {
     expect(item.flight).toMatchObject({ departureTimeZone:'America/New_York', arrivalTimeZone:'Europe/Paris', arrivalDateTime:'2027-01-02T08:30' });
   });
 
+  it('rejects impossible flight dates and clocks in input and backups', () => {
+    const trip=createTrip({title:'Flight validation',destination:'Example',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC'},'flight-trip');
+    const input={date:'2027-01-01',type:'flight',title:'Flight',arrivalDateTime:'2027-01-02T08:30'};
+    const valid=createItem(input,trip,'flight');
+    for(const value of ['2027-02-29T08:30','2027-04-31T08:30','2027-01-02T24:00','2027-01-02T08:60']) {
+      expect(()=>createItem({...input,arrivalDateTime:value},trip)).toThrow(/抵達日期/);
+      expect(()=>validateBackup({schemaVersion:1,trips:[{...trip,items:[{...valid,flight:{...valid.flight,arrivalDateTime:value}}]}]})).toThrow();
+    }
+  });
+
+  it('preserves valid leap days and an earlier local arrival date across the date line', () => {
+    const trip=createTrip({title:'Date line',destination:'Example',startDate:'2028-03-01',endDate:'2028-03-02',timeZone:'Pacific/Auckland'},'date-line');
+    const item=createItem({date:'2028-03-01',type:'flight',title:'Flight',startTime:'01:00',departureTimeZone:'Pacific/Auckland',arrivalTimeZone:'Pacific/Honolulu',arrivalDateTime:'2028-02-29T13:00'},trip);
+    expect(item.flight.arrivalDateTime).toBe('2028-02-29T13:00');
+    expect(validateTrip({...trip,items:[item]}).items[0].flight.arrivalDateTime).toBe('2028-02-29T13:00');
+  });
+
   it('rejects malformed backups', () => {
     expect(() => validateBackup({ schemaVersion:1, trips:'not-an-array' })).toThrow();
   });

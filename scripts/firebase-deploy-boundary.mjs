@@ -63,8 +63,12 @@ function deploy(rootDir) {
     approvedProject,
     blockedProjects:readBlockedProjects(rootDir),
   });
-  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const result = spawnSync(command, ['--yes', 'firebase-tools@15.11.0', 'deploy', '--only', 'database', '--project', projectId], {
+  const npmBinDir = path.dirname(process.env.npm_execpath || '');
+  const npxCli = npmBinDir
+    ? path.join(npmBinDir, 'npx-cli.js')
+    : path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npx-cli.js');
+  if (!fs.existsSync(npxCli)) throw new Error('Unable to locate the npm npx CLI. Run deployment through npm run firebase:rules:deploy.');
+  const result = spawnSync(process.execPath, [npxCli, '--yes', 'firebase-tools@15.11.0', 'deploy', '--only', 'database', '--project', projectId], {
     cwd:rootDir,
     stdio:'inherit',
     shell:false,
