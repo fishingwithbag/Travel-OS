@@ -10,11 +10,15 @@ npm run dev
 npm run check
 ```
 
-修改 Firebase Rules 時，請安裝 Java 21 並執行：
+修改 Firebase Rules 時，請編輯 `scripts/database-rules.mjs`，不要直接修改生成的 `firebase/database.rules.json`。請安裝 Java 21 並執行：
 
 ```bash
+npm run firebase:rules:build
+npm run firebase:rules:check
 npm run test:rules
 ```
+
+Rules 來源以共用驗證器組合資料結構；部署 JSON 維持單行生成檔，降低 Firebase 控制台與公開檔案的重複篇幅。CI 會拒絕過期或手動改過的生成檔。
 
 ## 提交要求
 

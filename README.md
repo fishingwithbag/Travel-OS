@@ -113,6 +113,10 @@ npm run check
 # Firebase Realtime Database Rules；需要 Java 21
 npm run test:rules
 
+# 維護 Rules：修改 scripts/database-rules.mjs 後重新生成並確認同步
+npm run firebase:rules:build
+npm run firebase:rules:check
+
 # 自架者部署 Rules：先明確核准自己的 Firebase project，再部署
 npm run firebase:rules:configure -- --project YOUR_PROJECT_ID
 npm run firebase:rules:deploy
@@ -137,7 +141,8 @@ src/
 ├─ app.js        介面流程與狀態
 └─ styles.css    響應式視覺系統
 
-firebase/        Realtime Database Rules
+firebase/        自動生成的 Realtime Database Rules 部署檔
+scripts/         Rules 結構來源、生成器與部署邊界工具
 tests/           Domain、設定、儲存與權限測試
 docs/            設定指南、資料說明與 ADR
 ```

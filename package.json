@@ -8,11 +8,13 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:rules": "npx --yes firebase-tools@15.11.0 emulators:exec --project demo-travel-os --only database \"vitest run tests/database-rules.test.js tests/snapshot-rules.test.js\"",
+    "test:rules": "npm run firebase:rules:check && npx --yes firebase-tools@15.11.0 emulators:exec --project demo-travel-os --only database \"vitest run tests/database-rules.test.js tests/snapshot-rules.test.js\"",
+    "firebase:rules:build": "node scripts/generate-database-rules.mjs",
+    "firebase:rules:check": "node scripts/generate-database-rules.mjs --check",
     "firebase:rules:configure": "node scripts/firebase-deploy-boundary.mjs configure",
     "firebase:rules:deploy": "node scripts/firebase-deploy-boundary.mjs deploy",
     "test:watch": "vitest",
-    "check": "npm run test -- --exclude tests/database-rules.test.js --exclude tests/snapshot-rules.test.js && npm run build"
+    "check": "npm run firebase:rules:check && npm run test -- --exclude tests/database-rules.test.js --exclude tests/snapshot-rules.test.js && npm run build"
   },
   "dependencies": {
     "firebase": "^12.3.0"
