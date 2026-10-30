@@ -147,6 +147,8 @@ tests/           Domain、設定、儲存與權限測試
 docs/            設定指南、資料說明與 ADR
 ```
 
+Realtime Database Rules 使用資料型別層級的 `$field` 白名單集中驗證純量欄位；Firebase Console 自動格式化後約 160 行，而不是將安全驗證刪除來換取較短檔案。
+
 ## 目前狀態
 
 Travel OS 仍在開發驗收階段，尚未達到完整發布標準。開發分支已恢復景點庫、收藏、租車、住宿、獨立費用、Places 搜尋、Routes 交通估算與多人協作；本機操作、備份、單元與 Rules 測試均有逐批紀錄。真實 Spark 全流程、真實 Google 服務、多帳號與正式 Pages 仍待完成驗收。天氣已移除。正式 Firebase 專案與 Rules 由每位自行部署者管理。

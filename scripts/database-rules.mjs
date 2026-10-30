@@ -1,9 +1,18 @@
 const rule = (expression) => ({ '.validate': expression });
-const strictRecord = (required, fields, extra = '') => ({
-  '.validate': `newData.hasChildren([${required.map((name) => `'${name}'`).join(',')}])${extra ? ` && ${extra}` : ''}`,
-  ...fields,
-  '$other': rule(false),
-});
+const isLeafRule = (value) => Object.keys(value).length === 1 && typeof value['.validate'] === 'string';
+const strictRecord = (required, fields, extra = '') => {
+  const leafFields = Object.entries(fields).filter(([, value]) => isLeafRule(value));
+  const nestedFields = Object.fromEntries(Object.entries(fields).filter(([, value]) => !isLeafRule(value)));
+  const leafValidation = leafFields
+    .map(([name, value]) => `($field === '${name}' && (${value['.validate']}))`)
+    .join(' || ');
+
+  return {
+    '.validate': `newData.hasChildren([${required.map((name) => `'${name}'`).join(',')}])${extra ? ` && ${extra}` : ''}`,
+    ...nestedFields,
+    '$field':rule(leafValidation || false),
+  };
+};
 const collection = (variable, entry) => ({ '.validate':'newData.hasChildren()', [variable]:entry });
 
 const text = (maximum) => rule(`newData.isString() && newData.val().length <= ${maximum}`);

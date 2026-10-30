@@ -18,7 +18,7 @@ npm run firebase:rules:check
 npm run test:rules
 ```
 
-Rules 來源以共用驗證器組合資料結構；部署 JSON 維持單行生成檔，降低 Firebase 控制台與公開檔案的重複篇幅。CI 會拒絕過期或手動改過的生成檔。
+Rules 來源以共用驗證器組合資料結構，並將純量欄位集中成 `$field` 白名單驗證。Firebase Console 自動排版後必須維持在 200 行以內；CI 會拒絕過期、手動改過或重新膨脹的生成檔。
 
 ## 提交要求
 
