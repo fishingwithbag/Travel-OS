@@ -215,7 +215,7 @@
         <div class="field-pair"><label>類型<select name="type"><option value="place">景點</option><option value="meal">餐飲</option><option value="stay">住宿</option><option value="flight">航班</option><option value="transport">交通</option><option value="other">其他</option></select></label><label>開始時間<input name="startTime" type="time" /></label></div>
         <div id="end-fields" class="field-pair"><label>結束日期（跨日時填寫）<input name="endDate" type="date" /></label><label>結束時間<input name="endTime" type="time" /></label></div>
         <div class="field-pair"><label>前往下一站交通方式<select name="transitMode"><option value="">未設定</option><option value="driving">開車</option><option value="walking">步行</option><option value="transit">大眾交通</option><option value="other">其他</option></select></label><label>交通分鐘（手動）<input name="transitMinutes" type="number" min="0" max="1440" step="1" /></label></div>
-        <p class="field-help">交通時間為手動估計。一般安排按旅程當地鐘面時間計算時長與重疊，不換算夏令時間切換造成的實際經過分鐘；航班依起降時區顯示，不納入這項衝突檢查。</p>
+        <p class="field-help">交通時間為手動估計。一般安排依旅程時區計算實際經過分鐘；若輸入夏令時間切換時不存在或重複的當地時刻，行程會顯示修正提示。航班依起降時區顯示，不納入一般安排的衝突檢查。</p>
         <label>名稱<input name="title" maxlength="100" required placeholder="要去哪裡或做什麼？" /></label>
         <label>地址／位置<input name="location" maxlength="200" placeholder="可直接手動輸入" /></label>
         <label>目的地 Google Maps 連結（選填）<input name="mapsUrl" type="url" maxlength="600" placeholder="https://maps.app.goo.gl/..." /></label>

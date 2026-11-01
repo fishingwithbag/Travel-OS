@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createTrip, createItem, editItem, createBackup, validateBackup } from '../src/domain/trip.js';
 import { serializeFirebaseTrip, parseFirebaseTrip } from '../src/storage/firebase-store.js';
-import { durationMinutes, itemsForGroup, scheduleWarnings } from '../src/domain/schedule.js';
+import { durationDetails, durationMinutes, itemsForGroup, scheduleWarnings } from '../src/domain/schedule.js';
 
 const trip = createTrip({title:'Schedule',destination:'Sample',startDate:'2026-12-31',endDate:'2027-01-02',timeZone:'UTC'},'schedule');
 const input = {date:'2026-12-31',type:'place',title:'Museum',startTime:'23:00',endDate:'2027-01-01',endTime:'01:00',transitMode:'walking',transitMinutes:'15'};
@@ -53,5 +53,18 @@ describe('editable itinerary schedule', () => {
     expect(scheduleWarnings([{...first,endTime:'09:00'},{...second,startTime:'09:00',type:'transport'}],[]).size).toBe(0);
     expect(scheduleWarnings([{...first,type:'flight'},second],[]).size).toBe(0);
     expect(durationMinutes({...first,type:'flight'})).toBeNull();
+  });
+  it('uses actual elapsed time across daylight-saving transitions', () => {
+    const spring={type:'place',date:'2027-03-14',startTime:'00:30',endDate:'2027-03-14',endTime:'03:30'};
+    const fall={type:'place',date:'2027-11-07',startTime:'00:30',endDate:'2027-11-07',endTime:'02:30'};
+    expect(durationDetails(spring,'America/New_York')).toEqual({minutes:120,wallMinutes:180,adjusted:true,issue:''});
+    expect(durationDetails(fall,'America/New_York')).toEqual({minutes:180,wallMinutes:120,adjusted:true,issue:''});
+    expect(durationMinutes(spring,'Asia/Tokyo')).toBe(180);
+  });
+  it('flags nonexistent and repeated local times instead of guessing', () => {
+    const missing={type:'place',date:'2027-03-14',startTime:'02:30',endDate:'2027-03-14',endTime:'03:30'};
+    const repeated={type:'place',date:'2027-11-07',startTime:'01:30',endDate:'2027-11-07',endTime:'02:30'};
+    expect(durationDetails(missing,'America/New_York')).toMatchObject({minutes:60,wallMinutes:60,adjusted:false,issue:expect.stringContaining('不存在')});
+    expect(durationDetails(repeated,'America/New_York')).toMatchObject({minutes:60,wallMinutes:60,adjusted:false,issue:expect.stringContaining('重複')});
   });
 });

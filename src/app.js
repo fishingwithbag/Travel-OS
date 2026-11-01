@@ -11,7 +11,7 @@ import { localStorageKey } from './storage/browser-scope.js';
 import { itemMapUrl, parkingMapUrl, routeMapUrl, dayRouteSections } from './providers/maps.js';
 import { nextStop } from './domain/next-stop.js';
 import { formatFlightSchedule } from './domain/flight-schedule.js';
-import { durationMinutes, itemsForGroup, scheduleWarnings } from './domain/schedule.js';
+import { durationDetails, durationMinutes, itemsForGroup, scheduleWarnings } from './domain/schedule.js';
 import { setupRentalUi } from './ui/rentals.js';
 import { setupStayUi } from './ui/stays.js';
 import { setupExpenseUi } from './ui/expenses.js';
@@ -248,10 +248,12 @@ function flightScheduleHtml(item) {
   return schedule ? `<p class="item-notes"><strong>起降</strong><span>${escapeHtml(schedule)}</span></p>` : '';
 }
 
-function itemTimingHtml(item) {
-  const duration = durationMinutes(item);
+function itemTimingHtml(item,timeZone) {
+  const timing = durationDetails(item,timeZone);
+  const duration = timing?.minutes ?? null;
   const mode = {driving:'開車',walking:'步行',transit:'大眾交通',other:'其他'}[item.transitMode];
-  return `${duration == null ? '' : `<p class="timeline-meta">至 ${escapeHtml(item.endDate !== item.date ? item.endDate + ' ' : '')}${escapeHtml(item.endTime)} · ${duration} 分鐘（旅程當地時間）</p>`}${mode ? `<p class="timeline-meta">前往下一站：${mode}${item.transitMinutes == null ? ' · 時間未設定' : ` · ${item.transitMinutes} 分鐘（手動）`}</p>` : ''}`;
+  const durationLabel=timing?.adjusted ? `${duration} 分鐘（跨夏令時間；鐘面 ${timing.wallMinutes} 分鐘）` : `${duration} 分鐘（旅程時區）`;
+  return `${duration == null ? '' : `<p class="timeline-meta">至 ${escapeHtml(item.endDate !== item.date ? item.endDate + ' ' : '')}${escapeHtml(item.endTime)} · ${durationLabel}</p>`}${timing?.issue ? `<p class="timeline-meta schedule-time-warning">${escapeHtml(timing.issue)}；目前暫以鐘面 ${timing.wallMinutes} 分鐘顯示，請調整時間。</p>` : ''}${mode ? `<p class="timeline-meta">前往下一站：${mode}${item.transitMinutes == null ? ' · 時間未設定' : ` · ${item.transitMinutes} 分鐘（手動）`}</p>` : ''}`;
 }
 
 function itemTypeLabel(item) { return typeLabels[item.type] || '其他'; }
@@ -267,9 +269,9 @@ function nowCardHtml(item,trip) {
   return `<p class="dashboard-focus__time">${escapeHtml(item.startTime || '彈性時間')}${item.endTime ? ` - ${escapeHtml(item.endTime)}` : ''}</p><h2>${escapeHtml(item.title)}</h2><p class="dashboard-focus__meta"><span>${escapeHtml(itemTypeLabel(item))}</span><span>${escapeHtml(group || '全員')}</span><span>${escapeHtml(item.location || trip.destination)}</span></p>${focusActions(item,true)}`;
 }
 
-function nextCardHtml(item) {
+function nextCardHtml(item,timeZone) {
   if(!item) return '<p class="focus-loading">沒有下一個安排</p>';
-  return `<p>${escapeHtml(item.startTime || '彈性時間')} · ${escapeHtml(itemTypeLabel(item))}</p>${itemTimingHtml(item)}${flightScheduleHtml(item)}${itemNotesHtml(item)}${parkingHtml(item)}${!item.parking && ['place','meal','stay'].includes(item.type) ? '<p class="next-parking-empty">停車資訊未設定</p>' : ''}${focusActions(item)}`;
+  return `<p>${escapeHtml(item.startTime || '彈性時間')} · ${escapeHtml(itemTypeLabel(item))}</p>${itemTimingHtml(item,timeZone)}${flightScheduleHtml(item)}${itemNotesHtml(item)}${parkingHtml(item)}${!item.parking && ['place','meal','stay'].includes(item.type) ? '<p class="next-parking-empty">停車資訊未設定</p>' : ''}${focusActions(item)}`;
 }
 
 function todayNowHtml(item,trip) {
@@ -443,10 +445,10 @@ function render() {
   const currentIndex=Math.max(0,items.indexOf(upcoming));
   const currentItem=items[currentIndex] || null;
   const nextItem=items[currentIndex+1] || null;
-  const warnings = scheduleWarnings(trip.items, trip.groups);
+  const warnings = scheduleWarnings(trip.items, trip.groups, trip.timeZone);
   $('#next-stop').hidden = false;
   $('#next-stop-heading').textContent = dashboardNext?.title || '';
-  $('#next-stop-details').innerHTML = nextCardHtml(dashboardNext);
+  $('#next-stop-details').innerHTML = nextCardHtml(dashboardNext,trip.timeZone);
   $('#dashboard-now').innerHTML=nowCardHtml(dashboardCurrent,trip);
   $('#dashboard-next-time').textContent=dashboardNext?.startTime || '--:--';
   $('#dashboard-city').textContent=trip.destination || 'TRIP';
@@ -467,10 +469,10 @@ function render() {
     const route = canRoute ? `<div class="route-leg"><a href="${escapeHtml(routeMapUrl(item, next, 'driving'))}" target="_blank" rel="noopener noreferrer">Google Maps 開車路線 ↗</a><a href="${escapeHtml(routeMapUrl(item, next, 'walking'))}" target="_blank" rel="noopener noreferrer">Google Maps 步行路線 ↗</a><span>路程與時間請在 Google Maps 查看。</span></div>` : '';
     const warningHtml = warnings.has(item.id) ? `<ul class="schedule-warnings">${warnings.get(item.id).map(message=>`<li>${escapeHtml(message)}</li>`).join('')}</ul>` : '';
     const [hours,minutes]=(item.startTime || '彈性').split(':');
-    return `<li class="tl-item"><div class="tl-time"><span class="tl-time__h">${escapeHtml(hours)}</span>${minutes ? `<span class="tl-time__m">${escapeHtml(minutes)}</span>` : ''}</div><div class="tl-track"><span class="tl-dot"></span><article class="tl-card"><div class="tl-card__main"><div class="tl-card__meta"><span class="tl-card__cat">${escapeHtml(itemTypeLabel(item))}</span><span class="tl-card__dur">${escapeHtml(item.endTime ? `${item.startTime || ''}-${item.endTime}` : '')}</span></div><h3 class="tl-card__name">${escapeHtml(item.title)}</h3><p class="tl-card__hours">${escapeHtml([item.location,item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : ''].filter(Boolean).join(' · '))}</p>${itemTimingHtml(item)}${warningHtml}${flightScheduleHtml(item)}${item.notes ? `<p class="tl-card__note is-visible">${escapeHtml(item.notes)}</p>` : ''}${timelineParkingHtml(item)}${route}</div><footer class="tl-card__footer"><span class="tl-card__cost">${item.amountMinor == null ? '' : `${escapeHtml(item.currency)} ${(item.amountMinor/100).toLocaleString('zh-TW')}`}</span><div class="tl-card__actions">${mapLink(item)}<button class="tl-card__btn" type="button" data-edit-item="${escapeHtml(item.id)}" aria-label="編輯安排：${escapeHtml(item.title)}">編輯</button></div></footer></article></div></li>`;
+    return `<li class="tl-item"><div class="tl-time"><span class="tl-time__h">${escapeHtml(hours)}</span>${minutes ? `<span class="tl-time__m">${escapeHtml(minutes)}</span>` : ''}</div><div class="tl-track"><span class="tl-dot"></span><article class="tl-card"><div class="tl-card__main"><div class="tl-card__meta"><span class="tl-card__cat">${escapeHtml(itemTypeLabel(item))}</span><span class="tl-card__dur">${escapeHtml(item.endTime ? `${item.startTime || ''}-${item.endTime}` : '')}</span></div><h3 class="tl-card__name">${escapeHtml(item.title)}</h3><p class="tl-card__hours">${escapeHtml([item.location,item.flight ? `${item.flight.origin || '—'} → ${item.flight.destination || '—'}` : ''].filter(Boolean).join(' · '))}</p>${itemTimingHtml(item,trip.timeZone)}${warningHtml}${flightScheduleHtml(item)}${item.notes ? `<p class="tl-card__note is-visible">${escapeHtml(item.notes)}</p>` : ''}${timelineParkingHtml(item)}${route}</div><footer class="tl-card__footer"><span class="tl-card__cost">${item.amountMinor == null ? '' : `${escapeHtml(item.currency)} ${(item.amountMinor/100).toLocaleString('zh-TW')}`}</span><div class="tl-card__actions">${mapLink(item)}<button class="tl-card__btn" type="button" data-edit-item="${escapeHtml(item.id)}" aria-label="編輯安排：${escapeHtml(item.title)}">編輯</button></div></footer></article></div></li>`;
   }).join('');
   $('#timeline-empty').hidden = items.length > 0;
-  const scheduledMinutes=items.reduce((total,item)=>total+(durationMinutes(item) || 0),0);
+  const scheduledMinutes=items.reduce((total,item)=>total+(durationMinutes(item,trip.timeZone) || 0),0);
   $('#summary-items').textContent = items.length;
   $('#summary-hours').textContent = scheduledMinutes ? `${Math.floor(scheduledMinutes/60)}h${scheduledMinutes%60 ? `${scheduledMinutes%60}m` : ''}` : '—';
   $('#summary-groups').textContent = trip.groups.length;
