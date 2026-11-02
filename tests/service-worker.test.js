@@ -8,7 +8,7 @@ function worker(fetchResponse, open) {
   const handlers = {};
   const caches = { open, match: vi.fn() };
   vm.runInNewContext(source, {
-    self: { addEventListener: (name, handler) => { handlers[name] = handler; } },
+    self: { registration:{scope:'https://example.test/Travel-OS/'}, addEventListener: (name, handler) => { handlers[name] = handler; } },
     location: { origin: 'https://example.test' }, URL,
     fetch: vi.fn().mockResolvedValue(fetchResponse), caches,
   });
@@ -23,6 +23,19 @@ function worker(fetchResponse, open) {
 }
 
 describe('offline asset caching', () => {
+  it('cleans only old caches belonging to the same deployment scope', async () => {
+    let activate;
+    const own='travel-os-shell:https://example.test/Travel-OS/:';
+    const remove=vi.fn();
+    vm.runInNewContext(source,{
+      self:{registration:{scope:'https://example.test/Travel-OS/'},clients:{claim:vi.fn()},addEventListener:(name,fn)=>{if(name==='activate')activate=fn;}},
+      caches:{keys:async()=>[`${own}old`,`${own}BUILD_VERSION`,'travel-os-shell:https://example.test/Other/:old','unrelated'],delete:remove},
+    });
+    let completion;
+    activate({waitUntil:promise=>{completion=promise;}});
+    await completion;
+    expect(remove.mock.calls).toEqual([[`${own}old`]]);
+  });
   it('clones the network body before delayed cache access and keeps the write alive', async () => {
     let resolveCache;
     const open = vi.fn(() => new Promise((resolve) => { resolveCache = resolve; }));

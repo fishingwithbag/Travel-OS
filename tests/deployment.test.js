@@ -38,8 +38,9 @@ describe('shared demo guard', () => {
     expect(viteConfig).toContain("base:'./'");
     expect(manifest.start_url).toBe('./');
     expect(manifest.scope).toBe('./');
-    expect(serviceWorker).toContain("const CACHE = 'travel-os-shell-v3'");
+    expect(serviceWorker).toContain('self.registration.scope');
+    expect(serviceWorker).toContain('BUILD_VERSION');
     expect(serviceWorker).toContain("const SHELL = ['./']");
-    expect(serviceWorker).toContain("key.startsWith('travel-os-shell-') && key !== CACHE");
+    expect(serviceWorker).toContain('key.startsWith(CACHE_PREFIX) && key !== CACHE');
   });
 });

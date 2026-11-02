@@ -1,4 +1,5 @@
-const CACHE = 'travel-os-shell-v3';
+const CACHE_PREFIX = `travel-os-shell:${self.registration.scope}:`;
+const CACHE = `${CACHE_PREFIX}BUILD_VERSION`;
 const SHELL = ['./'];
 const CACHEABLE_DESTINATIONS = new Set(['script', 'style', 'image', 'font', 'manifest']);
 
@@ -8,7 +9,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('travel-os-shell-') && key !== CACHE).map((key) => caches.delete(key)))));
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE).map((key) => caches.delete(key)))));
   self.clients.claim();
 });
 
