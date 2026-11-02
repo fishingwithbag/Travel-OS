@@ -27,3 +27,10 @@
 A16 的真實雲端匯入預覽、非覆蓋式還原及重新登入讀回已通過。私人／分享匯出與錯誤檔案防呆沿用既有瀏覽器及單元測試證據。
 
 本次沒有刪除還原資料、修改成員權限或測試第二 Firebase 專案。A15 owner／editor／viewer 真實多人權限、A17 第二專案切換與正式 Pages 仍是發布阻擋項目。
+
+## 後續安排與文件核對
+
+- 依使用者指示暫緩 A15 真實多人驗收，不將暫緩視為通過。
+- 修正自行部署指南仍寫成僅有免 Key 導航的舊說明，對齊現有 Step 3 的選配 Places／Routes 功能與獨立專案設定指南。
+- README 狀態對齊已有真實 Google 成功及 Firebase 雲端還原證據，並保留未完成門檻。
+- 文件提交 `bb7145a` 的 [CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/41465260385) 已成功。

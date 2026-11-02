@@ -151,7 +151,7 @@ Realtime Database Rules 使用資料型別層級的 `$field` 白名單集中驗�
 
 ## 目前狀態
 
-Travel OS 仍在開發驗收階段，尚未達到完整發布標準。開發分支已恢復景點庫、收藏、租車、住宿、獨立費用、Places 搜尋、Routes 交通估算與多人協作；本機操作、備份、單元與 Rules 測試均有逐批紀錄。真實 Spark 全流程、真實 Google 服務、多帳號與正式 Pages 仍待完成驗收。天氣已移除。正式 Firebase 專案與 Rules 由每位自行部署者管理。
+Travel OS 仍在開發驗收階段，尚未達到完整發布標準。候選分支已恢復景點庫、收藏、租車、住宿、獨立費用、Places 搜尋、Routes 交通估算與多人協作；本機操作、單元與 Rules 測試均有逐批紀錄。真實 Google 搜尋／交通估算及 Firebase owner 雲端還原與重新登入讀回已有實測證據；Spark 完整新手流程、多帳號、第二 Firebase 專案切換及正式 Pages 仍待驗收。詳細結果以[發布驗收清單](docs/RELEASE_ACCEPTANCE.zh-TW.md)為準。天氣已移除。正式 Firebase 專案與 Rules 由每位自行部署者管理。
 
 查看[版本紀錄](CHANGELOG.md)與 [Releases](https://github.com/fishingwithbag/Travel-OS/releases)了解每次更新。
 

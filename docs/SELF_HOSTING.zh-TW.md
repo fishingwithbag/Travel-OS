@@ -25,7 +25,7 @@
 1. 確認目前網址就是你自己的 GitHub Pages／自訂網域。
 2. 建立 **Firebase Spark** project、Web App、Email/Password Authentication、使用者帳號、Realtime Database（Locked mode）與 Travel OS Rules。
 3. 分別貼上 Firebase Web `firebaseConfig` 與 Realtime Database「資料」頁籤上方的 URL；不必手動改寫 `firebaseConfig`。
-4. 了解 Google Maps 外部導航；目前不需要 Google Cloud project、Billing 或 API Key。
+4. Google 地圖為選配：外部導航不需要 API Key；若要使用站內景點搜尋與交通估算，依[Google 功能指南](GOOGLE_CLOUD_SETUP.zh-TW.md)設定另一個 Google Cloud 專案與受限 Browser Key，再於 Step 3 輸入。Firebase 同步本身不需要 Google Maps Key。
 5. 輸入 Firebase Email/Password。
 6. 由 Travel OS 自動驗證 Authentication，以及在本人 UID 範圍內的 Realtime Database 寫入、讀取與刪除。
 
