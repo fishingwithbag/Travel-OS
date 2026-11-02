@@ -11,7 +11,7 @@
 1. 開啟 [Firebase 控制台](https://console.firebase.google.com/)。
 2. 按 **建立專案**。
 3. 專案名稱可填 `My Travel OS`。
-4. Google Analytics 不是 Travel OS 必要功能，可略過。
+4. 若看到「Firebase 專案的 AI 輔助功能」，關閉 **啟用 Gemini in Firebase**，按「繼續」。下一頁關閉 **啟用這項專案的 Google Analytics 功能**，再按「建立專案」。這兩項都不是 Travel OS 必要功能。
 5. 建立完成後會進入 **專案總覽**。
 6. 保持 **Spark** 免費方案；如果流程要求你連結 Billing／升級 Blaze，先停止並確認自己是否選錯 project。
 
