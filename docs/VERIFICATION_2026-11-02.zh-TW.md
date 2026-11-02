@@ -34,3 +34,12 @@ A16 的真實雲端匯入預覽、非覆蓋式還原及重新登入讀回已通�
 - 修正自行部署指南仍寫成僅有免 Key 導航的舊說明，對齊現有 Step 3 的選配 Places／Routes 功能與獨立專案設定指南。
 - README 狀態對齊已有真實 Google 成功及 Firebase 雲端還原證據，並保留未完成門檻。
 - 文件提交 `bb7145a` 的 [CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/41465260385) 已成功。
+
+## 部署快取檢查
+
+- 階段性文件提交 `9050463` 已與遠端分支一致，GitHub Actions 回報成功。
+- 開發模式不再註冊 Service Worker，避免新的開發工作階段建立 production 離線快取；這項調整不會自動移除先前已註冊的 worker，也無法替代持續運行的本機伺服器。
+- 修正靜態資源快取在非同步開啟 Cache Storage 後才 clone response 的競態：先 clone，再用 `event.waitUntil` 保護寫入生命週期。Cache Storage 失敗時，網路成功回應仍可使用。
+- 新增延遲開啟快取、先消耗網路 body、寫入生命週期及 quota 失敗案例，170 項單元測試與 production build 通過。
+- 新的本機瀏覽器分頁載入兩份樣式表，中文字型與排版正常，無水平溢出，Console 為 0 error／0 warning。
+- 以上為候選版本機證據；正式 Pages 更新／離線切換仍保留待驗。

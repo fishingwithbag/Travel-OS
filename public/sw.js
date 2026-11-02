@@ -20,7 +20,11 @@ self.addEventListener('fetch', (event) => {
   }
   if (!CACHEABLE_DESTINATIONS.has(event.request.destination)) return;
   event.respondWith(fetch(event.request).then((response) => {
-    if (response.ok) caches.open(CACHE).then((cache) => cache.put(event.request, response.clone()));
+    // Clone before returning: the browser may consume the body while the cache opens.
+    if (response.ok) {
+      const copy = response.clone();
+      event.waitUntil(caches.open(CACHE).then((cache) => cache.put(event.request, copy)).catch(() => {}));
+    }
     return response;
   }).catch(() => caches.match(event.request)));
 });
