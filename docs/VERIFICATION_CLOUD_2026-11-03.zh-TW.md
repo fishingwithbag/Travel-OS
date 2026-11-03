@@ -19,7 +19,13 @@ Console 長資料樹使用虛擬捲動，未出現在目前 DOM 的文字不能�
 
 ## 邊界
 
-本批未執行刪除、未改成員權限，亦未將目前顯示 Blaze／免費試用的環境誤記為 Spark。伺服器端讀回不替代第二帳號／第二裝置與新登入工作階段的測試。A10–A12 新增與保存已有真實雲端證據，其餘操作仍依發布清單驗收。
+初批未執行刪除；後續經帳號持有人明確確認後，完成下列單筆合成費用刪除。未改成員權限，亦未將目前顯示 Blaze／免費試用的環境誤記為 Spark。伺服器端讀回不替代第二帳號／第二裝置與新登入工作階段的測試。其餘操作仍依發布清單驗收。
+
+## 費用刪除增量
+
+取得明確確認後，只刪除新建的「可刪除驗收暫存費用」（TWD 1）。介面先顯示二次確認「確定刪除此筆獨立支出？每日安排的費用不受影響」，確認後顯示「獨立費用已刪除」與「已同步至自己的 Firebase」。摘要由 TWD 301 回到 TWD 300，USD 100 保留；原兩筆費用、租車、住宿與旅程保留。
+
+另開 Firebase Console 直接核對：目前 head 為 12，`versions/12/expenses` 只包含原兩筆費用節點。這完成真實雲端單筆刪除驗收；新登入與多人刪除權限仍待驗。
 
 ## 獨立 Spark 新手設定增量
 
@@ -31,7 +37,7 @@ Console 長資料樹使用虛擬捲動，未出現在目前 DOM 的文字不能�
 - owner／editor／viewer 建立畫面已準備，依瀏覽器操作規範，新密碼的輸入、確認及提交交由帳號持有人完成。
 - CLI 已登入帳號與此新專案的 Console 帳號不同，Rules 部署被拒絕，未發布。Console 已填入候選版 Rules 草稿，等待此次發布確認；不能將草稿當作已生效。
 - 本機部署目標已明確改為這個新測試專案，私人專案 denylist 保留，未向其他專案部署。
-- 本輪另新增 TWD 1 合成暫存費用，準備驗證刪除；取得刪除確認前保留，尚不計為刪除通過。
+- 本輪另新增 TWD 1 合成暫存費用，經明確確認後刪除，介面與 Console 最新版本均核對成功，見上節。
 
 官方來源：[Web setup](https://firebase.google.com/docs/web/setup)、[Password Authentication](https://firebase.google.com/docs/auth/web/password-auth)、[Realtime Database start](https://firebase.google.com/docs/database/web/start)。
 
@@ -45,7 +51,7 @@ Rules Emulator：2 個測試檔、40 項測試成功。起初預設 Java 17 不�
 
 | 項目 | 本輪進度 | 尚待關閉 |
 |---|---|---|
-| 1. 分支與 CI | 本機與遠端候選分支同步；172 項測試及 build 成功 | 本次提交後 CI |
+| 1. 分支與 CI | 04f5c71 的 [CI 全部通過](https://github.com/fishingwithbag/Travel-OS/actions/runs/41547630567)；本機 172 項單元、40 項 Rules 與 build 成功 | 後續提交繼續檢查 CI |
 | 2. 部署、路徑、快取與離線 | 前批 Chrome production 根／子路徑驗證保留 | 正式 Pages 更新及線上重測；內建瀏覽器離線問題 |
 | 3. Google 成功與降級 | 前批真實成功、無權限拒絕及手動保存證據保留 | 正式 Pages 與真實配額錯誤 |
 | 4. 第二專案隔離 | 新建獨立 Spark，原專案未修改 | Rules 發布、帳號登入、雙向切換讀回 |
