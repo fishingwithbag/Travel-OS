@@ -35,7 +35,8 @@ Console 長資料樹使用虛擬捲動，未出現在目前 DOM 的文字不能�
 - 初始化 Authentication，僅啟用 Email／Password；電子郵件連結登入未啟用。
 - 在新加坡建立 Realtime Database，採鎖定模式；未使用公開測試規則。
 - owner／editor／viewer 建立畫面已準備，依瀏覽器操作規範，新密碼的輸入、確認及提交交由帳號持有人完成。
-- CLI 已登入帳號與此新專案的 Console 帳號不同，Rules 部署被拒絕，未發布。Console 已填入候選版 Rules 草稿，等待此次發布確認；不能將草稿當作已生效。
+- CLI 已登入帳號與此新專案的 Console 帳號不同，CLI 部署被拒絕。改由 Console 準備候選版 Rules，取得帳號持有人「Spark Rules 發布確認」後按下發布。儲存完成後重新載入，成員隔離規則仍存在、「尚未發布的變更」及發布按鈕消失，確認已持久發布；方案仍為 Spark。此結果是部署驗證，不替代真實多帳號權限測試。
+- 另以不含登入 token 的 REST 請求對新專案合成測試路徑執行 GET 與 PUT，兩者均回應 HTTP 401／`Permission denied`。未登入讀寫拒絕已在實際服務確認；這不替代有效 owner／editor／viewer 資料與越權測試。
 - 本機部署目標已明確改為這個新測試專案，私人專案 denylist 保留，未向其他專案部署。
 - 本輪另新增 TWD 1 合成暫存費用，經明確確認後刪除，介面與 Console 最新版本均核對成功，見上節。
 
@@ -54,8 +55,8 @@ Rules Emulator：2 個測試檔、40 項測試成功。起初預設 Java 17 不�
 | 1. 分支與 CI | 04f5c71 的 [CI 全部通過](https://github.com/fishingwithbag/Travel-OS/actions/runs/41547630567)；本機 172 項單元、40 項 Rules 與 build 成功 | 後續提交繼續檢查 CI |
 | 2. 部署、路徑、快取與離線 | 前批 Chrome production 根／子路徑驗證保留 | 正式 Pages 更新及線上重測；內建瀏覽器離線問題 |
 | 3. Google 成功與降級 | 前批真實成功、無權限拒絕及手動保存證據保留 | 正式 Pages 與真實配額錯誤 |
-| 4. 第二專案隔離 | 新建獨立 Spark，原專案未修改 | Rules 發布、帳號登入、雙向切換讀回 |
-| 5. Spark 新手設定 | 專案、Web app、Auth provider、鎖定 RTDB 完成 | 使用者、Rules、精靈登入、第一趟旅程與重登 |
+| 4. 第二專案隔離 | 新建獨立 Spark，已發布成員隔離 Rules；原專案未修改 | 帳號登入、雙向切換讀回 |
+| 5. Spark 新手設定 | 專案、Web app、Auth provider、RTDB 及 Rules 發布完成；production 子路徑精靈停在 Step 4 | 使用者、精靈登入、第一趟旅程與重登 |
 | 6. 真實多人與衝突 | 單 owner 租車／住宿／費用雲端保存及 Console 讀回完成 | editor／viewer、越權拒絕、即時更新及競爭保存 |
 | 7. 審查與文件 | 本輪報告及新手指南更新，未引入新依賴 | 最終 main／tag／產物掃描與 PR 同步 |
 | 8. 發布 | 保留 draft PR，未將不完整驗收版本當成正式版 | 上述門檻完成後合併、Pages 實測與 release |
