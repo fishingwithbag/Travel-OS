@@ -22,6 +22,7 @@ function normalizeObjectSyntax(text) {
   const objectEnd = text.lastIndexOf('}');
   if (objectStart < 0 || objectEnd <= objectStart) throw new ValidationError('找不到 Firebase config 物件。');
   return text.slice(objectStart, objectEnd + 1)
+    .replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|\u00a0/g, (match, quoted) => quoted ?? ' ')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|\s)\/\/.*$/gm, '$1')
     .replace(/([{,]\s*)([A-Za-z][A-Za-z0-9]*)(\s*:)/g, '$1"$2"$3')

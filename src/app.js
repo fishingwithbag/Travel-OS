@@ -413,6 +413,8 @@ function render() {
   $('#group-recovery-save').disabled=groupRecoverySaving || !canEditTrip();
   $('#group-recovery-status').textContent=recovered.length && legacy ? '請先由擁有者完成上方的備份與升級確認；遺失群組將列在升級預覽中。' : recovered.length && !canEditTrip() ? '目前為唯讀權限，請聯絡旅程擁有者或編輯者確認修復。' : '';
   renderMembers();
+  const startHint = $('#local-start-button .qa-btn__sub');
+  if (startHint) startHint.textContent = state.mode === 'cloud' ? '儲存至自己的 Firebase' : '先用本機模式';
   $('#welcome').hidden = Boolean(trip);
   $('#workspace').hidden = !trip;
   travelEstimates.render();
@@ -707,6 +709,7 @@ async function activateStore(nextStore, mode, connection = null) {
       const previous=state.trips.find(entry=>entry.id===trip.id);
       upsertTrip(trip);state.access[trip.id]=access;
       if(!state.currentTripId) state.currentTripId=trip.id;
+      if(state.currentTripId===trip.id) $('#cloud-sync-status').textContent='已接收目前旅程的最新資料。';
       if(previous && previous.revision!==trip.revision) warnOpenDraft('旅程已由其他裝置更新，未儲存內容仍保留。請先複製內容，再重新開啟表單後編輯。');
       renderLive();
     },

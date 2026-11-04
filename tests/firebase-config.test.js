@@ -13,6 +13,11 @@ describe('Firebase runtime config', () => {
   it('parses the Console object without evaluating code', () => {
     expect(parseFirebaseConfig(raw)).toMatchObject({ projectId:'sample-project', apiKey:'example-browser-key' });
   });
+  it('accepts non-breaking indentation copied from displayed Console code without changing quoted values', () => {
+    const displayed = raw.replace(/^  /gm, '\u00a0\u00a0').replace('example-browser-key', 'example\u00a0browser-key');
+    expect(parseFirebaseConfig(displayed)).toMatchObject({ projectId:'sample-project', apiKey:'example\u00a0browser-key' });
+    expect(() => parseFirebaseConfig(displayed.replace('"sample-project"', '(() => "sample-project")()'))).toThrow(/無法解析/);
+  });
   it('rejects service account credentials', () => {
     expect(() => parseFirebaseConfig('{"private_key":"BEGIN PRIVATE KEY"}')).toThrow(/不接受/);
   });
