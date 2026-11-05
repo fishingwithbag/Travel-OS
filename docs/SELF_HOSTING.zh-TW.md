@@ -2,6 +2,8 @@
 
 公開體驗站由 repository 維護者控制，因此只開放 IndexedDB 本機模式，不接受 Firebase config 或帳號密碼。Travel OS 雲端同步以「自己的網站 + 自己的 Firebase」為主軸；請先建立由自己控制的網站副本。
 
+本文件由網站建立者操作。受邀旅伴使用建立者提供的網站與同一 Firebase 專案內的登入帳號，不需要各自建立 repository、Firebase 專案或計費帳戶。
+
 ## GitHub Pages
 
 1. 如果還沒有 GitHub 帳號，先依[GitHub 官方註冊說明](https://docs.github.com/en/account-and-profile/how-tos/account-management/creating-an-account-on-github)建立帳號並驗證電子郵件；未驗證信箱無法建立 repository。然後登入 GitHub，開啟 [Travel OS repository](https://github.com/fishingwithbag/Travel-OS)。
@@ -23,9 +25,9 @@
 第一次開啟自己的網站副本時，Travel OS 會自動打開設定精靈。依序完成：
 
 1. 確認目前網址就是你自己的 GitHub Pages／自訂網域。
-2. 建立 **Firebase Spark** project、Web App、Email/Password Authentication、使用者帳號、Realtime Database（Locked mode）與 Travel OS Rules。
+2. 由網站建立者準備 Firebase project、Web App、Email/Password Authentication、使用者帳號、Realtime Database（Locked mode）與 Travel OS Rules；可沿用已設定的 Blaze／免費試用專案。
 3. 分別貼上 Firebase Web `firebaseConfig` 與 Realtime Database「資料」頁籤上方的 URL；不必手動改寫 `firebaseConfig`。
-4. Google 地圖為選配：外部導航不需要 API Key；若要使用站內景點搜尋與交通估算，依[Google 功能指南](GOOGLE_CLOUD_SETUP.zh-TW.md)設定另一個 Google Cloud 專案與受限 Browser Key，再於 Step 3 輸入。Firebase 同步本身不需要 Google Maps Key。
+4. Google 地圖為選配：外部導航不需要 API Key；若要使用站內景點搜尋與交通估算，依[Google 功能指南](GOOGLE_CLOUD_SETUP.zh-TW.md)設定建立者管理的專案與受限 Browser Key，再於 Step 3 輸入。可沿用同一個已設定服務的專案；Firebase 登入本身不需要 Google Maps Key。
 5. 輸入 Firebase Email/Password。
 6. 由 Travel OS 自動驗證 Authentication，以及在本人 UID 範圍內的 Realtime Database 寫入、讀取與刪除。
 

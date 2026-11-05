@@ -749,7 +749,7 @@ $('#connection-form').addEventListener('submit', async (event) => {
     if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config }));
     else localStorage.removeItem(STORAGE_KEYS.connection);
     form.elements.password.value = '';
-    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：${escapeHtml(mapsStatus)}</span><span>Firebase 同步不需要 Blaze 或 Functions；Google API 另依設定與額度使用。</span>`;
+    $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：${escapeHtml(mapsStatus)}</span><span>Firebase 專案與方案由網站建立者管理；旅伴使用同一專案的帳號與旅程權限，不需另建專案。</span>`;
     setSetupStep(5);
     showToast(warnings.length ? `已連接 ${connection.projectId}；另略過 ${warnings.length} 筆失效或損壞的雲端資料。` : `已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
   } catch (error) {

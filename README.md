@@ -29,6 +29,8 @@
 > [!IMPORTANT]
 > 官方公開體驗站只開放 **IndexedDB 本機模式**，不接受 Firebase config、Google API key、Email 或密碼。需要雲端同步時，請先用 **Use this template** 建立由自己控制的網站副本。
 
+**網站建立者**負責部署、Firebase 專案及 Google 服務設定；**受邀旅伴**使用建立者的網站與同一 Firebase 專案內的登入帳號，再依旅程取得 owner／editor／viewer 權限。旅伴不需要各自建立 GitHub repository、Firebase 專案或計費帳戶。建立者可沿用已設定的 Blaze／免費試用專案。
+
 ## 為什麼做 Travel OS？
 
 > 開發狀態：正在恢復原站功能並執行完整新手驗收，目前尚未達到「陌生使用者可順暢使用所有功能」的發布標準。功能缺口見[發布驗收清單](docs/RELEASE_ACCEPTANCE.zh-TW.md)及[功能核對報告](docs/FEATURE_PARITY_AUDIT.zh-TW.md)。
@@ -87,7 +89,7 @@ flowchart LR
 - 「記住這台裝置」只保存公開 Firebase Web config，不保存密碼或登入狀態。
 - Travel OS 拒絕 service account、Admin SDK 私鑰及 server secret。
 - Firebase Rules 以 UID、`tripId` 和 membership 隔離資料。
-- Google Maps 外部連結不需 Key；站內 Places 搜尋與 Routes 交通時間／距離已接回，但需要另一個已設定帳單的 Google Cloud 專案。不要把 Firebase Spark 專案拿去連結帳單。天氣已依產品決定移除。
+- Google Maps 外部連結不需 Key；站內 Places 搜尋與 Routes 交通時間／距離已接回，由網站建立者設定受限 Browser Key 與服務專案，可沿用同一個已設定的 Blaze／免費試用專案。天氣已依產品決定移除。
 
 更多細節請讀[資料與備份](docs/DATA_AND_BACKUPS.zh-TW.md)、[舊旅程升級與回復](docs/STORAGE_MIGRATION.zh-TW.md)、[安全政策](SECURITY.md)及[共享體驗站架構決策](docs/decisions/003-shared-demo-local-only.md)。
 
@@ -151,7 +153,7 @@ Realtime Database Rules 使用資料型別層級的 `$field` 白名單集中驗�
 
 ## 目前狀態
 
-Travel OS 仍在開發驗收階段，尚未達到完整發布標準。候選分支已恢復景點庫、收藏、租車、住宿、獨立費用、Places 搜尋、Routes 交通估算與多人協作；本機操作、單元與 Rules 測試均有逐批紀錄。真實 Google 搜尋／交通估算及 Firebase owner 雲端還原與重新登入讀回已有實測證據；Spark 完整新手流程、多帳號、第二 Firebase 專案切換及正式 Pages 仍待驗收。詳細結果以[發布驗收清單](docs/RELEASE_ACCEPTANCE.zh-TW.md)為準。天氣已移除。正式 Firebase 專案與 Rules 由每位自行部署者管理。
+Travel OS 仍在開發驗收階段，尚未達到完整發布標準。候選分支已恢復景點庫、收藏、租車、住宿、獨立費用、Places 搜尋、Routes 交通估算與多人協作。真實 Google 搜尋／交通估算、Firebase owner 雲端還原與重登讀回，以及同專案三帳號協作已有實測證據；直接越權、跨專案設定隔離、建立者首次部署與正式 Pages 仍待驗收。詳細結果以[發布驗收清單](docs/RELEASE_ACCEPTANCE.zh-TW.md)為準。天氣已移除。正式 Firebase 專案與 Rules 由網站建立者管理，旅伴不需另外建立 Firebase 專案。
 
 查看[版本紀錄](CHANGELOG.md)與 [Releases](https://github.com/fishingwithbag/Travel-OS/releases)了解每次更新。
 

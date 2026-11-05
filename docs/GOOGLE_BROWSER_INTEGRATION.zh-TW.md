@@ -4,8 +4,8 @@
 
 ## 使用流程
 
-1. Firebase 同步維持 Spark；免 Key 外部導航與手動行程可直接使用。
-2. 若使用 Google 站內功能，使用獨立 Google Cloud 專案，依官方條件啟用 Maps JavaScript API、Places API (New)、Routes API，設定網站與 API 限制。免費額度不是無上限免費；預算通知不會停止收費。
+1. 網站建立者管理 Firebase 專案與方案，旅伴使用同一專案的 Authentication 帳號；本次沿用建立者現有 Blaze／免費試用專案。免 Key 外部導航與手動行程可直接使用。
+2. 若使用 Google 站內功能，可沿用建立者同一個已設定服務的專案，依官方條件啟用 Maps JavaScript API、Places API (New)、Routes API，設定網站與 API 限制。免費額度不是無上限免費；預算通知不會停止收費。
 3. 在精靈 Step 3、景點搜尋或每日估算開啟同一個「Google 功能設定」。貼上瀏覽器 Key 並套用；預設僅本分頁，明確勾選才記住於此網站的瀏覽器儲存空間。
 4. SDK 檢查僅確認 library 可載入。新增景點實際搜尋／選取，再建立兩站實際估算，兩項都成功才算服務通過。
 5. Step 5 僅驗證 Firebase 登入與本人範圍讀寫；完成頁不宣稱 Google 已驗證。

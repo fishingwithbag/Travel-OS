@@ -171,7 +171,7 @@
         <details id="google-place-search" class="google-place-search">
           <summary>用 Google 搜尋地點（選用）</summary>
           <fieldset class="connection-fields">
-          <p>在自己的 Google Cloud 專案啟用 Maps JavaScript API 與 Places API (New)，使用限制於自己網站的瀏覽器 Key。此功能有服務額度與計費條件，與 Firebase Spark 分開。</p>
+          <p>由網站建立者在所管理的 Google Cloud 專案啟用 Maps JavaScript API 與 Places API (New)，使用限制於自己網站的瀏覽器 Key。此功能有服務額度與計費條件；旅伴不需要各自建立專案。</p>
           <p>搜尋與交通估算共用 Google 功能設定；搜尋內容會傳送給 Google。</p>
           <div class="setup-actions-inline"><button type="button" class="secondary" data-google-settings>Google 功能設定</button><button type="button" class="secondary" data-google-load>啟用地點搜尋</button><button type="button" class="text-button" data-google-clear>關閉搜尋並清除預覽</button></div>
           <div data-google-widget></div><p role="status" aria-live="polite"></p>
@@ -307,11 +307,11 @@
 
             <section class="setup-panel" data-setup-step="1" hidden>
               <p class="eyebrow">STEP 2 · FIREBASE</p>
-              <h3>建立免費的 Firebase 雲端同步</h3>
-              <p>Firebase 負責 Travel OS 的登入、旅程資料與多人同步。請維持 <strong>Spark 免費方案</strong>，不需要付款資料、Google Cloud 計費帳戶或部署 Functions。</p>
-              <div class="warning-card"><strong>保持 Spark，不連結計費帳戶</strong><span>連結 Cloud Billing 會使 Firebase 專案成為 Blaze。Travel OS 不需要這個步驟；Spark 額度不足時請備份並使用本機模式，不需升級付費。</span></div>
+              <h3>設定網站建立者管理的 Firebase 雲端同步</h3>
+              <p>這一步由<strong>網站建立者</strong>準備 Firebase 專案，統一管理登入、旅程資料與多人同步。受邀旅伴使用同一專案內的 Authentication 帳號，再依旅程取得 owner／editor／viewer 權限。</p>
+              <div class="warning-card"><strong>旅伴不需要建立 Firebase 專案</strong><span>Firebase 方案與計費由網站建立者管理。已有 Blaze／免費試用專案可沿用；旅伴不需要另選 Spark、申請計費帳戶或取得 Firebase Console 管理權限。</span></div>
               <ol class="setup-steps detailed">
-                <li><strong>建立 Firebase 專案：</strong>先用自己的 Google 帳戶登入 Firebase 控制台；沒有 Google 帳戶就先依官方說明建立。按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。如果 Gemini in Firebase 或 Google Analytics 預設開啟，可在建立流程中關閉；Travel OS 不需要這兩項。維持 Spark 免費方案。這個 Firebase 專案本身也會是 Google Cloud 專案，不必再建一個給目前的 Maps 導航。</li>
+                <li><strong>由網站建立者準備 Firebase 專案：</strong>可沿用自己管理的專案；如需新建，先登入 Firebase 控制台，按 <strong>建立專案</strong>，名稱可填 <code>My Travel OS</code>。Gemini in Firebase 或 Google Analytics 可關閉。這個 Firebase 專案本身也是 Google Cloud 專案；方案、服務啟用與計費由建立者管理。</li>
                 <li><strong>註冊網頁應用程式：</strong>進入 <strong>專案總覽</strong> → 點 <strong>&lt;/&gt; 網頁</strong>（若已有應用程式，點「新增應用程式」→「網頁」）→「應用程式暱稱」填 <code>Travel OS</code> → <strong>不要勾選 Firebase Hosting</strong> → 按「註冊應用程式」。</li>
                 <li><strong>啟用電子郵件／密碼登入：</strong>左側進入 <strong>Authentication（驗證）</strong> →「開始使用」→「登入方式」→「電子郵件地址/密碼」→ 啟用 →「儲存」。不要啟用「電子郵件連結」。</li>
                 <li><strong>建立你的登入帳號：</strong>Authentication →「使用者」→「新增使用者」→ 輸入你自己的電子郵件與密碼。這組帳密稍後會填回 Travel OS。</li>
@@ -339,7 +339,7 @@
               <p class="eyebrow">STEP 3 · GOOGLE MAPS</p>
               <h3>設定 Google 搜尋與交通估算</h3>
               <p><strong>基本導航：</strong>景點、停車場及開車／步行路線透過 Google Maps 外部連結開啟。不需建立 API 金鑰、不需 Google Cloud、不需連結計費帳戶，直接下一步即可。</p>
-              <div class="warning-card"><strong>先確認你的零費用要求</strong><span>Google Cloud「免費試用帳戶」有期限，並非永久免費方案；不升級時，試用到期或抵免用完會停止相關服務。將帳單帳戶連結至 Firebase 專案會使 Firebase 自動轉為 Blaze，即使 Cloud 帳戶仍是免費試用。若必須維持 Spark，請勿對同一專案連結帳單。Travel OS 不會替你升級帳戶，也無法保證 Google API 永遠零費用。</span><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans" target="_blank" rel="noopener noreferrer">Firebase 方案與帳單連結說明</a><a href="https://docs.cloud.google.com/free/docs/free-cloud-features" target="_blank" rel="noopener noreferrer">Google Cloud 免費試用到期說明</a></div>
+              <div class="warning-card"><strong>由網站建立者管理 Google 服務</strong><span>可沿用建立者已設定好的 Blaze／免費試用專案，或由建立者選擇另一個 Google Cloud 專案。旅伴不需要各自建立專案或計費帳戶。免費試用有期限，免費額度與計費條件請由建立者依官方文件確認。</span><a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans" target="_blank" rel="noopener noreferrer">Firebase 方案與帳單連結說明</a><a href="https://docs.cloud.google.com/free/docs/free-cloud-features" target="_blank" rel="noopener noreferrer">Google Cloud 免費試用到期說明</a></div>
               <ol class="setup-steps detailed">
                 <li>在新增安排中手動輸入地點名稱或地址。</li>
                 <li>若要精確定位，從 Google Maps 複製分享連結，貼到安排的「Google Maps 連結」欄位。</li>
@@ -347,7 +347,7 @@
                 <li>相鄰安排可開啟 Google Maps 開車或步行路線，路程與時間在 Google Maps 查看。</li>
               </ol>
               <ol class="setup-steps detailed">
-                <li><strong>建立另一個 Google Cloud 專案：</strong>Project ID 不可與上一步 Firebase 專案相同。Maps API 要求連結帳單；若沿用 Firebase 專案，Firebase 會離開 Spark。看到 Google 要你替 Firebase Project ID 設定帳單時，請按取消並回來建立新專案。</li>
+                <li><strong>選擇建立者管理的 Google Cloud 專案：</strong>可與 Firebase 使用同一個已設定服務的專案，不強制建立另一個。由建立者確認 Maps API 所需的帳單設定；若選擇保留 Spark，才需另外安排 Maps 專案。</li>
                 <li>依官方說明確認 Google Maps 的計費及免費額度條件，啟用 Maps JavaScript API、Places API (New) 與 Routes API。免費額度不等於無上限免費，預算通知不會自動停止用量。</li>
                 <li>建立瀏覽器 API Key，將網站限制設為自己的網站，API 限制只勾選實際使用的服務。不要貼服務帳戶私鑰或伺服器憑證。</li>
                 <li>按下方「Google 功能設定」貼上 Key 並套用，可選擇記住此裝置。SDK 載入檢查只確認程式載入，不代表服務或額度已驗證。</li>
@@ -359,17 +359,17 @@
 
             <section class="setup-panel" data-setup-step="3" hidden>
               <p class="eyebrow">STEP 4 · SIGN IN</p>
-              <h3>輸入你剛才在 Firebase Authentication 建立的帳號</h3>
+              <h3>輸入網站建立者提供的 Firebase 登入帳號</h3>
               <p>這不是 Google Cloud IAM。Authentication 只負責回答「現在登入 Travel OS 的人是誰」；Travel OS 的 owner／editor／viewer 是另一層旅程權限。</p>
               <div class="field-pair"><label>Firebase 使用者 Email<input name="email" type="email" autocomplete="username" placeholder="you@example.com" /></label><label>Firebase 使用者密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
-              <p class="field-help">帳號來源：Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」。Travel OS 不會保存你的密碼。</p>
+              <p class="field-help">帳號由網站建立者在 Firebase Authentication →「使用者」建立；受邀旅伴只需使用自己的登入帳密，不需 Firebase Console 管理權限。Travel OS 不會保存你的密碼。</p>
               <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的 Firebase Web config（不保存密碼）</label>
             </section>
 
             <section class="setup-panel" data-setup-step="4" hidden>
               <p class="eyebrow">STEP 5 · VERIFY</p>
               <h3>最後由 Travel OS 自動檢查</h3>
-              <p>按下驗證後，Travel OS 會登入你的 Firebase，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除，以及目前儲存格式所需的 Rules。若仍使用舊版 Rules，請回 Step 2 複製並發布目前版本。本步不驗證 Google 搜尋或交通估算，也不部署 Functions；請在 Firebase 控制台確認 Spark。</p>
+              <p>按下驗證後，Travel OS 會登入網站建立者提供的 Firebase 專案，並在你的 UID 範圍內測試 Realtime Database 寫入、讀取與刪除，以及目前儲存格式所需的 Rules。若仍使用舊版 Rules，請由建立者回 Step 2 複製並發布目前版本。本步不驗證 Google 搜尋或交通估算，也不部署 Functions；旅伴不需變更 Firebase 方案。</p>
               <div id="verification-summary" class="setup-check-result"></div>
               <div id="connection-progress" class="checklist" aria-live="polite"></div>
               <div class="warning-card"><strong>「登入成功」不代表 Rules 一定安全</strong><span>Travel OS repository 另外用 Firebase Emulator 測試 owner/editor/viewer 與跨旅程拒絕。這裡只確認你的 self-host 設定可以正常連線與合法讀寫。</span></div>

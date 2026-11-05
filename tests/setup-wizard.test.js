@@ -23,7 +23,7 @@ describe('zero-basis setup wizard', () => {
   });
 
   it('documents the critical Firebase safety path in the wizard itself', () => {
-    expect(html).toContain('Spark 免費方案');
+    expect(html).toContain('旅伴不需要建立 Firebase 專案');
     expect(html).toContain('不要選測試模式');
     expect(html).toContain('鎖定模式');
     expect(html).toContain('copy-rules-button');
