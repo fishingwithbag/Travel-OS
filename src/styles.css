@@ -2,6 +2,7 @@
 [data-theme="dark"] { --bg:#515360; --surface:#5b5e6b; --surface-2:#646875; --ink:#f7f6ed; --muted:#d1d5ce; --line:#777c86; --accent:#b7d7c2; --accent-ink:#20372a; --danger:#ffb4a9; color-scheme:dark; }
 * { box-sizing:border-box; }
 [hidden] { display:none!important; }
+.check-row[hidden] { display:none!important; }
 body { min-width:0; min-height:100vh; margin:0; background:var(--bg); color:var(--ink); line-height:1.5; }
 body.travel-os-page { padding-bottom:76px; }
 button,input,select,textarea { font:inherit; }

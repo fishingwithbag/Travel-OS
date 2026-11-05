@@ -1,5 +1,7 @@
 ## 繁體中文
 
+2026-11-05 旅伴登入實作：建立者驗證後可匯出 allowlist 公開網站設定，透過 `TRAVEL_OS_SITE_CONFIG` Actions secret 部署。訪客載入同站執行時設定，只需網站 Email／密碼；禁止在設定檔帶入密碼、token、service account 或旅程資料。官方 demo 維持本機模式，錯誤設定不會改連瀏覽器記住的其他專案。另修復 CSS 優先序讓已隱藏的 Firebase 記住選項仍露出的問題。178 項單元與 production build 通過，preview 已確認簡化登入畫面；真實旅伴登入及正式 Pages 驗收仍待完成。操作文件：`docs/SITE_CONNECTION.zh-TW.md`。
+
 現行部署模型：網站建立者管理一個 Firebase／Google 服務專案，受邀旅伴使用同一專案的 Authentication 帳號與旅程權限，不需各自建立專案。本次驗收沿用建立者現有 Blaze／免費試用專案，取消額外 Spark 流程與新增 Spark 測試帳號的門檻；下方較早紀錄中的 Spark 待辦已由此決定取代。README、設定精靈與指南同步澄清建立者／旅伴身分。
 
 恢復通用旅程、原版四個主要介面、分組停車、景點收藏、航班、住宿、租車、多幣別費用、Firebase 成員權限與備份還原，以及選配 Google Places／Routes。Firebase Rules 依 UID、tripId 與 membership 隔離不可變完整旅程版本。
@@ -15,6 +17,8 @@
 2026-11-05：真實三帳號完成合成旅程分享、editor 編輯、viewer 唯讀介面、即時更新、舊表單衝突拒絕與草稿保留、成員撤銷／恢復，以及跨旅程清單隔離。另修正 config 非斷行空白解析、雲端空旅程副標與重新授權後殘留的同步錯誤提示。173 項單元與 build 通過；新版提示、獨立 Spark、直接越權請求及正式部署仍待驗。詳見 `docs/VERIFICATION_MULTIPLAYER_2026-11-05.zh-TW.md`。
 
 ## English
+
+2026-11-05 traveler onboarding implementation: operators can export an allowlisted public website profile after verification and publish it through the `TRAVEL_OS_SITE_CONFIG` Actions secret. New visitors load same-origin runtime settings and see website Email/password login only; passwords, tokens, service accounts and trip data are rejected from the profile. The official demo remains local-only. Invalid deployed profiles fail closed instead of switching to a remembered project. Fixed a CSS specificity issue that exposed a hidden Firebase remember checkbox. 178 unit tests and production build pass; preview confirms the simplified UI, while real traveler login and deployed Pages acceptance remain pending. Setup instructions: `docs/SITE_CONNECTION.zh-TW.md`.
 
 Current deployment model: the website operator manages a Firebase/Google services project. Invited travelers use Authentication accounts and trip roles within that project; they do not need separate projects. Acceptance uses the operator's existing Blaze/free-trial project. The additional Spark setup and Spark-user prerequisite are canceled, superseding older Spark TODOs below. README, wizard and guides now distinguish operator setup from traveler access.
 

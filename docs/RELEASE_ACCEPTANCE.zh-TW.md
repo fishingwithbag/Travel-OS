@@ -33,6 +33,8 @@
 
 ## 新手設定必經流程
 
+- [ ] 建立者匯出網站連線設定並部署；新裝置僅輸入網站 Email／密碼即可登入，不需 Firebase Console 或 config。2026-11-05 已完成 production preview 簡化登入畫面與設定單元測試，真實旅伴登入及 Pages 部署待驗；見[指南](SITE_CONNECTION.zh-TW.md)。
+
 - [ ] 僅依 README 與 Step 1 完成自己網站的部署；官方 demo 不接收個人設定。
 - [ ] 網站建立者依 Step 2 準備 Firebase 專案、Web app、RTDB、Authentication、使用者及 Rules；本次沿用現有 Blaze／免費試用專案，不要求旅伴另建專案。
 - [ ] Firebase config 與 database URL 可貼上／逐欄修改；service account 與私鑰被拒絕。

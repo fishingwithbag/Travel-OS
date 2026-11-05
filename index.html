@@ -265,7 +265,7 @@
     <dialog id="settings-dialog" class="setup-dialog">
       <form id="connection-form" class="dialog-form setup-form">
         <header class="setup-header">
-          <div><p class="eyebrow">SETUP</p><h2>設定你的 Travel OS</h2><p class="muted compact">照著畫面一步一步完成即可，不需要先懂 GitHub、Firebase 或 Google Cloud。</p></div>
+          <div><p class="eyebrow">SETUP</p><h2 id="setup-title">設定你的 Travel OS</h2><p id="setup-intro" class="muted compact">照著畫面一步一步完成即可，不需要先懂 GitHub、Firebase 或 Google Cloud。</p></div>
           <button class="icon-button" data-close type="button" aria-label="關閉設定精靈">×</button>
         </header>
 
@@ -359,10 +359,10 @@
 
             <section class="setup-panel" data-setup-step="3" hidden>
               <p class="eyebrow">STEP 4 · SIGN IN</p>
-              <h3>輸入網站建立者提供的 Firebase 登入帳號</h3>
-              <p>這不是 Google Cloud IAM。Authentication 只負責回答「現在登入 Travel OS 的人是誰」；Travel OS 的 owner／editor／viewer 是另一層旅程權限。</p>
-              <div class="field-pair"><label>Firebase 使用者 Email<input name="email" type="email" autocomplete="username" placeholder="you@example.com" /></label><label>Firebase 使用者密碼<input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
-              <p class="field-help">帳號由網站建立者在 Firebase Authentication →「使用者」建立；受邀旅伴只需使用自己的登入帳密，不需 Firebase Console 管理權限。Travel OS 不會保存你的密碼。</p>
+              <h3 id="login-heading">輸入網站建立者提供的 Firebase 登入帳號</h3>
+              <p id="login-explanation">這不是 Google Cloud IAM。Authentication 只負責回答「現在登入 Travel OS 的人是誰」；Travel OS 的 owner／editor／viewer 是另一層旅程權限。</p>
+              <div class="field-pair"><label><span id="login-email-label">Firebase 使用者 Email</span><input name="email" type="email" autocomplete="username" placeholder="you@example.com" /></label><label><span id="login-password-label">Firebase 使用者密碼</span><input name="password" type="password" minlength="6" autocomplete="current-password" /></label></div>
+              <p id="login-help" class="field-help">帳號由網站建立者在 Firebase Authentication →「使用者」建立；受邀旅伴只需使用自己的登入帳密，不需 Firebase Console 管理權限。Travel OS 不會保存你的密碼。</p>
               <label class="check-row"><input name="remember" type="checkbox" /> 記住這台裝置的 Firebase Web config（不保存密碼）</label>
             </section>
 
@@ -379,7 +379,8 @@
               <p class="eyebrow">READY</p>
               <h3>你的 Travel OS 雲端已連線</h3>
               <div id="setup-complete-summary" class="setup-check-result success"></div>
-              <p>接下來可以建立第一趟旅程。若之後要讓旅伴登入，先到 Firebase 控制台 → Authentication（驗證）→「使用者」→「新增使用者」建立他們的帳號；旅程內的 owner／editor／viewer 權限由 Travel OS 資料與 Rules 控制，不是 Google Cloud IAM。</p>
+              <p id="operator-next-steps">接下來可以建立第一趟旅程。若之後要讓旅伴登入，由網站建立者在 Firebase Authentication 建立帳號，再由旅程 owner 指派權限。下載下方網站連線設定檔，依設定指南發布後，旅伴只需網站帳密。</p>
+              <button id="site-config-export-button" class="secondary" type="button" hidden>匯出網站連線設定</button>
             </section>
           </fieldset>
         </div>

@@ -33,6 +33,8 @@
 
 如果目前只想試用或離線工作，可以在精靈選擇「先使用本機模式」。這是 fallback，而不是正式 self-host 的主要 onboarding 路徑。
 
+建立者驗證完成後，請依[網站連線發布指南](SITE_CONNECTION.zh-TW.md)匯出設定並放入自己的 Actions secret，重新部署。此後旅伴只看到網站 Email／密碼登入，不需要操作上述六步。只完成建立者的本機驗證，尚未發布設定檔時，新裝置仍會看到設定精靈。
+
 若之後啟用 Google 登入、Email Link 或其他 redirect 驗證方式，Authorized domains 應加入你自己的 GitHub Pages hostname，例如：
 
 ```text

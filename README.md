@@ -31,6 +31,8 @@
 
 **網站建立者**負責部署、Firebase 專案及 Google 服務設定；**受邀旅伴**使用建立者的網站與同一 Firebase 專案內的登入帳號，再依旅程取得 owner／editor／viewer 權限。旅伴不需要各自建立 GitHub repository、Firebase 專案或計費帳戶。建立者可沿用已設定的 Blaze／免費試用專案。
 
+建立者完成精靈後，依[網站連線發布指南](docs/SITE_CONNECTION.zh-TW.md)匯出設定並重新部署，旅伴就能直接輸入網站 Email／密碼登入，不必再貼 Firebase config。這條新流程目前已通過設定單元測試與 production preview 畫面檢查，真實登入及正式部署仍在驗收中。
+
 ## 為什麼做 Travel OS？
 
 > 開發狀態：正在恢復原站功能並執行完整新手驗收，目前尚未達到「陌生使用者可順暢使用所有功能」的發布標準。功能缺口見[發布驗收清單](docs/RELEASE_ACCEPTANCE.zh-TW.md)及[功能核對報告](docs/FEATURE_PARITY_AUDIT.zh-TW.md)。

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/prepare-site-config.mjs && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:rules": "npm run firebase:rules:check && npx --yes firebase-tools@15.11.0 emulators:exec --project demo-travel-os --only database \"vitest run tests/database-rules.test.js tests/snapshot-rules.test.js\"",

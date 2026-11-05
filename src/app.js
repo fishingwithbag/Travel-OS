@@ -4,6 +4,7 @@ import travelOsDatabaseRules from '../firebase/database.rules.json?raw';
 import { addGroup, createBackup, createItem, createPlace, createTrip, editItem, expenseTotals, filterPlaces, placeItemInput, restoredTripCopy, touchTrip, tripDates, validateBackup, ValidationError } from './domain/trip.js';
 import { IndexedDbTripStore } from './storage/indexed-db.js';
 import { parseFirebaseConfigInput, parseRememberedConnection } from './config/firebase-config.js';
+import { loadSiteConfig, parseSiteConfig } from './config/site-config.js';
 import { isSharedPublicDemo, shouldOpenCloudOnboarding } from './config/deployment.js';
 import { FirebaseTripStore } from './storage/firebase-store.js';
 import { prepareStoreSwitch,saveToActiveStore } from './storage/store-switch.js';
@@ -20,7 +21,7 @@ import {recoverMissingGroups} from './domain/groups.js';
 import {setupPlaceSearch} from './ui/place-search.js';
 import {setupGoogleSettings} from './ui/google-settings.js';
 import {setupTravelEstimates} from './ui/travel-estimates.js';
-import {googleKey} from './config/google-settings.js';
+import {googleKey,setGoogleKey,restoreGoogleKey} from './config/google-settings.js';
 
 let store = new IndexedDbTripStore();
 const state = { trips: [], currentTripId: '', selectedDate: '', groupView:'all', mode:'local', connection:null, access:Object.create(null) };
@@ -37,6 +38,9 @@ let placeSaving = false;
 let placeFilterTripId = '';
 let setupStep = 0;
 let highestSetupStep = 0;
+let siteConfig = null, siteConfigError = '', connecting = false;
+const operatorSetup = new URL(location.href).searchParams.get('setup') === 'operator';
+const travelerLogin = () => !operatorSetup && Boolean(siteConfig || siteConfigError);
 const $ = (selector) => document.querySelector(selector);
 const typeLabels = { place: '景點', meal: '餐飲', stay: '住宿', flight: '航班', transport: '交通', other: '其他' };
 const sharedPublicDemo = isSharedPublicDemo(location.hostname, location.pathname);
@@ -91,7 +95,7 @@ const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openD
 const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const groupUi = setupGroupUi({currentTrip,saveTrip,openDialog,setError,showToast,canEdit:canEditTrip});
 setupPlaceSearch({sharedPublicDemo,canEdit:()=>canEditTrip() && !placeSaving});
-setupGoogleSettings({sharedPublicDemo,openDialog});
+setupGoogleSettings({sharedPublicDemo,openDialog,isManaged:travelerLogin});
 const travelEstimates=setupTravelEstimates({currentTrip,selectedDate:()=>state.selectedDate,escapeHtml});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
@@ -348,6 +352,7 @@ function renderVerificationSummary() {
 }
 
 function setSetupStep(nextStep) {
+  if (travelerLogin() && nextStep !== 5) nextStep = 3;
   setupStep = Math.max(0, Math.min(5, Number(nextStep) || 0));
   highestSetupStep = Math.max(highestSetupStep, setupStep);
   for (const panel of document.querySelectorAll('[data-setup-step]')) panel.hidden = Number(panel.dataset.setupStep) !== setupStep;
@@ -362,6 +367,15 @@ function setSetupStep(nextStep) {
   $('#setup-verify-button').hidden = sharedPublicDemo || setupStep !== 4;
   $('#setup-create-trip-button').hidden = sharedPublicDemo || setupStep !== 5 || state.trips.length > 0;
   $('#setup-finish-button').hidden = setupStep !== 5;
+  if (travelerLogin()) {
+    $('.setup-stepper').hidden = true;
+    $('#setup-back-button').hidden = true;
+    $('#setup-verify-button').hidden = true;
+    $('#setup-next-button').hidden = setupStep !== 3;
+    $('#setup-next-button').textContent = connecting ? '登入中…' : '登入網站';
+    $('#setup-next-button').disabled = connecting || Boolean(siteConfigError);
+    $('#site-config-export-button').hidden = true;
+  } else $('#site-config-export-button').hidden = sharedPublicDemo || setupStep !== 5;
   if (setupStep === 4) renderVerificationSummary();
   setError($('#connection-form'), '');
 }
@@ -680,14 +694,21 @@ function updateConnectionSummary() {
   $('#local-mode-button').textContent = state.mode === 'cloud' ? '切換到本機模式' : '先使用本機模式';
   $('#firebase-forget-button').hidden = sharedPublicDemo || (state.mode !== 'cloud' && !hasRememberedConnection);
   if (state.mode === 'cloud') {
-    summary.innerHTML = `<strong>雲端同步已啟用</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')}</span>`;
-    $('#save-status').textContent = '已連接自己的 Firebase';
+    summary.innerHTML = travelerLogin() ? `<strong>已登入 Travel OS</strong><span>${escapeHtml(state.connection.email || '')}</span>` : `<strong>雲端同步已啟用</strong><span>${escapeHtml(state.connection.projectId)} · ${escapeHtml(state.connection.email || '')}</span>`;
+    $('#save-status').textContent = travelerLogin() ? '已登入網站' : '已連接自己的 Firebase';
   } else if (sharedPublicDemo) {
     summary.innerHTML = '<strong>公開體驗站</strong><span>僅限本機模式，不接受雲端設定或帳密</span>';
     $('#save-status').textContent = '本機模式';
+  } else if (travelerLogin()) {
+    summary.innerHTML = '<strong>登入 Travel OS</strong><span>使用網站建立者提供的帳號，不需要設定 Firebase 或 Google Cloud。</span>';
+    $('#save-status').textContent = '尚未登入';
   } else {
     summary.innerHTML = '<strong>本機模式</strong><span>資料只保存在這台裝置</span>';
     $('#save-status').textContent = '本機模式';
+  }
+  if (travelerLogin()) {
+    $('#firebase-forget-button').hidden = state.mode !== 'cloud';
+    $('#firebase-forget-button').textContent = '登出網站';
   }
 }
 
@@ -727,18 +748,23 @@ async function activateStore(nextStore, mode, connection = null) {
 
 $('#connection-form').addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (connecting) return;
   const form = event.currentTarget; setError(form, '');
-  if (setupStep !== 4) {
+  if (setupStep !== 4 && !travelerLogin()) {
     try { validateSetupStep(setupStep); setSetupStep(setupStep + 1); }
     catch (error) { setError(form, error); }
     return;
   }
   const progress = $('#connection-progress'); progress.innerHTML = '<span>1／3　正在檢查 Firebase 設定…</span>';
   try {
+    if (siteConfigError && travelerLogin()) throw new ValidationError(siteConfigError);
     if (sharedPublicDemo) throw new ValidationError('公開體驗站僅提供本機模式；請先建立由自己控制的網站副本。');
     const input = formData(form);
-    if (!input.email || !input.password) throw new ValidationError('請輸入 Firebase Email 與密碼。');
-    const config = parseFirebaseConfigInput(input);
+    if (!input.email || !input.password) throw new ValidationError(travelerLogin() ? '請輸入網站 Email 與密碼。' : '請輸入 Firebase Email 與密碼。');
+    const config = travelerLogin() ? siteConfig.firebase : parseFirebaseConfigInput(input);
+    connecting = true;
+    $('#setup-next-button').disabled = $('#setup-verify-button').disabled = true;
+    if (travelerLogin()) $('#setup-next-button').textContent = '登入中…';
     progress.innerHTML += '<span>2／3　正在登入指定的 Firebase 專案，並測試本人範圍讀寫…</span>';
     const cloudStore = new FirebaseTripStore();
     const connection = await cloudStore.connect(config, { email:input.email, password:input.password });
@@ -746,20 +772,28 @@ $('#connection-form').addEventListener('submit', async (event) => {
     const warnings = await activateStore(cloudStore, 'cloud', connection);
     localStorage.setItem(STORAGE_KEYS.onboardingMode, 'cloud');
     const mapsStatus = googleKey() ? '已設定 Key；請分別實測景點搜尋與路程估算' : '免 Key 外部導航與手動安排';
-    if (input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config }));
+    if (!travelerLogin() && input.remember) localStorage.setItem(STORAGE_KEYS.connection, JSON.stringify({ firebase:config }));
     else localStorage.removeItem(STORAGE_KEYS.connection);
     form.elements.password.value = '';
     $('#setup-complete-summary').innerHTML = `<strong>✓ 雲端同步已啟用</strong><span>Firebase：${escapeHtml(connection.projectId)}</span><span>帳號：${escapeHtml(connection.email || '')}</span><span>Google Maps：${escapeHtml(mapsStatus)}</span><span>Firebase 專案與方案由網站建立者管理；旅伴使用同一專案的帳號與旅程權限，不需另建專案。</span>`;
+    if (travelerLogin()) $('#setup-complete-summary').textContent = `登入成功：${connection.email || ''}。現在顯示你有權限使用的旅程。`;
     setSetupStep(5);
     showToast(warnings.length ? `已連接 ${connection.projectId}；另略過 ${warnings.length} 筆失效或損壞的雲端資料。` : `已連接 ${connection.projectId}；目前顯示這個帳號的雲端旅程。`);
   } catch (error) {
     progress.innerHTML += `<span>✕ 驗證失敗：${escapeHtml(error instanceof Error ? error.message : '未知錯誤')}</span>`;
-    setError(form, error);
+    if (travelerLogin()) setError(form, new ValidationError(siteConfigError || (/Email|密碼/.test(error.message || '') ? error.message : '網站登入服務暫時無法使用，請檢查網路或聯絡網站建立者。')));
+    else setError(form, error);
+  } finally {
+    connecting = false;
+    $('#setup-next-button').disabled = Boolean(siteConfigError) && travelerLogin();
+    $('#setup-verify-button').disabled = false;
+    if (travelerLogin()) $('#setup-next-button').textContent = '登入網站';
   }
 });
 
 $('#setup-next-button').addEventListener('click', () => {
   const form = $('#connection-form'); setError(form, '');
+  if (travelerLogin()) { form.requestSubmit(); return; }
   if (sharedPublicDemo) { setSetupStep(setupStep + 1); return; }
   try { validateSetupStep(setupStep); setSetupStep(setupStep + 1); }
   catch (error) { setError(form, error); }
@@ -786,6 +820,12 @@ $('#setup-create-trip-button').addEventListener('click', () => {
 });
 
 $('#setup-finish-button').addEventListener('click', () => $('#settings-dialog').close());
+$('#site-config-export-button').addEventListener('click', () => {
+  try {
+    const profile = parseSiteConfig({schemaVersion:1, firebase:parseFirebaseConfigInput(formData($('#connection-form'))), ...(googleKey() ? {googleMapsKey:googleKey()} : {})});
+    downloadJson(profile, 'site-config.json');
+  } catch(error) { setError($('#connection-form'), error); }
+});
 
 $('#local-mode-button').addEventListener('click', async () => {
   const form = $('#connection-form'); setError(form, '');
@@ -820,7 +860,7 @@ $('#firebase-forget-button').addEventListener('click', async () => {
     highestSetupStep = 0;
     setSetupStep(0);
     updateConnectionSummary();
-    showToast('已登出 Firebase 並清除這台裝置記住的設定；雲端旅程未刪除。');
+    showToast(travelerLogin() ? '已登出網站；雲端旅程未刪除。' : '已登出 Firebase 並清除這台裝置記住的設定；雲端旅程未刪除。');
   } catch (error) { setError(form, error); }
 });
 
@@ -927,6 +967,15 @@ async function start() {
   setActiveView(new URL(location.href).searchParams.get('view') || 'dashboard',{updateUrl:false});
   $('#current-site-url').textContent = location.href.split('#')[0].split('?')[0];
   let initialSetupStep = 0;
+  if (!sharedPublicDemo) {
+    try { siteConfig = await loadSiteConfig(location.href); }
+    catch(error) { siteConfigError = error instanceof ValidationError ? error.message : '網站登入設定無法載入，請聯絡網站建立者。'; }
+  }
+  // Restore a personal Maps setting only when no operator profile controls this site.
+  if (!siteConfig && !siteConfigError) {
+    try { restoreGoogleKey(sharedPublicDemo); }
+    catch { $('#google-settings-dialog [role="status"]').textContent = '瀏覽器設定儲存空間無法使用，請檢查隱私設定。'; }
+  }
   if (sharedPublicDemo) {
     localStorage.removeItem(STORAGE_KEYS.connection);
     $('#official-demo-url-warning').hidden = false;
@@ -939,7 +988,7 @@ async function start() {
     $('#local-start-button').textContent = '建立第一趟旅程';
   }
   const remembered = localStorage.getItem(STORAGE_KEYS.connection);
-  if (remembered) {
+  if (remembered && !siteConfig && !siteConfigError) {
     try {
       const connection = parseRememberedConnection(remembered);
       $('#connection-form').elements.firebaseConfig.value = JSON.stringify(connection.firebase, null, 2);
@@ -950,9 +999,31 @@ async function start() {
       renderFirebasePreview(connection.firebase);
     } catch { localStorage.removeItem(STORAGE_KEYS.connection); }
   }
+  if (siteConfig) {
+    $('#connection-form').elements.firebaseConfig.value = JSON.stringify(siteConfig.firebase);
+    $('#connection-form').elements.firebase_databaseURL.value = siteConfig.firebase.databaseURL;
+    highestSetupStep = initialSetupStep = 3;
+    setGoogleKey(siteConfig.googleMapsKey || '');
+  }
+  if (travelerLogin()) {
+    $('#setup-title').textContent = '登入 Travel OS';
+    $('#setup-intro').textContent = '輸入網站帳號與密碼即可使用，不需要 Firebase 或 Google Cloud 資格。';
+    $('#welcome > p:not(.eyebrow)').textContent = '登入網站後即可使用已獲授權的旅程；也可以先用本機模式體驗。';
+    $('#login-heading').textContent = '使用你的網站帳號登入';
+    $('#login-explanation').textContent = '帳號由網站建立者提供；登入後只會顯示你有權限使用的旅程。';
+    $('#login-help').textContent = '網站不保存密碼。忘記密碼或尚未取得帳號時，請聯絡網站建立者。';
+    $('[data-setup-step="3"] .eyebrow').textContent = 'SIGN IN';
+    $('#login-email-label').textContent = '網站登入 Email';
+    $('#login-password-label').textContent = '網站登入密碼';
+    $('#connection-form').elements.remember.closest('label').hidden = true;
+    $('#operator-next-steps').textContent = '你只能查看或編輯已獲授權的旅程。需要加入同行旅程時，請聯絡旅程擁有者。';
+    $('#cloud-setup-button .qa-btn__title').textContent = '登入網站';
+    $('#cloud-setup-button .qa-btn__sub').textContent = '使用網站帳號';
+  }
   await store.connect(); state.trips = await store.listTrips(); state.trips.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)); state.currentTripId = state.trips[0]?.id || ''; render();
   updateConnectionSummary();
   if (sharedPublicDemo) setSetupStep(0); else setSetupStep(initialSetupStep);
+  if (siteConfigError) setError($('#connection-form'), new ValidationError(siteConfigError));
   if (shouldOpenCloudOnboarding(location.hostname, location.pathname, localStorage.getItem(STORAGE_KEYS.onboardingMode) || '')) openDialog('settings-dialog');
 }
 

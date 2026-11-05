@@ -4,6 +4,8 @@
 
 ## 工作順序與門檻
 
+2026-11-05 WP3 增量：新增建立者驗證後匯出網站設定、Actions secret 注入部署、同站 runtime profile 與旅伴簡化登入。178 項單元及 build 通過，production preview 已確認旅伴只需 Email／密碼；真實登入與正式部署仍待驗，不將介面檢查當成完整驗收。詳見 SITE_CONNECTION.zh-TW.md。
+
 基準確認 → WP4 群組完整性 → WP1 地點搜尋 → WP2 交通估算 → WP3 精靈整合 → 完整驗收。
 WP3 流程設計可提早開始，整合須等 Google 功能可運作。各階段提交明確變更、測試證據及中英文 PR；不以自動測試取代真實服務與瀏覽器驗證。
 
