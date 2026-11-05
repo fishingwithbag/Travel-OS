@@ -33,6 +33,8 @@
 
 ## 新手設定必經流程
 
+本批旅伴登入、手機、根／子路徑及匿名拒絕證據見[設定流程驗證報告](VERIFICATION_ONBOARDING_2026-11-05.zh-TW.md)，包含尚未通過的真實登入與正式部署門檻。
+
 - [ ] 建立者匯出網站連線設定並部署；新裝置僅輸入網站 Email／密碼即可登入，不需 Firebase Console 或 config。2026-11-05 已完成 production preview 簡化登入畫面與設定單元測試，真實旅伴登入及 Pages 部署待驗；見[指南](SITE_CONNECTION.zh-TW.md)。
 
 - [ ] 僅依 README 與 Step 1 完成自己網站的部署；官方 demo 不接收個人設定。

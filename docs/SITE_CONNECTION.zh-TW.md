@@ -31,6 +31,8 @@
 
 ## 本輪驗證狀態
 
+桌面登入視窗已實測 540px 單欄；320／390px 無水平溢出，空白帳密會顯示錯誤。完整證據與未通過項目見[本輪驗證報告](VERIFICATION_ONBOARDING_2026-11-05.zh-TW.md)。提交 `ebc4dcd` 的 [CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/42003383562) 全部通過，包含 40 項 Rules 測試；後續版面修正另由 CI 重跑。
+
 2026-11-05：設定 parser、同站子路徑載入、拒絕憑證與錯誤設定的單元測試通過；production preview 已實際呈現只有 Email／密碼的登入畫面，六步導覽與記住 Firebase 設定選項均隱藏。已準備既有 viewer 帳號的真實登入，等待帳號持有人於瀏覽器輸入密碼；尚不能宣稱旅伴登入後全流程或正式 Pages 部署驗收完成。
 
 本機 178 項單元、build、Rules 產生一致性及依賴稽核通過（0 vulnerabilities）。本輪本機 Emulator 未能啟動：預設 Java 17 不符工具需求；指定既有 Java 21 後遇到 Windows loopback socket 初始化錯誤，指定正式暫存路徑仍失敗，因此不列為本輪權限測試成功。前一提交 `65d47fa` 的 [GitHub CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/41959372208) 成功；本批仍需由 Linux CI 重跑權限測試。

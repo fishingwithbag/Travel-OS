@@ -1006,6 +1006,7 @@ async function start() {
     setGoogleKey(siteConfig.googleMapsKey || '');
   }
   if (travelerLogin()) {
+    $('#settings-dialog').classList.add('traveler-login');
     $('#setup-title').textContent = '登入 Travel OS';
     $('#setup-intro').textContent = '輸入網站帳號與密碼即可使用，不需要 Firebase 或 Google Cloud 資格。';
     $('#welcome > p:not(.eyebrow)').textContent = '登入網站後即可使用已獲授權的旅程；也可以先用本機模式體驗。';
