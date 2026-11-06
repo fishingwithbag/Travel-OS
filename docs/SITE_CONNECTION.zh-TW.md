@@ -31,6 +31,8 @@
 
 ## 本輪驗證狀態
 
+2026-11-06 增量：真實 SDK 三角色驗收完成 13 次越權拒絕、editor 合法發布與 viewer 新版讀回，見[權限報告](VERIFICATION_AUTHORIZATION_2026-11-06.zh-TW.md)。新 Repo 的 Pages 已成功部署，下一站備註／Maps／主備停車與重整讀回通過；建立者登入、匯出網站設定及線上旅伴登入仍待完成，見[部署報告](VERIFICATION_DEPLOYMENT_2026-11-06.zh-TW.md)。下方日期化紀錄保留當時狀態。
+
 2026-11-06：本機 production preview 已以既有 viewer 帳號真實登入，未再貼 config 或走六步設定，成功讀回唯一獲授權的共享旅程、跨年航班、下一站備註、停車連結與分幣別費用；群組、費用及成員寫入介面停用。正式 Pages 登入與直接 SDK 越權請求仍待驗；下方 2026-11-05 的「等待輸入密碼」為當時紀錄。
 
 桌面登入視窗已實測 540px 單欄；320／390px 無水平溢出，空白帳密會顯示錯誤。完整證據與未通過項目見[本輪驗證報告](VERIFICATION_ONBOARDING_2026-11-05.zh-TW.md)。提交 `ebc4dcd` 的 [CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/42003383562) 全部通過，包含 40 項 Rules 測試；後續版面修正另由 CI 重跑。
