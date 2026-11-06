@@ -1,5 +1,7 @@
 ## 繁體中文
 
+離線與版面增量：內建瀏覽器在 production preview 來源停服（port 無監聽）後，完整樣式重整、離線新增安排／備註及再重整讀回通過，恢復來源後資料保留。先前裸 HTML 失敗由本輪實測更新；不將此當成實體手機飛航模式或正式 Pages 證據。另修正長群組名稱被擠成逐字直排，保留原版樣式並自動換行，四個按鈕實測各約 123 × 45px。詳見 `docs/VERIFICATION_OFFLINE_2026-11-06.zh-TW.md`。
+
 Google 真實服務增量：日本東京站／上野站 Places 搜尋、選取、Place ID 保存與行程加入成功；開車約 3.7 公里／9 分鐘、步行約 3.2 公里／47 分鐘，手動地址亦成功。手動 0 分鐘、變更失效、未允許來源失敗及缺 Key 後手動保存均驗證。修正旅伴缺設定時仍被要求貼 Key、歡迎文案錯誤目標與 Google 元件主題不同步；390px iframe 鍵盤選取、light／dark 與無水平溢出通過。本機 178 項單元及 build 通過；正式 Pages、實體手機與配額錯誤不作已完成宣稱。詳見 `docs/VERIFICATION_GOOGLE_2026-11-06.zh-TW.md`。
 
 2026-11-06：production preview 真實 viewer 登入成功，僅輸入網站帳密、未再貼 config 或走六步精靈；唯一共享旅程、跨年航班、下一站備註、停車連結與分幣別費用讀回，群組／費用／成員修改停用。`4297eeb` CI 全部成功，89 個 commit 與最新通用產物掃描無命中。正式 Pages 與直接 SDK 權限驗證仍未關閉。
@@ -16,13 +18,15 @@ Google 真實服務增量：日本東京站／上野站 Places 搜尋、選取�
 
 驗證：172 項單元測試、production build、依賴稽核及 Rules Emulator 在 [CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/41467832190) 全部通過。Chrome 實際停服重整、離線新增景點／備註／停車與恢復連線讀回成功。真實 Firebase owner 新旅程還原與重登讀回、Google Places 拒絕後手動保存均已實測。
 
-尚待完成：連線設定的跨專案隔離、建立者首次部署、直接越權請求、正式 Pages 更新與離線重測。內建瀏覽器離線情境未通過，仍保留記錄。尚未宣告完整發布；詳細證據見發布驗收清單及驗證報告。
+尚待完成：連線設定的跨專案隔離、建立者首次部署、直接越權請求、正式 Pages 更新與離線重測。內建瀏覽器本機來源停服回歸已於 2026-11-06 通過；歷史失敗紀錄保留。尚未宣告完整發布；詳細證據見發布驗收清單及驗證報告。
 
 2026-11-03 增量：真實 owner 完成分組租車、住宿、取還車／入住退房加入行程，以及雙幣別費用保存／編輯與單筆暫存費用刪除；Firebase Console 直接核對伺服器快照。另從零建立獨立 Spark 專案，完成 Web app、Email／Password、RTDB 及成員隔離 Rules 發布，重載 Console 確認生效；新帳號與跨專案實測仍待完成。本機本輪 172 項單元、40 項 Rules 測試及 build 通過，正式依賴稽核 0 vulnerabilities。詳見 `docs/VERIFICATION_CLOUD_2026-11-03.zh-TW.md`。
 
 2026-11-05：真實三帳號完成合成旅程分享、editor 編輯、viewer 唯讀介面、即時更新、舊表單衝突拒絕與草稿保留、成員撤銷／恢復，以及跨旅程清單隔離。另修正 config 非斷行空白解析、雲端空旅程副標與重新授權後殘留的同步錯誤提示。173 項單元與 build 通過；新版提示、獨立 Spark、直接越權請求及正式部署仍待驗。詳見 `docs/VERIFICATION_MULTIPLAYER_2026-11-05.zh-TW.md`。
 
 ## English
+
+Offline/layout update: the in-app browser passes styled reload, offline item/note creation and readback after the local production preview origin is stopped with no listener. Data survives restoring the origin. This supersedes the earlier bare-HTML failure, without claiming physical-phone airplane-mode or production Pages coverage. Long group labels now wrap as readable buttons while preserving the original styling; four buttons measure about 123 × 45px each. See `docs/VERIFICATION_OFFLINE_2026-11-06.zh-TW.md`.
 
 Live Google validation: Places searches/selections in Japan, saved Place ID links and itinerary insertion pass. Driving returns about 3.7 km/9 minutes, walking about 3.2 km/47 minutes; manual-address routing also succeeds. Manual zero-minute priority, invalidation, a rejected unlisted origin and manual saving without a key are verified. Fix traveler prompts requesting personal keys, a welcome-copy selector and mismatched Google component themes. Keyboard selection, light/dark themes and no horizontal overflow pass in a 390px browser iframe. Local 178 unit tests and build pass; production Pages, physical phones and exhausted-quota responses are not claimed as verified. See `docs/VERIFICATION_GOOGLE_2026-11-06.zh-TW.md`.
 
@@ -40,7 +44,7 @@ This update fixes IANA/DST duration handling and offline caching. Production bui
 
 Validation: 172 unit tests, production build, dependency audit and Rules Emulator all pass in [CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/41467832190). Chrome passes reload with the server stopped, offline place/note/parking creation and readback after reconnect. Real Firebase owner restore/re-login and manual saving after a real Google Places rejection were verified.
 
-Remaining gates: project-switch isolation, operator first deployment, direct unauthorized requests, and production Pages update/offline checks. The in-app browser offline case remains failed and documented. Full release readiness is not claimed; see the acceptance checklist and verification reports.
+Remaining gates: project-switch isolation, operator first deployment, direct unauthorized requests, and production Pages update/offline checks. The in-app browser local-origin-offline regression passes on 2026-11-06; historical failures remain documented. Full release readiness is not claimed; see the acceptance checklist and verification reports.
 
 2026-11-03 update: a real owner saved grouped rentals, stays, pickup/return and check-in/out itinerary entries, plus currency-separated expenses, edits and deletion of one temporary test expense. Firebase Console confirmed server snapshots. A new independent Spark project now has a Web app, Email/Password, RTDB and published membership Rules, verified after a Console reload; new users and project-switch checks remain pending. This round passes 172 unit tests, 40 Rules tests and production build, with zero production dependency vulnerabilities. See `docs/VERIFICATION_CLOUD_2026-11-03.zh-TW.md`.
 
