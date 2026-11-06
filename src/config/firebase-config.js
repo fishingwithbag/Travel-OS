@@ -1,5 +1,4 @@
 import { ValidationError } from '../domain/trip.js';
-import { validateMapsBrowserKey } from '../providers/maps.js';
 
 const ALLOWED_FIELDS = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'measurementId'];
 const REQUIRED_FIELDS = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'];
@@ -23,6 +22,7 @@ function normalizeObjectSyntax(text) {
   const objectEnd = text.lastIndexOf('}');
   if (objectStart < 0 || objectEnd <= objectStart) throw new ValidationError('找不到 Firebase config 物件。');
   return text.slice(objectStart, objectEnd + 1)
+    .replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|\u00a0/g, (match, quoted) => quoted ?? ' ')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|\s)\/\/.*$/gm, '$1')
     .replace(/([{,]\s*)([A-Za-z][A-Za-z0-9]*)(\s*:)/g, '$1"$2"$3')
@@ -33,6 +33,8 @@ function normalizeObjectSyntax(text) {
 export function parseFirebaseConfig(raw, databaseURLOverride = '') {
   const text = String(raw || '').trim();
   if (!text) throw new ValidationError('請貼上 Firebase Web config。');
+  const looksLikeRules = /["']rules["']\s*:/.test(text) && /["']\.(?:read|write|validate)["']\s*:/.test(text);
+  if (looksLikeRules) throw new ValidationError('你貼入的是 Realtime Database Rules，不是 Firebase Web config。請到「專案設定 → 一般 → 您的應用程式 → SDK 設定與配置」，複製 const firebaseConfig = { ... }。');
   if (text.length > 10_000) throw new ValidationError('Firebase config 內容過長。');
   if (FORBIDDEN_MARKERS.some((marker) => text.toLowerCase().includes(marker.toLowerCase()))) throw new ValidationError('偵測到管理憑證或私鑰；本網站不接受這類敏感資料。');
   let parsed;
@@ -68,6 +70,6 @@ export function parseRememberedConnection(raw) {
   try { stored = JSON.parse(String(raw || '')); }
   catch { throw new ValidationError('已記住的 Firebase 連線設定無法解析。'); }
   if (!stored || typeof stored !== 'object' || Array.isArray(stored) || !stored.firebase) throw new ValidationError('已記住的 Firebase 連線設定不完整。');
-  const googleMapsKey = stored.googleMapsKey ? validateMapsBrowserKey(stored.googleMapsKey) : '';
-  return Object.freeze({ firebase:parseFirebaseConfig(JSON.stringify(stored.firebase)), googleMapsKey });
+  // ponytail: discard obsolete Maps keys; current navigation uses keyless Maps URLs.
+  return Object.freeze({ firebase:parseFirebaseConfig(JSON.stringify(stored.firebase)) });
 }

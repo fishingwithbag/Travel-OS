@@ -1,19 +1,19 @@
 # Firebase 設定指南
 
-這份文件假設你第一次使用 Firebase。請照順序操作，不要跳步。Travel OS 的 Firebase 只負責 Authentication、Realtime Database 與多人同步；Google Maps 請使用另一個 Google Cloud project。
+這份文件假設你第一次使用 Firebase。請照順序操作，不要跳步。Travel OS 的 Firebase 只負責 Authentication、Realtime Database 與多人同步；目前的 Google Maps 外部導航不需要 Google Cloud project 或 API Key。
 
-> 重要：這個 Firebase project 請維持 **Spark 免費方案**。不要在同一 project 連結 Cloud Billing，也不要直接拿它去開 Google Maps API。Firebase 官方說，同一 project 連結 Cloud Billing 或使用 Google Maps API 時，會從 Spark 升級成 Blaze。
+> 這份建立專案指南由**網站建立者**操作。建立者管理一個 Firebase 專案及其方案；受邀旅伴使用該專案內的 Authentication 帳號，不需要各自建立 Firebase、選擇 Spark 或設定計費。本次驗收沿用建立者現有的 Blaze／免費試用專案。
 
-開始前，請先完成[GitHub Pages 自行部署](SELF_HOSTING.zh-TW.md)，並確認你已經能開啟自己的 Travel OS 網址。
+開始前，請先完成[GitHub Pages 自行部署](SELF_HOSTING.zh-TW.md)，並確認你已經能開啟自己的 Travel OS 網址。若還沒有 Google 帳戶，先依[Google 官方說明](https://support.google.com/accounts/answer/27441?hl=zh-hant)建立；Firebase 控制台使用 Google 帳戶登入。建立 Firebase project 時，Google Cloud project 也會一併建立，無需為目前的 Maps 外部導航再建立一個專案。[Firebase 官方專案說明](https://firebase.google.com/docs/projects/learn-more)
 
 ## 1. 建立 Firebase 專案
 
 1. 開啟 [Firebase 控制台](https://console.firebase.google.com/)。
 2. 按 **建立專案**。
 3. 專案名稱可填 `My Travel OS`。
-4. Google Analytics 不是 Travel OS 必要功能，可略過。
+4. 若看到「Firebase 專案的 AI 輔助功能」，關閉 **啟用 Gemini in Firebase**，按「繼續」。下一頁關閉 **啟用這項專案的 Google Analytics 功能**，再按「建立專案」。這兩項都不是 Travel OS 必要功能。
 5. 建立完成後會進入 **專案總覽**。
-6. 保持 **Spark** 免費方案；如果流程要求你連結 Billing／升級 Blaze，先停止並確認自己是否選錯 project。
+6. 若已有自己管理的 Blaze／免費試用專案，可以沿用。專案方案與服務設定由網站建立者決定；不需為每位旅伴建立另一個專案。
 
 官方說明：[Firebase pricing plans](https://firebase.google.com/docs/projects/billing/firebase-pricing-plans)
 
@@ -55,7 +55,7 @@ Travel OS 目前不提供公開註冊，所以由 Firebase project 擁有者決�
 5. 設定一組密碼（Firebase 預設至少 6 字元；若你另外設定更嚴格 Password policy，請遵守該規則）。
 6. 建立後記住這組 Email / Password；稍後會填到 Travel OS 設定精靈的「登入」步驟。
 
-旅伴日後也可以在同一個「使用者」頁面按 **新增使用者** 建立帳號。Travel OS 的 owner／editor／viewer 角色不是 IAM，而是旅程資料與 Database Rules 的權限。
+網站建立者在同一個「使用者」頁面為旅伴新增 Authentication 帳號，再由旅程 owner 在 Travel OS 指派 editor／viewer。旅伴不需 Firebase Console 或 Google Cloud IAM 管理權限；網站管理者與旅程 owner 是不同層級的身分。
 
 ## 5. 建立 Realtime Database
 
@@ -188,7 +188,8 @@ const firebaseConfig = {
 - **缺少 Realtime Database URL**：Firebase 控制台 → Realtime Database →「資料」→ 複製頁面上方的 HTTPS 網址，再貼到 Travel OS 的 Realtime Database URL 欄位。
 - **Email 或密碼不正確**：確認帳號存在於目前 Firebase 專案的 Authentication →「使用者」。
 - **電子郵件地址/密碼尚未啟用**：Authentication →「登入方式」→「電子郵件地址/密碼」→ 啟用 → 儲存。
-- **PERMISSION_DENIED / Rules 拒絕存取**：確認 Realtime Database →「規則」已發布 Travel OS Rules，而不是鎖定模式原始規則或測試模式。
-- **看到 Blaze / Billing**：這個 Firebase project 應維持 Spark。Google Maps Billing 請放在另一個 Google Cloud project。
+- **PERMISSION_DENIED / Rules 拒絕存取**：回精靈 Step 2 重新複製並發布目前版本 Travel OS Rules；Step 5 的儲存格式檢查會拒絕舊規則，不能只確認登入成功。不要使用公開讀寫規則。
+- **舊旅程需要升級**：由擁有者在旅程上方下載備份、預覽修復並確認升級；請閱讀[升級與回復指南](STORAGE_MIGRATION.zh-TW.md)。
+- **看到 Blaze / Billing**：這是網站建立者管理的專案方案，不是每位旅伴的方案。若沿用已設定的 Blaze／免費試用專案，可繼續驗證；請由建立者核對專案 ID 與服務設定。
 
-完成這一頁後，再依 [Google Cloud / Maps Browser Key 設定指南](GOOGLE_CLOUD_SETUP.zh-TW.md)設定 Google Maps。
+完成這一頁後，可閱讀 [Google Maps 導航說明](GOOGLE_CLOUD_SETUP.zh-TW.md)；目前不需另外設定 Google Cloud。

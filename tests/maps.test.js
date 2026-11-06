@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { itemMapUrl, mapSearchUrl, parkingMapUrl, recommendedWebsiteRestriction, validateMapsBrowserKey, verifyMapsBrowserKey } from '../src/providers/maps.js';
+import { describe, expect, it } from 'vitest';
+import { itemMapUrl, mapSearchUrl, parkingMapUrl, routeMapUrl, dayRouteSections } from '../src/providers/maps.js';
 
 describe('Google Maps external navigation', () => {
   it('uses an exact destination link and keeps parking navigation separate', () => {
@@ -14,42 +14,50 @@ describe('Google Maps external navigation', () => {
   it('rejects an empty navigation query', () => {
     expect(() => mapSearchUrl('   ')).toThrow(/地點/);
   });
-  it('accepts browser-key-shaped values and rejects unrelated secrets', () => {
-    expect(validateMapsBrowserKey('AIza123456789012345678901234567890')).toMatch(/^AIza/);
-    expect(() => validateMapsBrowserKey('server-secret')).toThrow(/Browser Key/);
+  it('opens encoded driving and walking directions without a key', () => {
+    const origin = { title:'A & B' }, destination = { location:'City Hall', title:'Hall' };
+    const url = new URL(routeMapUrl(origin, destination, 'walking'));
+    expect(url.searchParams.get('origin')).toBe('A & B');
+    expect(url.searchParams.get('destination')).toBe('City Hall');
+    expect(url.searchParams.get('travelmode')).toBe('walking');
+    expect(new URL(routeMapUrl(origin, destination)).searchParams.get('travelmode')).toBe('driving');
+    expect(url.searchParams.has('key')).toBe(false);
+    expect(() => routeMapUrl(origin, destination, 'invalid')).toThrow();
   });
-  it('builds a host-level website restriction recommendation', () => {
-    expect(recommendedWebsiteRestriction('https://traveler.github.io')).toBe('https://traveler.github.io/*');
-    expect(recommendedWebsiteRestriction('file://local')).toBe('');
+});
+
+describe('daily group routes', () => {
+  const stop = (title, startTime, groupId = '') => ({ title, startTime, groupId, type:'place' });
+  it('includes shared stops without mixing groups and keeps return visits', () => {
+    const items = [stop('Hotel','18:00'), stop('B only','10:00','b'), stop('Hotel','08:00'), stop('A only','09:00','a')];
+    const routes = dayRouteSections(items, [{id:'a',name:'Team A'}, {id:'b',name:'Team B'}]);
+    expect(routes[0].segments[0].titles).toEqual(['Hotel','A only','Hotel']);
+    expect(routes[1].segments[0].titles).toEqual(['Hotel','B only','Hotel']);
+    expect(new URL(routes[0].segments[0].url).searchParams.get('waypoints')).toBe('A only');
+    expect(items[0].startTime).toBe('18:00');
   });
-  it('loads Maps JS with origin-scoped referrer authorization and verifies Places', async () => {
-    const originalDocument = globalThis.document;
-    const originalGoogle = globalThis.google;
-    let appended;
-    const remove = vi.fn();
-    const importLibrary = vi.fn().mockResolvedValue({});
-    globalThis.document = {
-      createElement:() => ({ remove }),
-      head:{
-        append:(script) => {
-          appended = script;
-          globalThis.google = { maps:{ importLibrary } };
-          const callback = new URL(script.src).searchParams.get('callback');
-          queueMicrotask(() => globalThis[callback]());
-        },
-      },
-    };
-    try {
-      await expect(verifyMapsBrowserKey('AIza123456789012345678901234567890')).resolves.toMatchObject({ enabled:true });
-      const url = new URL(appended.src);
-      expect(url.origin).toBe('https://maps.googleapis.com');
-      expect(url.searchParams.get('auth_referrer_policy')).toBe('origin');
-      expect(appended.referrerPolicy).toBe('strict-origin-when-cross-origin');
-      expect(importLibrary).toHaveBeenCalledWith('places');
-      expect(remove).toHaveBeenCalledOnce();
-    } finally {
-      globalThis.document = originalDocument;
-      globalThis.google = originalGoogle;
+  it('splits long routes without dropping a stop or exceeding mobile waypoint limits', () => {
+    const items = Array.from({length:11}, (_, i) => stop(`Stop ${i}`, `${String(i).padStart(2,'0')}:00`));
+    const segments = dayRouteSections(items)[0].segments;
+    expect(segments.map(s => s.titles.length)).toEqual([5,5,3]);
+    expect(segments.flatMap((s,i) => i ? s.titles.slice(1) : s.titles)).toEqual(items.map(i=>i.title));
+    for (const s of segments) {
+      expect(new URL(s.url).searchParams.get('waypoints').split('|').length).toBeLessThanOrEqual(3);
+      expect(s.url.length).toBeLessThanOrEqual(2048);
     }
+  });
+  it('handles zero stops, one stop, and an empty group without creating fake directions', () => {
+    expect(dayRouteSections([])[0].segments).toEqual([]);
+    expect(dayRouteSections([stop('Museum','09:00')])[0].segments[0].url).toBe(mapSearchUrl('Museum'));
+    expect(dayRouteSections([{...stop('Flight','09:00'),type:'flight'}])[0].segments).toEqual([]);
+    expect(dayRouteSections([stop('A','09:00','a')],[{id:'b',name:'B'}])[0].segments).toEqual([]);
+  });
+  it('never generates an overlong URL or silently drops unrouteable stops', () => {
+    const items = [stop('館'.repeat(200),'08:00'),stop('站'.repeat(200),'09:00'),stop('Park','10:00')];
+    const segments = dayRouteSections(items)[0].segments;
+    expect(segments[0].url).toBe('');
+    expect(segments[0].titles).toEqual(items.slice(0,2).map(i=>i.title));
+    expect(segments[1].titles.at(-1)).toBe('Park');
+    expect(segments.every(s=>s.url.length<=2048)).toBe(true);
   });
 });
