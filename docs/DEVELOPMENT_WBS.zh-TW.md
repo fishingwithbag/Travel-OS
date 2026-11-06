@@ -4,6 +4,8 @@
 
 ## 工作順序與門檻
 
+2026-11-06 權限增量：真實服務三角色 SDK 驗收 21 PASS／0 FAIL，包含 13 次直接越權讀寫拒絕及合法 editor 發布／viewer 新版讀回。直接越權缺口關閉；新 Repo 首次部署、跨專案與跨裝置仍未完成。見 VERIFICATION_AUTHORIZATION_2026-11-06.zh-TW.md。
+
 2026-11-06 WP1／WP2 增量：真實日本 Places 搜尋、Place ID 保存及加入行程、開車／步行與手動地址 Routes 均成功；手動 0 分鐘、變更失效、缺 Key 手動保存及未允許來源的失敗降級完成。390px 瀏覽器 iframe 搜尋／鍵盤選取與主題同步完成。不是正式 Pages、實體手機或逐一真實配額錯誤驗收，詳見 VERIFICATION_GOOGLE_2026-11-06.zh-TW.md。
 
 2026-11-05 WP3 增量：新增建立者驗證後匯出網站設定、Actions secret 注入部署、同站 runtime profile 與旅伴簡化登入。178 項單元及 build 通過，production preview 已確認旅伴只需 Email／密碼；真實登入與正式部署仍待驗，不將介面檢查當成完整驗收。詳見 SITE_CONNECTION.zh-TW.md。

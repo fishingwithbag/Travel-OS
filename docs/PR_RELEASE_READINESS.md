@@ -1,5 +1,7 @@
 ## 繁體中文
 
+真實權限增量（2026-11-06）：Firebase 服務直接 SDK 驗收 21 項成功、0 項失敗，其中匿名存取、viewer 寫入、editor 升權、跨旅程與他人索引等 13 次越權請求均遭拒絕；合法 editor 完整版本發布、viewer 讀回版本 2 及拒絕後角色／head 完整性通過。修正僅限私有驗證工具辨識無 `code` 的讀取拒絕，沒有放寬產品 Rules。新部署、跨專案及跨裝置門檻仍待完成。詳見 `docs/VERIFICATION_AUTHORIZATION_2026-11-06.zh-TW.md`。
+
 離線與版面增量：內建瀏覽器在 production preview 來源停服（port 無監聽）後，完整樣式重整、離線新增安排／備註及再重整讀回通過，恢復來源後資料保留。先前裸 HTML 失敗由本輪實測更新；不將此當成實體手機飛航模式或正式 Pages 證據。另修正長群組名稱被擠成逐字直排，保留原版樣式並自動換行，四個按鈕實測各約 123 × 45px。詳見 `docs/VERIFICATION_OFFLINE_2026-11-06.zh-TW.md`。
 
 Google 真實服務增量：日本東京站／上野站 Places 搜尋、選取、Place ID 保存與行程加入成功；開車約 3.7 公里／9 分鐘、步行約 3.2 公里／47 分鐘，手動地址亦成功。手動 0 分鐘、變更失效、未允許來源失敗及缺 Key 後手動保存均驗證。修正旅伴缺設定時仍被要求貼 Key、歡迎文案錯誤目標與 Google 元件主題不同步；390px iframe 鍵盤選取、light／dark 與無水平溢出通過。本機 178 項單元及 build 通過；正式 Pages、實體手機與配額錯誤不作已完成宣稱。詳見 `docs/VERIFICATION_GOOGLE_2026-11-06.zh-TW.md`。
@@ -25,6 +27,8 @@ Google 真實服務增量：日本東京站／上野站 Places 搜尋、選取�
 2026-11-05：真實三帳號完成合成旅程分享、editor 編輯、viewer 唯讀介面、即時更新、舊表單衝突拒絕與草稿保留、成員撤銷／恢復，以及跨旅程清單隔離。另修正 config 非斷行空白解析、雲端空旅程副標與重新授權後殘留的同步錯誤提示。173 項單元與 build 通過；新版提示、獨立 Spark、直接越權請求及正式部署仍待驗。詳見 `docs/VERIFICATION_MULTIPLAYER_2026-11-05.zh-TW.md`。
 
 ## English
+
+Live authorization update (2026-11-06): 21 checks pass with zero failures against the real Firebase service, including 13 rejected direct SDK operations covering anonymous access, viewer writes, editor privilege escalation, cross-trip access and another user's index. A valid editor snapshot publishes successfully and the viewer reads revision 2; rejected writes preserve roles and the head revision. Fixed a private QA classifier for SDK read errors without a `code`; product Rules were not weakened. Production deployment, project switching and cross-device gates remain open. See `docs/VERIFICATION_AUTHORIZATION_2026-11-06.zh-TW.md`.
 
 Offline/layout update: the in-app browser passes styled reload, offline item/note creation and readback after the local production preview origin is stopped with no listener. Data survives restoring the origin. This supersedes the earlier bare-HTML failure, without claiming physical-phone airplane-mode or production Pages coverage. Long group labels now wrap as readable buttons while preserving the original styling; four buttons measure about 123 × 45px each. See `docs/VERIFICATION_OFFLINE_2026-11-06.zh-TW.md`.
 
