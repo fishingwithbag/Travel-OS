@@ -31,6 +31,8 @@
 
 ## 本輪驗證狀態
 
+2026-11-06：本機 production preview 已以既有 viewer 帳號真實登入，未再貼 config 或走六步設定，成功讀回唯一獲授權的共享旅程、跨年航班、下一站備註、停車連結與分幣別費用；群組、費用及成員寫入介面停用。正式 Pages 登入與直接 SDK 越權請求仍待驗；下方 2026-11-05 的「等待輸入密碼」為當時紀錄。
+
 桌面登入視窗已實測 540px 單欄；320／390px 無水平溢出，空白帳密會顯示錯誤。完整證據與未通過項目見[本輪驗證報告](VERIFICATION_ONBOARDING_2026-11-05.zh-TW.md)。提交 `ebc4dcd` 的 [CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/42003383562) 全部通過，包含 40 項 Rules 測試；後續版面修正另由 CI 重跑。
 
 2026-11-05：設定 parser、同站子路徑載入、拒絕憑證與錯誤設定的單元測試通過；production preview 已實際呈現只有 Email／密碼的登入畫面，六步導覽與記住 Firebase 設定選項均隱藏。已準備既有 viewer 帳號的真實登入，等待帳號持有人於瀏覽器輸入密碼；尚不能宣稱旅伴登入後全流程或正式 Pages 部署驗收完成。

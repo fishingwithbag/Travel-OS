@@ -2,7 +2,7 @@ import {mountPlaceSearch} from '../providers/google-places.js';
 import {ValidationError} from '../domain/trip.js';
 import {googleKey,googleSettingsChanged} from '../config/google-settings.js';
 
-export function setupPlaceSearch({sharedPublicDemo,canEdit}) {
+export function setupPlaceSearch({sharedPublicDemo,canEdit,isManaged=()=>false}) {
   const dialog=document.querySelector('#place-dialog'),panel=document.querySelector('#google-place-search');
   const load=panel.querySelector('[data-google-load]'),clear=panel.querySelector('[data-google-clear]');
   const host=panel.querySelector('[data-google-widget]'),status=panel.querySelector('[role="status"]'),preview=panel.querySelector('[data-google-preview]');
@@ -14,7 +14,7 @@ export function setupPlaceSearch({sharedPublicDemo,canEdit}) {
     if(sharedPublicDemo || !canEdit()) return;
     reset();controller=new AbortController();const request=version;load.disabled=true;status.textContent='正在載入 Google 搜尋…';
     try {
-      if(!googleKey()) throw new ValidationError('請先開啟「Google 功能設定」貼上並套用自己的瀏覽器 Key。');
+      if(!googleKey()) throw new ValidationError(isManaged() ? '此網站尚未設定站內地點搜尋，請聯絡網站建立者；你仍可手動填寫與使用外部導航。' : '請先開啟「Google 功能設定」貼上並套用自己的瀏覽器 Key。');
       const dispose=await mountPlaceSearch(host,googleKey(),{
         signal:controller.signal,
         onLoading:()=>{selection=null;apply.hidden=true;preview.replaceChildren();status.textContent='正在取得地點資料…';},

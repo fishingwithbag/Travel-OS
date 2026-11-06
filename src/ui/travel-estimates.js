@@ -2,7 +2,7 @@ import {dailyTravelLegs,estimateTravel} from '../providers/google-routes.js';
 import {googleKey,googleSettingsChanged} from '../config/google-settings.js';
 import {ValidationError} from '../domain/trip.js';
 
-export function setupTravelEstimates({currentTrip,selectedDate,escapeHtml}) {
+export function setupTravelEstimates({currentTrip,selectedDate,escapeHtml,isManaged=()=>false}) {
   const panel=document.querySelector('#travel-estimates'),list=panel.querySelector('[data-travel-list]'),status=panel.querySelector('[role="status"]'),button=panel.querySelector('[data-travel-calculate]');
   let context='',generation=0,busy=false,legs=[],results=new Map();
   function render() {
@@ -23,7 +23,7 @@ export function setupTravelEstimates({currentTrip,selectedDate,escapeHtml}) {
     if(busy) return;
     const pending=legs.filter(leg=>leg.from.transitMinutes==null && !results.has(leg.id));
     if(!pending.length){status.textContent='所有路段已有結果或手動時間；要重試請先清除估算。';return;}
-    if(!googleKey()){status.textContent='請先開啟 Google 功能設定並套用自己的 Key。';return;}
+    if(!googleKey()){status.textContent=isManaged() ? '此網站尚未設定站內交通估算，請聯絡網站建立者；手動時間與外部導航仍可使用。' : '請先開啟 Google 功能設定並套用自己的 Key。';return;}
     const request=++generation,requestContext=context,batch=pending.slice(0,20),dedup=new Map();busy=true;render();
     let stopped=false;
     for(let i=0;i<batch.length;i++) {

@@ -1,5 +1,9 @@
 ## 繁體中文
 
+Google 真實服務增量：日本東京站／上野站 Places 搜尋、選取、Place ID 保存與行程加入成功；開車約 3.7 公里／9 分鐘、步行約 3.2 公里／47 分鐘，手動地址亦成功。手動 0 分鐘、變更失效、未允許來源失敗及缺 Key 後手動保存均驗證。修正旅伴缺設定時仍被要求貼 Key、歡迎文案錯誤目標與 Google 元件主題不同步；390px iframe 鍵盤選取、light／dark 與無水平溢出通過。本機 178 項單元及 build 通過；正式 Pages、實體手機與配額錯誤不作已完成宣稱。詳見 `docs/VERIFICATION_GOOGLE_2026-11-06.zh-TW.md`。
+
+2026-11-06：production preview 真實 viewer 登入成功，僅輸入網站帳密、未再貼 config 或走六步精靈；唯一共享旅程、跨年航班、下一站備註、停車連結與分幣別費用讀回，群組／費用／成員修改停用。`4297eeb` CI 全部成功，89 個 commit 與最新通用產物掃描無命中。正式 Pages 與直接 SDK 權限驗證仍未關閉。
+
 版面回歸：旅伴登入改為桌面 540px 單欄，320／390px 實際瀏覽器無水平溢出；空白帳密顯示可修正錯誤。通用產物在根路徑與 repo 子路徑載入正常，跨年三日旅程重整讀回且路徑間不混資料；真實匿名資料庫讀取三項均為 401 拒絕。`ebc4dcd` CI 全部成功（178 項單元、40 項 Rules、build、稽核），88 個可達 commit 與通用產物的憑證／個資掃描無命中。真實旅伴登入與正式部署仍待驗，詳見 `docs/VERIFICATION_ONBOARDING_2026-11-05.zh-TW.md`。
 
 2026-11-05 旅伴登入實作：建立者驗證後可匯出 allowlist 公開網站設定，透過 `TRAVEL_OS_SITE_CONFIG` Actions secret 部署。訪客載入同站執行時設定，只需網站 Email／密碼；禁止在設定檔帶入密碼、token、service account 或旅程資料。官方 demo 維持本機模式，錯誤設定不會改連瀏覽器記住的其他專案。另修復 CSS 優先序讓已隱藏的 Firebase 記住選項仍露出的問題。178 項單元與 production build 通過，preview 已確認簡化登入畫面；真實旅伴登入及正式 Pages 驗收仍待完成。操作文件：`docs/SITE_CONNECTION.zh-TW.md`。
@@ -19,6 +23,10 @@
 2026-11-05：真實三帳號完成合成旅程分享、editor 編輯、viewer 唯讀介面、即時更新、舊表單衝突拒絕與草稿保留、成員撤銷／恢復，以及跨旅程清單隔離。另修正 config 非斷行空白解析、雲端空旅程副標與重新授權後殘留的同步錯誤提示。173 項單元與 build 通過；新版提示、獨立 Spark、直接越權請求及正式部署仍待驗。詳見 `docs/VERIFICATION_MULTIPLAYER_2026-11-05.zh-TW.md`。
 
 ## English
+
+Live Google validation: Places searches/selections in Japan, saved Place ID links and itinerary insertion pass. Driving returns about 3.7 km/9 minutes, walking about 3.2 km/47 minutes; manual-address routing also succeeds. Manual zero-minute priority, invalidation, a rejected unlisted origin and manual saving without a key are verified. Fix traveler prompts requesting personal keys, a welcome-copy selector and mismatched Google component themes. Keyboard selection, light/dark themes and no horizontal overflow pass in a 390px browser iframe. Local 178 unit tests and build pass; production Pages, physical phones and exhausted-quota responses are not claimed as verified. See `docs/VERIFICATION_GOOGLE_2026-11-06.zh-TW.md`.
+
+2026-11-06: real viewer login passes on production preview using website credentials only, without pasting config or repeating the six-step wizard. The only authorized shared trip, cross-year flight, next-stop notes, parking links and currency-separated expenses load correctly; group, expense and membership editing is disabled. CI for `4297eeb` passes, with no matches in credential/private-data scans across 89 commits and the latest generic artifacts. Production Pages and direct SDK authorization probes remain pending.
 
 Layout regression: traveler login now uses a 540px single-column desktop dialog; real 320/390px browser checks show no horizontal overflow and blank credentials produce a recoverable error. Generic artifacts load at root and repository subpaths; a three-day cross-year local trip survives reload without leaking into the root scope. Three real anonymous database reads return 401. CI for `ebc4dcd` passes 178 unit tests, 40 Rules tests, build and audit. Credential/private-data scans of 88 reachable commits and generic artifacts find no matches. Real traveler login and production deployment remain pending; see `docs/VERIFICATION_ONBOARDING_2026-11-05.zh-TW.md`.
 

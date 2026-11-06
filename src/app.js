@@ -94,9 +94,9 @@ const rentalUi = setupRentalUi({currentTrip,saveTrip,openItemDialog,escapeHtml,o
 const stayUi = setupStayUi({currentTrip,saveTrip,openItemDialog,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const expenseUi = setupExpenseUi({currentTrip,saveTrip,escapeHtml,openDialog,setError,showToast,canEdit:canEditTrip});
 const groupUi = setupGroupUi({currentTrip,saveTrip,openDialog,setError,showToast,canEdit:canEditTrip});
-setupPlaceSearch({sharedPublicDemo,canEdit:()=>canEditTrip() && !placeSaving});
+setupPlaceSearch({sharedPublicDemo,canEdit:()=>canEditTrip() && !placeSaving,isManaged:travelerLogin});
 setupGoogleSettings({sharedPublicDemo,openDialog,isManaged:travelerLogin});
-const travelEstimates=setupTravelEstimates({currentTrip,selectedDate:()=>state.selectedDate,escapeHtml});
+const travelEstimates=setupTravelEstimates({currentTrip,selectedDate:()=>state.selectedDate,escapeHtml,isManaged:travelerLogin});
 
 function formatDay(date) { return new Intl.DateTimeFormat('zh-TW', { month:'numeric', day:'numeric', weekday:'short', timeZone:'UTC' }).format(new Date(`${date}T00:00:00Z`)); }
 function currentTrip() { return state.trips.find((trip) => trip.id === state.currentTripId); }
@@ -135,7 +135,7 @@ function renderLive() {
 function renderMembers() {
   const cloud=state.mode==='cloud',trip=currentTrip(),access=state.access[trip?.id];
   $('#cloud-session').hidden=!cloud;
-  $('#cloud-account').textContent=cloud ? `${state.connection.projectId} · ${state.connection.email || ''}` : '';
+  $('#cloud-account').textContent=cloud ? (travelerLogin() ? state.connection.email || '' : `${state.connection.projectId} · ${state.connection.email || ''}`) : '';
   $('#cloud-uid').textContent=cloud ? state.connection.uid : '';
   $('#members-panel').hidden=!cloud || !trip;
   const labels={owner:'擁有者',editor:'編輯者',viewer:'檢視者'};
@@ -147,7 +147,7 @@ function renderMembers() {
 }
 
 $('#copy-uid-button').addEventListener('click',async()=>{
-  try{await copyText(state.connection?.uid || '');showToast('已複製目前專案帳號的 UID。');}catch(error){showToast(error.message);}
+  try{await copyText(state.connection?.uid || '');showToast(travelerLogin() ? '已複製目前網站帳號的 UID。' : '已複製目前專案帳號的 UID。');}catch(error){showToast(error.message);}
 });
 $('#member-form').addEventListener('submit',async event=>{
   event.preventDefault();const form=event.currentTarget;if(memberSaving) return;setError(form,'');
@@ -156,7 +156,7 @@ $('#member-form').addEventListener('submit',async event=>{
     if(state.mode!=='cloud' || state.access[trip?.id]?.ownerId!==state.connection?.uid) throw new ValidationError('只有旅程擁有者可以管理成員。');
     const input=formData(form);memberSaving=true;renderMembers();
     await store.setMember(trip.id,input.uid.trim(),input.role);
-    form.reset();showToast('成員權限已儲存。請對方登入相同專案確認旅程。');
+    form.reset();showToast(travelerLogin() ? '成員權限已儲存。請對方登入此網站確認旅程。' : '成員權限已儲存。請對方登入相同專案確認旅程。');
   }catch(error){setError(form,error);}finally{memberSaving=false;renderMembers();}
 });
 $('#member-list').addEventListener('click',async event=>{
@@ -701,7 +701,7 @@ function updateConnectionSummary() {
     $('#save-status').textContent = '本機模式';
   } else if (travelerLogin()) {
     summary.innerHTML = '<strong>登入 Travel OS</strong><span>使用網站建立者提供的帳號，不需要設定 Firebase 或 Google Cloud。</span>';
-    $('#save-status').textContent = '尚未登入';
+    $('#save-status').textContent = '本機模式（未登入網站）';
   } else {
     summary.innerHTML = '<strong>本機模式</strong><span>資料只保存在這台裝置</span>';
     $('#save-status').textContent = '本機模式';
@@ -834,7 +834,7 @@ $('#local-mode-button').addEventListener('click', async () => {
     await activateStore(localStore, 'local');
     localStorage.setItem(STORAGE_KEYS.onboardingMode, 'local');
     form.closest('dialog').close();
-    showToast('已切換到本機模式；Firebase 設定仍保留，可之後重新登入。');
+    showToast(travelerLogin() ? '已切換到本機模式；登入網站後可回到雲端旅程。' : '已切換到本機模式；Firebase 設定仍保留，可之後重新登入。');
   } catch (error) { setError(form, error); }
 });
 
@@ -1009,7 +1009,8 @@ async function start() {
     $('#settings-dialog').classList.add('traveler-login');
     $('#setup-title').textContent = '登入 Travel OS';
     $('#setup-intro').textContent = '輸入網站帳號與密碼即可使用，不需要 Firebase 或 Google Cloud 資格。';
-    $('#welcome > p:not(.eyebrow)').textContent = '登入網站後即可使用已獲授權的旅程；也可以先用本機模式體驗。';
+    $('#welcome-description').textContent = '登入網站後即可使用已獲授權的旅程；也可以先用本機模式體驗。';
+    $('#member-form > p').textContent = '請對方先登入此網站，複製「我的 UID」帳號代碼提供給旅程擁有者，再在下方貼上。無需 Firebase Console。';
     $('#login-heading').textContent = '使用你的網站帳號登入';
     $('#login-explanation').textContent = '帳號由網站建立者提供；登入後只會顯示你有權限使用的旅程。';
     $('#login-help').textContent = '網站不保存密碼。忘記密碼或尚未取得帳號時，請聯絡網站建立者。';
