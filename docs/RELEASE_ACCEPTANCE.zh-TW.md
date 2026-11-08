@@ -1,6 +1,8 @@
 # 公開發布驗收
 
-更新：2026-11-08。**發布門檻未通過。** Repository 公開、PR 或 CI 成功不等於產品驗收完成。
+更新：2026-11-09。**發布門檻未通過。** Repository 公開、PR 或 CI 成功不等於產品驗收完成。
+
+本日完成 GitHub 再驗證後，含 Google Key 的網站設定已部署，Pages 流程成功；真實 Places／Routes 仍遭拒絕，網站正確降級並保留手動行程，不能勾選成功驗收。已補 Step 3 與指南的 hostname／Repo 路徑差異，較廣 hostname 限制等待帳號持有人確認後實測，見[Google Pages 報告](VERIFICATION_GOOGLE_PAGES_2026-11-09.zh-TW.md)。
 
 本日修正分組停車未遵循畫面群組的問題，181 項單元與來源 CI、新驗收 Repo Pages 部署及線上 B 組／所有行程回歸均通過，見[停車回歸報告](VERIFICATION_PARKING_2026-11-08.zh-TW.md)。新 Google 來源限制已依帳號持有人確認保存；含 Key 的網站 profile 更新停在 GitHub 再次確認身分，尚未宣稱已發布或服務已通過。
 
