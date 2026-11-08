@@ -1,6 +1,8 @@
 ## 繁體中文
 
-2026-11-09：帳號持有人完成 GitHub 再驗證，含 Google Key 的 profile 部署成功；正式 Pages 的 Places／Routes 實測仍拒絕，降級與停止批次正常，未宣告成功。依 Google 官方文件補上 Step 3／指南的 hostname 與 Repo 路徑限制差異及涵蓋範圍；較廣來源等待確認後重測。181 項單元及 build 通過，詳見 `docs/VERIFICATION_GOOGLE_PAGES_2026-11-09.zh-TW.md`。
+2026-11-09 讀回增量：獨立登入讀回 Pages 自建及還原旅程，原旅程保留；住宿／租車／雙幣別／收藏及 A／B 分組停車正確。補齊主備停車與幣別保存、暫存景點刪除不連帶刪除行程、清理暫存安排及最終備份完整性。帳號持有人拒絕擴大 hostname，已取消並重讀確認未保存；設定精靈改為先確認範圍，不強制採用整個 hostname。Google 成功與獨立來源方案仍待完成，見雲端讀回報告。
+
+2026-11-09：帳號持有人完成 GitHub 再驗證，含 Google Key 的 profile 部署成功；正式 Pages 的 Places／Routes 實測仍拒絕，降級與停止批次正常，未宣告成功。依 Google 官方文件補上 Step 3／指南的 hostname 與 Repo 路徑限制差異及涵蓋範圍。181 項單元及 build 通過，詳見 `docs/VERIFICATION_GOOGLE_PAGES_2026-11-09.zh-TW.md`。
 
 2026-11-08 增量：修正選 B 組仍顯示 A 組停車；目前站／下一站／時間軸共用群組交集規則，所有行程與首頁仍顯示各組並標示名稱。181 項單元、build、0 vulnerabilities，以及 390px 實際瀏覽器 A／B／無停車 C 組回歸通過。來源 `250c8c9` CI 與新 Repo `ecb61f6` Pages 均成功，線上確認修正版 B 組／所有行程。另完成新 Pages 建立者驗證、profile 匯出發布、旅伴僅用網站帳密登入、自建 owner 旅程、住宿／租車／費用與新雲端旅程還原。Google profile 更新待 GitHub 再次確認身分，正式 Google 仍待驗；詳見本月 7、8 日報告。
 
@@ -22,7 +24,9 @@
 
 ## English
 
-2026-11-09: GitHub reauthentication and deployment of the Google-enabled profile succeed. Live Pages Places/Routes calls remain rejected; recovery and batch stopping work, without claiming service success. Update Step 3 and the guide using official Google documentation to explain hostname versus repository-path restrictions and their scope. Broader-source approval and retesting remain pending. All 181 unit tests and build pass; see `docs/VERIFICATION_GOOGLE_PAGES_2026-11-09.zh-TW.md`.
+2026-11-09 readback: an independent login retrieves both the original and restored Pages-created cloud trips, including stays, rentals, separate currencies, saved places and A/B parking. Verify primary/backup parking and currencies, temporary-place deletion without cascading to scheduled items, temporary-item cleanup and final-backup integrity. The operator declines hostname-wide access; cancel and reload to confirm it was not saved. Setup now requires a scope decision rather than prescribing the whole hostname. Google success and an isolated-origin plan remain open; see the cloud-readback report.
+
+2026-11-09: GitHub reauthentication and deployment of the Google-enabled profile succeed. Live Pages Places/Routes calls remain rejected; recovery and batch stopping work, without claiming service success. Update Step 3 and the guide using official Google documentation to explain hostname versus repository-path restrictions and their scope. All 181 unit tests and build pass; see `docs/VERIFICATION_GOOGLE_PAGES_2026-11-09.zh-TW.md`.
 
 2026-11-08 update: selecting group B no longer shows group A parking. Current-stop, next-stop and timeline views share the group intersection rule; all-group and dashboard views retain labeled sets. All 181 unit tests, build, zero-vulnerability audit and real 390px A/B/unconfigured-C checks pass locally. Source `250c8c9` CI and new-repo `ecb61f6` Pages succeed; deployed B/all-group views pass. Hosted operator verification/profile publishing, credential-only traveler sign-in, self-owned trips, stays/rentals/expenses and new-cloud-trip restoration also pass. Google profile publication awaits GitHub reauthentication; hosted Google remains unverified. See the November 7–8 reports.
 

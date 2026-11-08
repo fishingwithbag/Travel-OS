@@ -10,6 +10,6 @@ Google Cloud 免費試用有期限，不能當成永久零費用保證。不願�
 
 建立者在所選 Google Cloud project 啟用三項 API 後，建立 Browser Key，網站限制只允許自己的 GitHub Pages／自訂網域，API 限制只允許 Maps JavaScript API、Places API (New) 與 Routes API。Browser Key 可以在瀏覽器中被看見，不能當成私密憑證；限制與 quota 是必要防護，預算通知不會自動停止用量。Travel OS 不接收 Server Key、service account 或私鑰。
 
-網站限制請包含協定與 hostname，例如 `https://你的帳號.github.io/*`；不要將 `https://你的帳號.github.io/Repo/*` 當成可靠的隔離邊界。[Google 官方文件](https://developers.google.com/maps/api-security-best-practices#restricting-api-keys)提醒，多數瀏覽器會從跨站請求的 `Referer` 移除路徑，只有 Repo 路徑的設定可能造成 SDK 載入後搜尋／估算仍遭拒絕。hostname 範圍會涵蓋該 hostname 下其他 Repo 網站，建立者需確認這個範圍；若需隔離不同網站，應使用獨立 hostname 與專用 Key。不要以取消所有網站限制來排錯。
+網站限制須先由建立者確認涵蓋範圍。例如 `https://你的帳號.github.io/*` 會涵蓋該 hostname 下其他 Repo 網站，只有同意這個共用範圍時才採用；若不允許共用，應使用 Travel OS 專屬 hostname 與專用 Key。[Google 官方文件](https://developers.google.com/maps/api-security-best-practices#restricting-api-keys)提醒，多數瀏覽器會從跨站請求的 `Referer` 移除路徑，只有 Repo 路徑的設定可能造成 SDK 載入後搜尋／估算仍遭拒絕，不能將 `/Repo/*` 當成可靠的隔離邊界。不要把擴大 hostname 範圍或取消所有網站限制當作未經同意的修正。
 
 驗證時先在「新增景點」實際搜尋並選取，再安排兩個非航班／交通站點，按「估算剩餘路段」。SDK 載入成功不等於 Places 與 Routes 都成功；兩項都成功才算站內 Google 功能通過。API 未啟用、Key 限制錯誤、額度或網路失敗時，應顯示具體錯誤並保留手動資料。

@@ -349,8 +349,8 @@
               <ol class="setup-steps detailed">
                 <li><strong>選擇建立者管理的 Google Cloud 專案：</strong>可與 Firebase 使用同一個已設定服務的專案，不強制建立另一個。由建立者確認 Maps API 所需的帳單設定；若選擇保留 Spark，才需另外安排 Maps 專案。</li>
                 <li>依官方說明確認 Google Maps 的計費及免費額度條件，啟用 Maps JavaScript API、Places API (New) 與 Routes API。免費額度不等於無上限免費，預算通知不會自動停止用量。</li>
-                <li>建立瀏覽器 API Key，網站限制填自己的 HTTPS hostname，例如 <code>https://你的帳號.github.io/*</code>，API 限制只勾選 Maps JavaScript API、Places API (New) 與 Routes API。不要貼服務帳戶私鑰或伺服器憑證。</li>
-                <li>不要只以 <code>/Repo/*</code> 路徑限制 Key：瀏覽器可能移除跨站請求的路徑，導致搜尋或估算被拒絕。hostname 限制會涵蓋該 hostname 下所有網站；如需隔離其他網站，請使用獨立 hostname 與專用 Key。<a href="https://developers.google.com/maps/api-security-best-practices#restricting-api-keys" target="_blank" rel="noopener noreferrer">Google 官方網站限制說明</a></li>
+                <li>建立瀏覽器 API Key，API 限制只勾選 Maps JavaScript API、Places API (New) 與 Routes API。不要貼服務帳戶私鑰或伺服器憑證。</li>
+                <li>先確認網站限制的涵蓋範圍：<code>https://你的帳號.github.io/*</code> 會涵蓋該 hostname 下所有 Repo 網站，只有同意共用這個範圍時才使用；需要隔離其他網站時，請使用 Travel OS 專屬 hostname 與專用 Key。不要把 <code>/Repo/*</code> 當成可靠的隔離邊界：瀏覽器可能移除跨站請求的路徑，造成搜尋或估算被拒絕。<a href="https://developers.google.com/maps/api-security-best-practices#restricting-api-keys" target="_blank" rel="noopener noreferrer">Google 官方網站限制說明</a></li>
                 <li>按下方「Google 功能設定」貼上 Key 並套用，可選擇記住此裝置。SDK 載入檢查只確認程式載入，不代表服務或額度已驗證。</li>
                 <li>建立旅程後，在「新增景點」實際搜尋及選取；再新增兩站，在「站內路程與時間估算」實測。兩項都成功才算 Google 功能驗證完成。</li>
               </ol>
