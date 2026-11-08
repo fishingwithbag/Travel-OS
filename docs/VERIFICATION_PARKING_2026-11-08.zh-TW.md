@@ -16,4 +16,8 @@
 
 首輪單元測試曾指出把長組名放入 42px 標籤欄會破壞原有版面約定；已改將組名放進內容欄，原有測試未被刪除或放寬，完整重跑通過。
 
-以上為本機修正版證據。仍需同步至新驗收 Repo、等待 CI／Pages 部署，並在部署產物重測；不能將本機通過當作已修正線上版本。
+## 部署回歸
+
+來源提交 `250c8c9` 的 [CI](https://github.com/fishingwithbag/Travel-OS/actions/runs/42437385086) 成功。僅將三個逐檔審查的程式／測試檔同步到新驗收 Repo，建立以原模板分支為 parent 的 `ecb61f6`，沒有 force push、覆蓋其他檔案或變更來源 main。[新 Pages 部署](https://github.com/fishingwithbag/travel-os-onboarding-acceptance-20261106/actions/runs/42437416212) 成功。
+
+線上分頁確認載入 `index-CJsbOG_E.js`。先下載保留原本的 Pages 本機合成旅程，再載入回歸案例；B 組下一站僅顯示 B 組主備停車與備註，所有行程清楚列出 A／B 組。此輪完成正式 Pages 本機模式回歸；真實雲端相同資料的重新登入仍另列門檻。

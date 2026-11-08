@@ -32,9 +32,11 @@
 
 ## 尚待完成
 
-- 新 Pages 的 Google Key 尚未發布；新增新網址的來源限制已準備，等待帳號持有人確認後儲存，再驗證真實搜尋／估算。
+- 2026-11-08 更新：帳號持有人已同意新增新 Pages 來源及發布 Browser Key，重新開啟 Cloud Console 確認新來源已保存，三項 API 限制保留。含 Key 的 profile 已填入新驗收 Repo 更新表單，但 GitHub 要求再次確認身分，尚待本人完成 Verify／Update secret；尚未宣稱 Key 已部署或正式站 Google 通過。
 - 新 Pages 新增／還原的旅程仍須另一次登入或獨立裝置讀回；本輪未將同分頁切換或匯出誤報成跨裝置重登。
 - 第二專案雙向切換、完整正式站更新／離線及實體裝置仍保留門檻。
 - 來源 PR 仍為 draft，未合併 main 或建立正式 release；不能宣稱整體 100% 發布完成。
 
 瀏覽器截圖及完整備份留在本機，不將 Email、UID、實際專案設定或私人備份上傳到來源 repository。正式服務端拒絕證據另見[三角色權限報告](VERIFICATION_AUTHORIZATION_2026-11-06.zh-TW.md)。
+
+後續分組停車實測發現選 B 組仍顯示 A 組資訊，已修正並部署，詳見[2026-11-08 回歸報告](VERIFICATION_PARKING_2026-11-08.zh-TW.md)。
