@@ -1,8 +1,5 @@
 import { ValidationError } from '../domain/trip.js';
 
-let loaderPromise;
-let loadedKey = '';
-
 export function mapSearchUrl(query) {
   const value = String(query || '').trim();
   if (!value) throw new ValidationError('需要地點名稱或地址。');
@@ -18,63 +15,53 @@ export function parkingMapUrl(spot) {
   return spot.mapsUrl || mapSearchUrl(spot.name);
 }
 
-export function validateMapsBrowserKey(value) {
-  const key = String(value || '').trim();
-  if (!/^AIza[0-9A-Za-z_-]{20,}$/.test(key)) throw new ValidationError('Google Maps Browser Key 格式不正確。');
-  return key;
+export function savedPlaceId(item) {
+  try {
+    const url=new URL(item.mapsUrl);
+    const id=url.searchParams.get('query_place_id');
+    return url.protocol==='https:' && ['www.google.com','google.com'].includes(url.hostname) && url.pathname.startsWith('/maps/') && /^[A-Za-z0-9_-]{1,256}$/.test(id || '') ? id : '';
+  } catch {return '';}
 }
 
-export function recommendedWebsiteRestriction(origin = globalThis.location?.origin) {
-  const value = String(origin || '').trim();
-  if (!/^https?:\/\/[^/]+$/i.test(value)) return '';
-  return `${value}/*`;
+export function routeMapUrl(origin, destination, mode = 'driving') {
+  if (!['driving', 'walking'].includes(mode)) throw new ValidationError('不支援的路線模式。');
+  const from = String(origin.location || origin.title || '').trim();
+  const to = String(destination.location || destination.title || '').trim();
+  if (!from || !to) throw new ValidationError('路線需要起點與目的地。');
+  let url=`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&travelmode=${mode}`;
+  for(const [name,item] of [['origin',origin],['destination',destination]]) {const id=savedPlaceId(item);if(id) url+=`&${name}_place_id=${encodeURIComponent(id)}`;}
+  return url;
 }
 
-export async function verifyMapsBrowserKey(value, timeoutMs = 12_000) {
-  const key = validateMapsBrowserKey(value);
-  if (globalThis.google?.maps?.importLibrary) {
-    if (loadedKey && loadedKey !== key) throw new ValidationError('這個頁面已用另一把 Google Maps Browser Key 載入；請重新整理頁面後再驗證新 Key。');
-    if (!loadedKey) throw new ValidationError('Google Maps 已由其他程式載入，無法確認目前輸入的 Browser Key；請重新整理後重試。');
-    await globalThis.google.maps.importLibrary('places');
-    return { enabled:true, message:'Maps JavaScript API 與 Places 已驗證。' };
-  }
-  if (!globalThis.document?.head) throw new ValidationError('目前環境無法載入 Google Maps JavaScript API。');
-  if (!loaderPromise) {
-    loaderPromise = new Promise((resolve, reject) => {
-      const callback = `travelOsMapsReady_${crypto.randomUUID().replaceAll('-', '')}`;
-      const script = document.createElement('script');
-      const timer = setTimeout(() => finish(new ValidationError('Google Maps API 驗證逾時，請檢查 API、網站限制、帳務與網路。')), timeoutMs);
-      const finish = (error) => {
-        clearTimeout(timer);
-        delete globalThis[callback];
-        script.onerror = null;
-        script.remove?.();
-        if (error) {
-          loaderPromise = undefined;
-          reject(error);
-        } else {
-          loadedKey = key;
-          resolve();
-        }
-      };
-      globalThis[callback] = () => finish();
-      script.onerror = () => finish(new ValidationError('Google Maps API 無法載入；請確認 Browser Key、Website restrictions、API restrictions 與 Billing。'));
-      const params = new URLSearchParams({
-        key,
-        loading:'async',
-        v:'weekly',
-        auth_referrer_policy:'origin',
-        callback,
-      });
-      script.src = `https://maps.googleapis.com/maps/api/js?${params}`;
-      script.async = true;
-      script.referrerPolicy = 'strict-origin-when-cross-origin';
-      document.head.append(script);
-    });
-  }
-  await loaderPromise;
-  if (!globalThis.google?.maps?.importLibrary) throw new ValidationError('Maps JavaScript API 已載入，但 importLibrary 不可用。');
-  try { await globalThis.google.maps.importLibrary('places'); }
-  catch { throw new ValidationError('Places 無法載入；請確認 Places API 與 Places API (New) 已啟用並加入 API restrictions。'); }
-  return { enabled:true, message:'Maps JavaScript API 與 Places 已驗證。' };
+// Maps URLs supports only three intermediate stops in mobile browsers.
+// Keep the connecting stop in both segments and preserve return visits.
+export function dayRouteSections(items, groups = []) {
+  const sorted = items.filter((item) => !['flight', 'transport'].includes(item.type))
+    .slice().sort((a, b) => (a.startTime || '99:99').localeCompare(b.startTime || '99:99'));
+  const lanes = groups.length ? groups : [{ id:'', name:'所有人' }];
+  return lanes.map((group) => {
+    const stops = sorted.filter((item) => !item.groupId || item.groupId === group.id);
+    const segments = [];
+    let start = 0;
+    while (start < stops.length) {
+      if (start === stops.length - 1) {
+        if (!segments.length) segments.push({ url:itemMapUrl(stops[start]), titles:[stops[start].title] });
+        break;
+      }
+      let end = Math.min(start + 4, stops.length - 1);
+      let url;
+      do {
+        url = routeMapUrl(stops[start], stops[end]);
+        const middle = stops.slice(start + 1, end).map((item) => item.location || item.title);
+        if (middle.length) url += `&waypoints=${encodeURIComponent(middle.join('|'))}`;
+        const ids=stops.slice(start+1,end).map(savedPlaceId);
+        if(ids.length && ids.every(Boolean)) url+=`&waypoint_place_ids=${encodeURIComponent(ids.join('|'))}`;
+        if (url.length <= 2048 || end === start + 1) break;
+        end--;
+      } while (end > start);
+      segments.push({ url:url.length <= 2048 ? url : '', titles:stops.slice(start, end + 1).map((item) => item.title) });
+      start = end;
+    }
+    return { groupId:group.id, name:group.name, segments };
+  });
 }

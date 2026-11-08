@@ -29,6 +29,8 @@ jobs:
           java-version: 21
       - run: npm ci
       - run: npm run check
+        env:
+          TRAVEL_OS_SITE_CONFIG: ${{ secrets.TRAVEL_OS_SITE_CONFIG }}
       - run: npm audit --audit-level=high
       - run: npm run test:rules
       - uses: actions/configure-pages@v5

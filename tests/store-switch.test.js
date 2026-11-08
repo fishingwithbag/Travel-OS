@@ -1,7 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
-import { prepareStoreSwitch } from '../src/storage/store-switch.js';
+import { prepareStoreSwitch,saveToActiveStore } from '../src/storage/store-switch.js';
 
 describe('store switching', () => {
+  it('does not return an old project write after the active store changes',async()=>{
+    let finish;
+    const first={saveTrip:vi.fn(()=>new Promise(resolve=>{finish=resolve;}))};
+    let active=first;
+    const pending=saveToActiveStore(()=>active,{id:'draft'});
+    active={saveTrip:vi.fn()};finish();
+    await expect(pending).rejects.toThrow(/連線已切換/);
+    expect(active.saveTrip).not.toHaveBeenCalled();
+  });
+  it('returns confirmed writes only for the same store and preserves write failures',async()=>{
+    const trip={id:'draft'},store={saveTrip:vi.fn(async()=>{})};
+    await expect(saveToActiveStore(()=>store,trip)).resolves.toBe(trip);
+    store.saveTrip.mockRejectedValueOnce(new Error('network failure'));
+    await expect(saveToActiveStore(()=>store,trip)).rejects.toThrow('network failure');
+  });
   it('keeps the current store open when the next store cannot load', async () => {
     const currentStore = { close:vi.fn() };
     const nextStore = { listTrips:vi.fn().mockRejectedValue(new Error('load failed')), close:vi.fn() };

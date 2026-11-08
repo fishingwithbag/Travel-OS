@@ -1,4 +1,5 @@
 node_modules/
+public/site-config.json
 dist/
 .env
 .env.*
