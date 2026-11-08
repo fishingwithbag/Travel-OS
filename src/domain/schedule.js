@@ -62,6 +62,13 @@ export function itemsForGroup(items,groupId='all') {
   return groupId==='all' ? [...items] : items.filter(item=>!item.groupId || item.groupId===groupId);
 }
 
+export function parkingSetsForGroup(item,groups,groupId='all') {
+  if(!item.parking) return [];
+  if(item.parking.mode!=='split') return [{name:'共用停車',set:item.parking}];
+  return groups.filter(group=>(!item.groupId || group.id===item.groupId) && (groupId==='all' || group.id===groupId))
+    .map(group=>({name:group.name,set:item.parking.byGroup?.[group.id]})).filter(({set})=>set);
+}
+
 export function scheduleWarnings(items, groups, timeZone='UTC') {
   const warnings = new Map();
   for (const group of groups.length ? groups : [{id:'', name:'所有人'}]) {

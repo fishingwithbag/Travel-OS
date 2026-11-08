@@ -12,7 +12,7 @@ import { localStorageKey } from './storage/browser-scope.js';
 import { itemMapUrl, parkingMapUrl, routeMapUrl, dayRouteSections } from './providers/maps.js';
 import { nextStop } from './domain/next-stop.js';
 import { formatFlightSchedule } from './domain/flight-schedule.js';
-import { durationDetails, durationMinutes, itemsForGroup, scheduleWarnings } from './domain/schedule.js';
+import { durationDetails, durationMinutes, itemsForGroup, parkingSetsForGroup, scheduleWarnings } from './domain/schedule.js';
 import { setupRentalUi } from './ui/rentals.js';
 import { setupStayUi } from './ui/stays.js';
 import { setupExpenseUi } from './ui/expenses.js';
@@ -174,21 +174,17 @@ function mapLink(item, label = '在 Google Maps 開啟') {
   return `<a class="map-link" href="${escapeHtml(itemMapUrl(item))}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${label}：${item.title}`)}">${icons.maps}<span>${escapeHtml(label)}</span></a>`;
 }
 
-function parkingHtml(item) {
-  const sets = parkingSets(item);
+function parkingHtml(item,groupView='all') {
+  const sets = parkingSets(item,groupView);
   if (!sets.length) return '';
   return sets.map(({name,set})=> {
     const rows = parkingRows(set);
-    return `<div class="item-parking next-parking"><span class="parking-title next-info-label">${icons.parking}<strong>停車</strong></span><div class="next-parking__list">${rows.map(([label,spot])=>`<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(name)}${label}：${escapeHtml(spot.name)}"><strong>${label}</strong><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>${spot.walkMinutes == null ? '' : `<p>步行 ${spot.walkMinutes} 分鐘</p>`}${spot.feeMinor == null ? '' : `<p>預估停車費 ${escapeHtml(spot.currency)} ${(spot.feeMinor/100).toFixed(2)}</p>`}${spot.note ? `<p class="parking-notes">${escapeHtml(spot.note)}</p>` : ''}`).join('')}${set?.notes ? `<p class="parking-notes">${escapeHtml(set.notes)}</p>` : ''}</div></div>`;
+    return `<div class="item-parking next-parking"><span class="parking-title next-info-label">${icons.parking}<strong>停車</strong></span><div class="next-parking__list">${name === '共用停車' ? '' : `<p class="parking-group-name"><strong>${escapeHtml(name)}</strong></p>`}${rows.map(([label,spot])=>`<a href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 開啟${escapeHtml(name)}${label}：${escapeHtml(spot.name)}"><strong>${label}</strong><span>${escapeHtml(spot.name)}</span><span aria-hidden="true">↗</span></a>${spot.walkMinutes == null ? '' : `<p>步行 ${spot.walkMinutes} 分鐘</p>`}${spot.feeMinor == null ? '' : `<p>預估停車費 ${escapeHtml(spot.currency)} ${(spot.feeMinor/100).toFixed(2)}</p>`}${spot.note ? `<p class="parking-notes">${escapeHtml(spot.note)}</p>` : ''}`).join('')}${set?.notes ? `<p class="parking-notes">${escapeHtml(set.notes)}</p>` : ''}</div></div>`;
   }).join('');
 }
 
-function parkingSets(item) {
-  const parking = item.parking;
-  if (!parking) return [];
-  return parking.mode === 'split'
-    ? currentTrip().groups.filter(group=>!item.groupId || group.id === item.groupId).map(group=>({name:group.name,set:parking.byGroup?.[group.id]}))
-    : [{name:'共用停車',set:parking}];
+function parkingSets(item,groupView='all') {
+  return parkingSetsForGroup(item,currentTrip().groups,groupView);
 }
 
 function parkingRows(set) {
@@ -200,13 +196,13 @@ function parkingMeta(spot) {
 }
 
 function timelineParkingHtml(item) {
-  const rows=parkingSets(item).flatMap(({name,set})=>parkingRows(set).map(([label,spot])=>({name,label,spot})));
+  const rows=parkingSets(item,state.groupView).flatMap(({name,set})=>parkingRows(set).map(([label,spot])=>({name,label,spot})));
   if(!rows.length) return '';
   return `<div class="tl-parking">${rows.map(({name,label,spot},index)=>`<div class="tl-parking__row${index ? ' tl-parking__backup' : ''}"><span class="tl-parking__badge">${escapeHtml(label === '主要' ? (name === '共用停車' ? 'P' : name) : '備')}</span><a class="tl-parking__link" href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer">${icons.parking}${escapeHtml(spot.name)}</a>${parkingMeta(spot) ? `<span class="tl-parking__meta">${escapeHtml(parkingMeta(spot))}</span>` : ''}</div>`).join('')}</div>`;
 }
 
 function focusParkingHtml(item) {
-  const rows=parkingSets(item).flatMap(({name,set})=>parkingRows(set).map(([label,spot])=>({name,label,spot})));
+  const rows=parkingSets(item,state.groupView).flatMap(({name,set})=>parkingRows(set).map(([label,spot])=>({name,label,spot})));
   if(!rows.length) return '';
   return `<div class="focus-parking-list">${rows.map(({name,label,spot})=>`<a class="focus-parking" href="${escapeHtml(parkingMapUrl(spot))}" target="_blank" rel="noopener noreferrer">${icons.parking}<span class="focus-parking__copy"><small>${escapeHtml(name)} · ${escapeHtml(label)}</small><strong>${escapeHtml(spot.name)}</strong>${parkingMeta(spot) ? `<em>${escapeHtml(parkingMeta(spot))}</em>` : ''}</span><span class="focus-parking__arrow" aria-hidden="true">↗</span></a>`).join('')}</div>`;
 }
@@ -286,7 +282,7 @@ function todayNowHtml(item,trip) {
 
 function todayNextHtml(item) {
   if(!item) return '<div class="focus-loading">沒有下一個安排</div>';
-  return `<div class="next-label"><span>NEXT</span><span>${escapeHtml(item.startTime || '彈性')}</span></div><div class="next-row"><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.transitMode ? '前往下一站' : itemTypeLabel(item))}</p></div>${itemNotesHtml(item)}${parkingHtml(item)}${focusActions(item)}`;
+  return `<div class="next-label"><span>NEXT</span><span>${escapeHtml(item.startTime || '彈性')}</span></div><div class="next-row"><h2>${escapeHtml(item.title)}</h2><p>${escapeHtml(item.transitMode ? '前往下一站' : itemTypeLabel(item))}</p></div>${itemNotesHtml(item)}${parkingHtml(item,state.groupView)}${focusActions(item)}`;
 }
 
 function flightLegHtml(item) {

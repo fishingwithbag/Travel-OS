@@ -1,6 +1,8 @@
 # 公開發布驗收
 
-更新：2026-11-06。**發布門檻未通過。** Repository 公開、PR 或 CI 成功不等於產品驗收完成。
+更新：2026-11-07。**發布門檻未通過。** Repository 公開、PR 或 CI 成功不等於產品驗收完成。
+
+最新線上驗收：新 Repo Pages 的建立者驗證、Step 6 設定匯出、Actions secret 發布及旅伴僅用網站帳密登入已通過。旅伴讀取共享旅程保持 viewer，自建新旅程取得該旅程 owner；群組、住宿、租車、下一站備註／主備停車、分幣別費用、雲端新旅程還原與分享副本移除私人內容均通過。正式站 Google、重登／跨裝置、跨專案與更新離線仍待驗，見[線上雲端報告](VERIFICATION_HOSTED_CLOUD_2026-11-07.zh-TW.md)。
 
 最新權限驗收：真實 Firebase SDK 完成 21 項 PASS、0 FAIL，包含匿名、viewer 寫入、editor 升權、跨旅程與他人索引等 13 次服務端拒絕；editor 合法發布與 viewer 讀回新版成功，拒絕後版本及角色完整。直接越權請求缺口已關閉，跨裝置與正式部署仍待驗，見[權限報告](VERIFICATION_AUTHORIZATION_2026-11-06.zh-TW.md)。
 
@@ -41,7 +43,7 @@
 
 本批旅伴登入、手機、根／子路徑及匿名拒絕證據見[設定流程驗證報告](VERIFICATION_ONBOARDING_2026-11-05.zh-TW.md)，包含尚未通過的真實登入與正式部署門檻。
 
-- [ ] 建立者匯出網站連線設定並部署；新裝置僅輸入網站 Email／密碼即可登入，不需 Firebase Console 或 config。2026-11-06 production preview 真實 viewer 登入、唯一共享旅程讀回及唯讀控制通過；首次 Pages 部署及正式站登入待驗，見[指南](SITE_CONNECTION.zh-TW.md)。
+- [x] 建立者匯出網站連線設定並部署；全新 Pages 分頁僅輸入網站 Email／密碼即可登入，不需 Firebase Console 或 config。2026-11-07 真實 viewer 登入、共享旅程讀回及唯讀控制通過，見[線上報告](VERIFICATION_HOSTED_CLOUD_2026-11-07.zh-TW.md)。實體新裝置另外保留驗收門檻。
 
 - [ ] 僅依 README 與 Step 1 完成自己網站的部署；官方 demo 不接收個人設定。
 - [ ] 網站建立者依 Step 2 準備 Firebase 專案、Web app、RTDB、Authentication、使用者及 Rules；本次沿用現有 Blaze／免費試用專案，不要求旅伴另建專案。

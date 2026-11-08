@@ -1,6 +1,7 @@
 import { describe,expect,it } from 'vitest';
 import { createTrip,createItem,editItem,createBackup,validateBackup } from '../src/domain/trip.js';
 import { serializeFirebaseTrip,parseFirebaseTrip } from '../src/storage/firebase-store.js';
+import { parkingSetsForGroup } from '../src/domain/schedule.js';
 
 const trip=()=>({...createTrip({title:'Test',destination:'Anywhere',startDate:'2027-01-01',endDate:'2027-01-02',timeZone:'UTC',currency:'USD'},'trip'),groups:[{id:'a',name:'A'},{id:'b',name:'B'},{id:'c',name:'C'}]});
 const spot=(name,currency='USD')=>({name,mapsUrl:'',walkMinutes:5,feeMinor:1250,currency,note:'North entrance'});
@@ -8,6 +9,25 @@ const parking=()=>({primary:spot('Shared'),backup:{name:'',mapsUrl:''},notes:'Sh
 const itemInput=()=>({date:'2027-01-01',type:'place',title:'Museum',parking:parking()});
 
 describe('shared and arbitrary-group parking',()=>{
+  it('shows only the selected group parking for a shared stop without changing its data',()=>{
+    const base=trip(),item=createItem(itemInput(),base,'item');
+    expect(parkingSetsForGroup(item,base.groups,'b').map(({name,set})=>[name,set.primary.name])).toEqual([['B','B lot']]);
+    expect(parkingSetsForGroup(item,base.groups,'a')[0].set.backup.name).toBe('A backup');
+    expect(parkingSetsForGroup(item,base.groups).map(({name})=>name)).toEqual(['A','B']);
+    expect(parkingSetsForGroup(item,base.groups,'c')).toEqual([]);
+    expect(item.parking.byGroup.a.primary.name).toBe('A lot');
+  });
+  it('intersects the stop group with the selected view and never substitutes another group',()=>{
+    const base=trip(),item=createItem({...itemInput(),groupId:'b'},base,'item');
+    expect(parkingSetsForGroup(item,base.groups,'a')).toEqual([]);
+    expect(parkingSetsForGroup(item,base.groups,'missing')).toEqual([]);
+    expect(parkingSetsForGroup(item,base.groups).map(({name})=>name)).toEqual(['B']);
+  });
+  it('keeps common parking available in every group and handles a stop without parking',()=>{
+    const base=trip(),item=createItem({...itemInput(),parking:{...parking(),mode:'shared'}},base,'item');
+    expect(parkingSetsForGroup(item,base.groups,'b')[0].set.primary.name).toBe('Shared');
+    expect(parkingSetsForGroup({...item,parking:null},base.groups,'b')).toEqual([]);
+  });
   it('preserves every group, currency and hidden shared set through edits, backup and Firebase',()=>{
     const base=trip(); const item=createItem(itemInput(),base,'item');
     const updated=editItem({...base,items:[item]},'item',{title:'Updated',parking:{...item.parking,mode:'shared'}});

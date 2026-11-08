@@ -31,6 +31,8 @@
 
 ## 本輪驗證狀態
 
+2026-11-07：獨立新 Pages 由建立者通過 Step 5、以 Step 6 匯出設定、在自己的新 Repo 設定 Actions secret 並部署成功。全新分頁的 viewer 實際只用網站帳密登入，讀回共享旅程並保留唯讀權限；同一帳號自建旅程取得該旅程 owner，保存群組／住宿／租車／停車／費用及還原成功。Google、跨專案、跨裝置及正式發布門檻仍未關閉，見[線上報告](VERIFICATION_HOSTED_CLOUD_2026-11-07.zh-TW.md)。
+
 2026-11-06 增量：真實 SDK 三角色驗收完成 13 次越權拒絕、editor 合法發布與 viewer 新版讀回，見[權限報告](VERIFICATION_AUTHORIZATION_2026-11-06.zh-TW.md)。新 Repo 的 Pages 已成功部署，下一站備註／Maps／主備停車與重整讀回通過；建立者登入、匯出網站設定及線上旅伴登入仍待完成，見[部署報告](VERIFICATION_DEPLOYMENT_2026-11-06.zh-TW.md)。下方日期化紀錄保留當時狀態。
 
 2026-11-06：本機 production preview 已以既有 viewer 帳號真實登入，未再貼 config 或走六步設定，成功讀回唯一獲授權的共享旅程、跨年航班、下一站備註、停車連結與分幣別費用；群組、費用及成員寫入介面停用。正式 Pages 登入與直接 SDK 越權請求仍待驗；下方 2026-11-05 的「等待輸入密碼」為當時紀錄。
